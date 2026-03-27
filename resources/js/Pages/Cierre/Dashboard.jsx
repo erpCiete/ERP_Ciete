@@ -1,29 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useI18n } from '@/i18n';
 import { Head, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 
 const FLOW_STEPS = [
-    { id: 'encargo', label: 'Encargo' },
-    { id: 'pedido', label: 'Pedido' },
-    { id: 'ejecucion', label: 'En curso' },
-    { id: 'terminado', label: 'Terminado' },
-    { id: 'revision_cierre', label: 'Revisión de cierre' },
-    { id: 'cerrado', label: 'Cerrado' },
+    'encargo',
+    'pedido',
+    'ejecucion',
+    'terminado',
+    'revision_cierre',
+    'cerrado',
 ];
-
-const CLOSURE_STATUS_LABELS = {
-    pendiente: 'Pendiente de revisión',
-    listo: 'Listo para cerrar',
-    bloqueado: 'Bloqueado',
-    cerrado: 'Cerrado',
-};
-
-const LEGALIZATION_LABELS = {
-    pendiente: 'Pendiente',
-    en_revision: 'En revisión',
-    completa: 'Completa',
-    no_aplica: 'No aplica',
-};
 
 const INITIAL_WORKS = [
     {
@@ -262,18 +249,6 @@ const INITIAL_WORKS = [
     },
 ];
 
-const moneyFormatter = new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR',
-    maximumFractionDigits: 2,
-});
-
-const dateFormatter = new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-});
-
 const statusOrder = {
     pendiente: 0,
     listo: 1,
@@ -289,17 +264,17 @@ function normalizeText(value) {
         .trim();
 }
 
-function formatMoney(value) {
-    return moneyFormatter.format(Number(value || 0));
+function formatMoneyIntl(value, formatter) {
+    return formatter.format(Number(value || 0));
 }
 
-function formatDate(value) {
+function formatDateIntl(value, formatter) {
     if (!value) return '-';
 
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';
 
-    return dateFormatter.format(date);
+    return formatter.format(date);
 }
 
 function buildValidationItems(work) {
@@ -308,34 +283,35 @@ function buildValidationItems(work) {
     return [
         {
             id: 'finishedConfirmed',
-            label: 'Trabajo terminado confirmado',
+            labelKey: 'closureDashboard.checklist.finishedConfirmed',
             ok: work.terminadoConfirmado,
             blocking: true,
         },
         {
             id: 'endDate',
-            label: 'Fecha real de terminación informada',
+            labelKey: 'closureDashboard.checklist.endDate',
             ok: Boolean(work.fechaFinReal),
             blocking: true,
         },
         {
             id: 'validOrder',
-            label: 'Pedido válido',
+            labelKey: 'closureDashboard.checklist.validOrder',
             ok: Boolean(work.numeroPedido),
             blocking: true,
         },
         {
             id: 'amountReviewed',
-            label: 'Importe revisado',
+            labelKey: 'closureDashboard.checklist.amountReviewed',
             ok: !exceedsOrderAmount || work.revisionEconomicaAprobada,
             blocking: true,
-            note: exceedsOrderAmount && !work.revisionEconomicaAprobada
-                ? 'El importe del trabajo supera el pedido y requiere revisión económica.'
-                : '',
+            noteKey:
+                exceedsOrderAmount && !work.revisionEconomicaAprobada
+                    ? 'closureDashboard.messages.amountExceeded'
+                    : null,
         },
         {
             id: 'legalizationChecked',
-            label: 'Legalización revisada',
+            labelKey: 'closureDashboard.checklist.legalizationChecked',
             ok:
                 work.legalizacionEstado === 'completa' ||
                 work.legalizacionEstado === 'no_aplica' ||
@@ -344,31 +320,31 @@ function buildValidationItems(work) {
         },
         {
             id: 'mandatoryFields',
-            label: 'Campos obligatorios completos',
+            labelKey: 'closureDashboard.checklist.mandatoryFields',
             ok: work.camposObligatoriosCompletos,
             blocking: true,
         },
         {
             id: 'noBlockingIncidents',
-            label: 'Sin incidencias bloqueantes',
+            labelKey: 'closureDashboard.checklist.noBlockingIncidents',
             ok: !work.incidenciaBloqueante,
             blocking: true,
         },
         {
             id: 'contractTariff',
-            label: 'Contrato/tarifario validado',
+            labelKey: 'closureDashboard.checklist.contractTariff',
             ok: !work.requiereContratoTarifario || work.contratoTarifarioValidado,
             blocking: true,
         },
         {
             id: 'flowReady',
-            label: 'Flujo preparado para cierre',
+            labelKey: 'closureDashboard.checklist.flowReady',
             ok: ['revision_cierre', 'cerrado'].includes(work.faseActual),
             blocking: true,
         },
         {
             id: 'readyToClose',
-            label: 'Listo para cierre',
+            labelKey: 'closureDashboard.checklist.readyToClose',
             ok: work.revisionCierreMarcada || work.cerrado,
             blocking: false,
         },
@@ -409,12 +385,12 @@ function legalizationBadgeClass(status) {
     return map[status] ?? 'bg-surface-2 text-text-muted';
 }
 
-function closureActionLabel(status) {
-    if (status === 'listo') return 'Cerrar';
-    if (status === 'bloqueado') return 'Revisar';
-    if (status === 'cerrado') return 'Reabrir';
+function closureActionKey(status) {
+    if (status === 'listo') return 'closureDashboard.actions.close';
+    if (status === 'bloqueado') return 'closureDashboard.actions.review';
+    if (status === 'cerrado') return 'closureDashboard.actions.reopen';
 
-    return 'Validar';
+    return 'closureDashboard.actions.validate';
 }
 
 function formatCsvValue(value) {
@@ -423,11 +399,36 @@ function formatCsvValue(value) {
 }
 
 export default function ClosureDashboard() {
+    const { t, locale } = useI18n();
     const user = usePage().props.auth.user;
+    const localeForIntl = locale === 'en' ? 'en-US' : 'es-ES';
+    const moneyFormatter = useMemo(
+        () =>
+            new Intl.NumberFormat(localeForIntl, {
+                style: 'currency',
+                currency: 'EUR',
+                maximumFractionDigits: 2,
+            }),
+        [localeForIntl],
+    );
+    const dateFormatter = useMemo(
+        () =>
+            new Intl.DateTimeFormat(localeForIntl, {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+            }),
+        [localeForIntl],
+    );
+    const formatMoneyValue = (value) => formatMoneyIntl(value, moneyFormatter);
+    const formatDateValue = (value) => formatDateIntl(value, dateFormatter);
+    const statusLabel = (status) => t(`closureDashboard.statusLabels.${status}`);
+    const legalizationLabel = (status) => t(`closureDashboard.legalizationLabels.${status}`);
+
     const actorName =
         user?.nombre_usuario ||
         [user?.nombre, user?.apellidos].filter(Boolean).join(' ') ||
-        'Usuario cierre';
+        t('closureDashboard.fallbackUser');
 
     const [works, setWorks] = useState(INITIAL_WORKS);
     const [contextFilter, setContextFilter] = useState('todos');
@@ -485,7 +486,7 @@ export default function ClosureDashboard() {
             legalizacionesPendientes: scopedWorks.filter((work) => ['pendiente', 'en_revision'].includes(work.legalizacionEstado)).length,
             cerradosHoy: scopedWorks.filter((work) => {
                 if (!work.cerrado || !work.trazabilidad?.fechaCierre) return false;
-                return formatDate(work.trazabilidad.fechaCierre) === today;
+                return formatDateValue(work.trazabilidad.fechaCierre) === today;
             }).length,
         };
     }, [scopedWorks]);
@@ -494,33 +495,33 @@ export default function ClosureDashboard() {
         const items = [
             {
                 id: 'no-end-date',
-                label: 'Trabajos terminados sin fecha fin',
+                label: t('closureDashboard.incidents.items.noEndDate'),
                 count: scopedWorks.filter((work) => work.terminadoConfirmado && !work.fechaFinReal).length,
             },
             {
                 id: 'budget-overrun',
-                label: 'Trabajos con pedido insuficiente',
+                label: t('closureDashboard.incidents.items.budgetOverrun'),
                 count: scopedWorks.filter((work) => work.importeTrabajo > work.importePedido && !work.revisionEconomicaAprobada).length,
             },
             {
                 id: 'legalization-pending',
-                label: 'Legalizaciones pendientes críticas',
+                label: t('closureDashboard.incidents.items.legalizationPending'),
                 count: scopedWorks.filter((work) => ['pendiente', 'en_revision'].includes(work.legalizacionEstado) && work.legalizacionCritica).length,
             },
             {
                 id: 'incomplete-data',
-                label: 'Datos obligatorios incompletos',
+                label: t('closureDashboard.incidents.items.incompleteData'),
                 count: scopedWorks.filter((work) => !work.camposObligatoriosCompletos).length,
             },
             {
                 id: 'economic-review',
-                label: 'Revisión económica pendiente',
+                label: t('closureDashboard.incidents.items.economicReview'),
                 count: scopedWorks.filter((work) => work.importeTrabajo > work.importePedido && !work.revisionEconomicaAprobada).length,
             },
         ];
 
         return items.filter((item) => item.count > 0);
-    }, [scopedWorks]);
+    }, [scopedWorks, t]);
 
     const allVisibleSelected =
         visibleWorks.length > 0 && visibleWorks.every((work) => selectedIds.includes(work.id));
@@ -566,7 +567,7 @@ export default function ClosureDashboard() {
                     ...work.trazabilidad,
                     reabiertoPor: actorName,
                     fechaReapertura: new Date().toISOString(),
-                    reaperturaMotivo: reason || 'Reapertura solicitada desde panel de cierre.',
+                    reaperturaMotivo: reason || t('closureDashboard.messages.defaultReopenReason'),
                 },
             };
         });
@@ -582,7 +583,7 @@ export default function ClosureDashboard() {
 
         setActiveWorkId(work.id);
         if (status === 'cerrado') {
-            setReopenReason('Reapertura por revisión de cierre.');
+            setReopenReason(t('closureDashboard.messages.defaultReopenReason'));
         }
     };
 
@@ -650,17 +651,16 @@ export default function ClosureDashboard() {
         const rows = buildExportRows(status);
         if (rows.length === 0) return;
 
-        // Export sencillo en CSV para seguimiento operativo del rol cierre.
         const csvHeader = [
-            'Cliente',
-            'Estación',
-            'Nº aviso',
-            'Nº pedido',
-            'Responsable',
-            'Estado cierre',
-            'Legalización',
-            'Importe pedido',
-            'Importe trabajo',
+            t('closureDashboard.columns.client'),
+            t('closureDashboard.columns.station'),
+            t('closureDashboard.columns.noticeNumber'),
+            t('closureDashboard.columns.orderNumber'),
+            t('closureDashboard.columns.owner'),
+            t('closureDashboard.columns.closureStatus'),
+            t('closureDashboard.columns.legalization'),
+            t('closureDashboard.columns.orderAmount'),
+            t('closureDashboard.columns.workAmount'),
         ];
 
         const lines = [csvHeader.join(',')];
@@ -672,8 +672,8 @@ export default function ClosureDashboard() {
                 formatCsvValue(work.numeroAviso),
                 formatCsvValue(work.numeroPedido),
                 formatCsvValue(work.responsable),
-                formatCsvValue(CLOSURE_STATUS_LABELS[resolveClosureStatus(work)]),
-                formatCsvValue(LEGALIZATION_LABELS[work.legalizacionEstado]),
+                formatCsvValue(statusLabel(resolveClosureStatus(work))),
+                formatCsvValue(legalizationLabel(work.legalizacionEstado)),
                 formatCsvValue(work.importePedido),
                 formatCsvValue(work.importeTrabajo),
             ].join(','));
@@ -686,7 +686,7 @@ export default function ClosureDashboard() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `panel-cierre-${status}.csv`;
+        link.download = `${t('closureDashboard.export.filePrefix')}-${status}.csv`;
         link.click();
 
         URL.revokeObjectURL(url);
@@ -699,8 +699,8 @@ export default function ClosureDashboard() {
         const popup = window.open('', '_blank', 'width=1200,height=900');
         if (!popup) return;
 
-        const title = `Panel de cierre - ${status}`;
-        const now = new Date().toLocaleString('es-ES');
+        const title = `${t('closureDashboard.header')} - ${statusLabel(status)}`;
+        const now = new Date().toLocaleString(localeForIntl);
 
         const tableRows = rows
             .map(
@@ -711,16 +711,15 @@ export default function ClosureDashboard() {
                         <td>${work.numeroAviso}</td>
                         <td>${work.numeroPedido}</td>
                         <td>${work.responsable}</td>
-                        <td>${CLOSURE_STATUS_LABELS[resolveClosureStatus(work)]}</td>
-                        <td>${LEGALIZATION_LABELS[work.legalizacionEstado]}</td>
-                        <td>${formatMoney(work.importePedido)}</td>
-                        <td>${formatMoney(work.importeTrabajo)}</td>
+                        <td>${statusLabel(resolveClosureStatus(work))}</td>
+                        <td>${legalizationLabel(work.legalizacionEstado)}</td>
+                        <td>${formatMoneyValue(work.importePedido)}</td>
+                        <td>${formatMoneyValue(work.importeTrabajo)}</td>
                     </tr>
                 `,
             )
             .join('');
 
-        // Generamos una vista de impresión limpia para exportar como PDF desde el navegador.
         popup.document.write(`
             <html>
                 <head>
@@ -736,19 +735,19 @@ export default function ClosureDashboard() {
                 </head>
                 <body>
                     <h1>${title}</h1>
-                    <p>Generado: ${now}</p>
+                    <p>${t('closureDashboard.export.generatedAt')}: ${now}</p>
                     <table>
                         <thead>
                             <tr>
-                                <th>Cliente</th>
-                                <th>Estación</th>
-                                <th>Nº aviso</th>
-                                <th>Nº pedido</th>
-                                <th>Responsable</th>
-                                <th>Estado cierre</th>
-                                <th>Legalización</th>
-                                <th>Importe pedido</th>
-                                <th>Importe trabajo</th>
+                                <th>${t('closureDashboard.columns.client')}</th>
+                                <th>${t('closureDashboard.columns.station')}</th>
+                                <th>${t('closureDashboard.columns.noticeNumber')}</th>
+                                <th>${t('closureDashboard.columns.orderNumber')}</th>
+                                <th>${t('closureDashboard.columns.owner')}</th>
+                                <th>${t('closureDashboard.columns.closureStatus')}</th>
+                                <th>${t('closureDashboard.columns.legalization')}</th>
+                                <th>${t('closureDashboard.columns.orderAmount')}</th>
+                                <th>${t('closureDashboard.columns.workAmount')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -782,57 +781,57 @@ export default function ClosureDashboard() {
             contentWidthClass="max-w-none"
             header={
                 <h2 className="text-xl font-semibold leading-tight text-[var(--ciete-slate)]">
-                    Panel de cierre
+                    {t('closureDashboard.header')}
                 </h2>
             }
         >
-            <Head title="Panel de cierre" />
+            <Head title={t('closureDashboard.headTitle')} />
 
             <div className="mx-auto w-full space-y-5 px-2 py-8">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                            Centro de validación final
+                            {t('closureDashboard.panelLabel')}
                         </p>
-                        <h1 className="text-xl font-semibold text-text-main">Panel de cierre</h1>
-                        <p className="mt-1 text-sm text-text-muted">Revisión final, validación y cierre de trabajos</p>
+                        <h1 className="text-xl font-semibold text-text-main">{t('closureDashboard.header')}</h1>
+                        <p className="mt-1 text-sm text-text-muted">{t('closureDashboard.subtitle')}</p>
                     </div>
 
                     <div className="grid w-full gap-2 rounded-[12px] border border-border bg-surface p-3 shadow-sm lg:w-auto lg:min-w-[30rem] lg:grid-cols-2">
                         <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                            Contexto
+                            {t('closureDashboard.filters.context')}
                             <select
                                 value={contextFilter}
                                 onChange={(event) => setContextFilter(event.target.value)}
                                 className="rounded-md border-border bg-surface-2 text-xs text-text-main"
                             >
-                                <option value="todos">Todos</option>
+                                <option value="todos">{t('closureDashboard.filters.all')}</option>
                                 <option value="repsol">Repsol</option>
                                 <option value="cepsa">Cepsa</option>
                             </select>
                         </label>
 
                         <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                            Estado
+                            {t('closureDashboard.filters.status')}
                             <select
                                 value={statusFilter}
                                 onChange={(event) => setStatusFilter(event.target.value)}
                                 className="rounded-md border-border bg-surface-2 text-xs text-text-main"
                             >
-                                <option value="todos">Todos</option>
-                                <option value="pendiente">Pendiente</option>
-                                <option value="listo">Listo para cerrar</option>
-                                <option value="bloqueado">Bloqueado</option>
-                                <option value="cerrado">Cerrado</option>
+                                <option value="todos">{t('closureDashboard.filters.all')}</option>
+                                <option value="pendiente">{statusLabel('pendiente')}</option>
+                                <option value="listo">{statusLabel('listo')}</option>
+                                <option value="bloqueado">{statusLabel('bloqueado')}</option>
+                                <option value="cerrado">{statusLabel('cerrado')}</option>
                             </select>
                         </label>
 
                         <label className="col-span-full flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                            Buscador rápido
+                            {t('closureDashboard.filters.quickSearch')}
                             <input
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                placeholder="Estación, nº aviso, nº pedido o responsable"
+                                placeholder={t('closureDashboard.filters.searchPlaceholder')}
                                 className="rounded-md border-border bg-surface-2 text-xs text-text-main placeholder:text-text-hint"
                             />
                         </label>
@@ -841,34 +840,34 @@ export default function ClosureDashboard() {
 
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-pending-dot bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">Pendientes de cierre</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.pendingToClose')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.pendientes}</p>
-                        <p className="mt-1 text-[9px] text-text-hint">pendiente de revisión</p>
+                        <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.pendingReview')}</p>
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-done-dot bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">Listos para cerrar</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.readyToClose')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.listos}</p>
-                        <p className="mt-1 text-[9px] text-text-hint">válidos para cierre</p>
+                        <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.validForClose')}</p>
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-blocked-dot bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">Bloqueados por incidencia</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.blockedByIncident')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.bloqueados}</p>
-                        <p className="mt-1 text-[9px] text-text-hint">requieren intervención</p>
+                        <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.requiresIntervention')}</p>
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-blocked-dot bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">Terminados sin fecha fin</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.finishedWithoutEndDate')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.sinFechaFin}</p>
-                        <p className="mt-1 text-[9px] text-text-hint">dato obligatorio pendiente</p>
+                        <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.requiredDataPending')}</p>
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-accent bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">Legalizaciones pendientes</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.pendingLegalizations')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.legalizacionesPendientes}</p>
-                        <p className="mt-1 text-[9px] text-text-hint">impacto en cierre</p>
+                        <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.impactsClose')}</p>
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-done-dot bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">Cerrados hoy</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.closedToday')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.cerradosHoy}</p>
-                        <p className="mt-1 text-[9px] text-text-hint">cierres confirmados</p>
+                        <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.confirmedClosures')}</p>
                     </div>
                 </div>
 
@@ -876,15 +875,15 @@ export default function ClosureDashboard() {
                     <div className="border-b border-border px-4 py-3">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <h3 className="text-sm font-medium text-text-main">Trabajos en revisión de cierre</h3>
-                                <p className="mt-1 text-xs text-text-hint">Control de validaciones, incidencias y acciones finales</p>
+                                <h3 className="text-sm font-medium text-text-main">{t('closureDashboard.main.title')}</h3>
+                                <p className="mt-1 text-xs text-text-hint">{t('closureDashboard.main.subtitle')}</p>
                             </div>
                             <div className="grid w-full grid-cols-2 gap-2 lg:w-auto lg:grid-cols-none lg:auto-cols-max lg:grid-flow-col lg:items-center">
                                 <span className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-text-hint lg:col-span-1">
-                                    {selectedWorks.length} seleccionados
+                                    {t('closureDashboard.main.selectedCount', { count: selectedWorks.length })}
                                 </span>
                                 <label className="inline-flex items-center justify-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-text-main">
-                                    Formato
+                                    {t('closureDashboard.main.format')}
                                     <select
                                         value={exportFormat}
                                         onChange={(event) => setExportFormat(event.target.value)}
@@ -900,24 +899,24 @@ export default function ClosureDashboard() {
                                     disabled={selectedWorks.length === 0}
                                     className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <span className="sm:hidden">Revisados</span>
-                                    <span className="hidden sm:inline">Marcar revisados</span>
+                                    <span className="sm:hidden">{t('closureDashboard.actions.shortMarkReviewed')}</span>
+                                    <span className="hidden sm:inline">{t('closureDashboard.actions.markReviewed')}</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => handleExport('pendiente')}
                                     className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
                                 >
-                                    <span className="sm:hidden">Exp. pend.</span>
-                                    <span className="hidden sm:inline">Exportar pendientes</span>
+                                    <span className="sm:hidden">{t('closureDashboard.actions.shortExportPending')}</span>
+                                    <span className="hidden sm:inline">{t('closureDashboard.actions.exportPending')}</span>
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => handleExport('bloqueado')}
                                     className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
                                 >
-                                    <span className="sm:hidden">Exp. bloq.</span>
-                                    <span className="hidden sm:inline">Exportar bloqueados</span>
+                                    <span className="sm:hidden">{t('closureDashboard.actions.shortExportBlocked')}</span>
+                                    <span className="hidden sm:inline">{t('closureDashboard.actions.exportBlocked')}</span>
                                 </button>
                                 <button
                                     type="button"
@@ -925,7 +924,7 @@ export default function ClosureDashboard() {
                                     disabled={!canMassClose}
                                     className="col-span-2 inline-flex items-center justify-center rounded-md bg-[var(--ciete-red)] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-[var(--ciete-red-dark)] disabled:cursor-not-allowed disabled:opacity-50 lg:col-span-1"
                                 >
-                                    Cierre masivo
+                                    {t('closureDashboard.actions.massClose')}
                                 </button>
                             </div>
                         </div>
@@ -934,7 +933,7 @@ export default function ClosureDashboard() {
                     <div className="space-y-2 p-3 md:hidden">
                         {visibleWorks.length === 0 ? (
                             <div className="rounded-lg border border-border bg-surface-2 px-3 py-6 text-center text-sm text-text-hint">
-                                No hay trabajos para los filtros seleccionados.
+                                {t('closureDashboard.main.empty')}
                             </div>
                         ) : (
                             visibleWorks.map((work) => {
@@ -948,36 +947,36 @@ export default function ClosureDashboard() {
                                                     type="checkbox"
                                                     checked={selectedIds.includes(work.id)}
                                                     onChange={() => handleSelectRow(work.id)}
-                                                    aria-label={`Seleccionar ${work.numeroAviso}`}
+                                                    aria-label={`${t('closureDashboard.main.selectOne')} ${work.numeroAviso}`}
                                                     className="rounded border-border"
                                                 />
                                                 {work.numeroAviso}
                                             </label>
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${closureStatusBadgeClass(closureStatus)}`}>
-                                                {CLOSURE_STATUS_LABELS[closureStatus]}
+                                                {statusLabel(closureStatus)}
                                             </span>
                                         </div>
 
                                         <p className="mb-2 text-xs font-medium text-text-main">{work.estacion}</p>
 
                                         <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] leading-tight">
-                                            <p><span className="text-text-hint">Cliente:</span> {work.cliente}</p>
-                                            <p><span className="text-text-hint">Pedido:</span> {work.numeroPedido}</p>
-                                            <p><span className="text-text-hint">Responsable:</span> {work.responsable}</p>
-                                            <p><span className="text-text-hint">Fecha fin:</span> {formatDate(work.fechaFinReal)}</p>
-                                            <p><span className="text-text-hint">Imp. pedido:</span> {formatMoney(work.importePedido)}</p>
-                                            <p><span className="text-text-hint">Imp. trabajo:</span> {formatMoney(work.importeTrabajo)}</p>
+                                            <p><span className="text-text-hint">{t('closureDashboard.columns.client')}:</span> {work.cliente}</p>
+                                            <p><span className="text-text-hint">{t('closureDashboard.mobile.orderShort')}:</span> {work.numeroPedido}</p>
+                                            <p><span className="text-text-hint">{t('closureDashboard.columns.owner')}:</span> {work.responsable}</p>
+                                            <p><span className="text-text-hint">{t('closureDashboard.mobile.endDateShort')}:</span> {formatDateValue(work.fechaFinReal)}</p>
+                                            <p><span className="text-text-hint">{t('closureDashboard.mobile.orderAmountShort')}:</span> {formatMoneyValue(work.importePedido)}</p>
+                                            <p><span className="text-text-hint">{t('closureDashboard.mobile.workAmountShort')}:</span> {formatMoneyValue(work.importeTrabajo)}</p>
                                             <p className="col-span-2">
-                                                <span className="text-text-hint">Legalización:</span>{' '}
+                                                <span className="text-text-hint">{t('closureDashboard.columns.legalization')}:</span>{' '}
                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${legalizationBadgeClass(work.legalizacionEstado)}`}>
-                                                    {LEGALIZATION_LABELS[work.legalizacionEstado]}
+                                                    {legalizationLabel(work.legalizacionEstado)}
                                                 </span>
                                             </p>
                                         </div>
 
                                         <div className="mt-2 flex items-center gap-1.5 text-[11px] text-text-main">
                                             <span className={`inline-block h-2 w-2 rounded-full ${work.incidenciaBloqueante ? 'bg-state-blocked-dot' : 'bg-state-done-dot'}`} />
-                                            <span>{work.incidencias.length} incidencias</span>
+                                            <span>{work.incidencias.length} {t('closureDashboard.mobile.incidentsSuffix')}</span>
                                         </div>
 
                                         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -994,14 +993,14 @@ export default function ClosureDashboard() {
                                                             : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
                                                 }`}
                                             >
-                                                {closureActionLabel(closureStatus)}
+                                                {t(closureActionKey(closureStatus))}
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveWorkId(work.id)}
                                                 className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
                                             >
-                                                Ver detalle
+                                                {t('closureDashboard.actions.viewDetail')}
                                             </button>
                                         </div>
                                     </article>
@@ -1019,31 +1018,31 @@ export default function ClosureDashboard() {
                                             type="checkbox"
                                             checked={allVisibleSelected}
                                             onChange={handleSelectAllVisible}
-                                            aria-label="Seleccionar trabajos visibles"
+                                            aria-label={t('closureDashboard.main.selectVisible')}
                                             className="rounded border-border"
                                         />
                                     </th>
-                                    <th className="w-16 px-2 py-2">Cliente</th>
-                                    <th className="w-[10rem] px-2 py-2">Estación</th>
-                                    <th className="w-[5.5rem] px-2 py-2">Nº aviso</th>
-                                    <th className="w-[5.5rem] px-2 py-2">Nº pedido</th>
-                                    <th className="w-[9rem] px-2 py-2">Tipo de trabajo</th>
-                                    <th className="w-[8rem] px-2 py-2">Responsable</th>
-                                    <th className="w-[6.5rem] px-2 py-2">Fecha encargo</th>
-                                    <th className="w-[6.5rem] px-2 py-2">Fecha real terminación</th>
-                                    <th className="w-[7rem] px-2 py-2">Importe pedido</th>
-                                    <th className="w-[7rem] px-2 py-2">Importe trabajo</th>
-                                    <th className="w-[6.5rem] px-2 py-2">Legalización</th>
-                                    <th className="w-[7rem] px-2 py-2">Estado de cierre</th>
-                                    <th className="w-[5.5rem] px-2 py-2">Incidencias</th>
-                                    <th className="w-[6.5rem] px-2 py-2">Acción</th>
+                                    <th className="w-16 px-2 py-2">{t('closureDashboard.columns.client')}</th>
+                                    <th className="w-[10rem] px-2 py-2">{t('closureDashboard.columns.station')}</th>
+                                    <th className="w-[5.5rem] px-2 py-2">{t('closureDashboard.columns.noticeNumber')}</th>
+                                    <th className="w-[5.5rem] px-2 py-2">{t('closureDashboard.columns.orderNumber')}</th>
+                                    <th className="w-[9rem] px-2 py-2">{t('closureDashboard.columns.workType')}</th>
+                                    <th className="w-[8rem] px-2 py-2">{t('closureDashboard.columns.owner')}</th>
+                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.assignmentDate')}</th>
+                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.realEndDate')}</th>
+                                    <th className="w-[7rem] px-2 py-2">{t('closureDashboard.columns.orderAmount')}</th>
+                                    <th className="w-[7rem] px-2 py-2">{t('closureDashboard.columns.workAmount')}</th>
+                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.legalization')}</th>
+                                    <th className="w-[7rem] px-2 py-2">{t('closureDashboard.columns.closureStatus')}</th>
+                                    <th className="w-[5.5rem] px-2 py-2">{t('closureDashboard.columns.incidents')}</th>
+                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.action')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {visibleWorks.length === 0 ? (
                                     <tr>
                                         <td colSpan={15} className="px-4 py-10 text-center text-sm text-text-hint">
-                                            No hay trabajos para los filtros seleccionados.
+                                            {t('closureDashboard.main.empty')}
                                         </td>
                                     </tr>
                                 ) : (
@@ -1057,7 +1056,7 @@ export default function ClosureDashboard() {
                                                         type="checkbox"
                                                         checked={selectedIds.includes(work.id)}
                                                         onChange={() => handleSelectRow(work.id)}
-                                                        aria-label={`Seleccionar ${work.numeroAviso}`}
+                                                        aria-label={`${t('closureDashboard.main.selectOne')} ${work.numeroAviso}`}
                                                         className="rounded border-border"
                                                     />
                                                 </td>
@@ -1067,24 +1066,24 @@ export default function ClosureDashboard() {
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.numeroPedido}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.tipoTrabajo}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.responsable}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDate(work.fechaEncargo)}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDate(work.fechaFinReal)}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">{formatMoney(work.importePedido)}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">{formatMoney(work.importeTrabajo)}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDateValue(work.fechaEncargo)}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDateValue(work.fechaFinReal)}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">{formatMoneyValue(work.importePedido)}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">{formatMoneyValue(work.importeTrabajo)}</td>
                                                 <td className="px-2 py-2.5">
                                                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${legalizationBadgeClass(work.legalizacionEstado)}`}>
-                                                        {LEGALIZATION_LABELS[work.legalizacionEstado]}
+                                                        {legalizationLabel(work.legalizacionEstado)}
                                                     </span>
                                                 </td>
                                                 <td className="px-2 py-2.5">
                                                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${closureStatusBadgeClass(closureStatus)}`}>
-                                                        {CLOSURE_STATUS_LABELS[closureStatus]}
+                                                        {statusLabel(closureStatus)}
                                                     </span>
                                                 </td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">
                                                     <div className="flex items-center gap-1.5">
                                                         <span className={`inline-block h-2 w-2 rounded-full ${work.incidenciaBloqueante ? 'bg-state-blocked-dot' : 'bg-state-done-dot'}`} />
-                                                        <span>{work.incidencias.length} incid.</span>
+                                                        <span>{work.incidencias.length} {t('closureDashboard.table.incidentsShort')}</span>
                                                     </div>
                                                 </td>
                                                 <td className="px-2 py-2.5">
@@ -1102,14 +1101,14 @@ export default function ClosureDashboard() {
                                                                         : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
                                                             }`}
                                                         >
-                                                            {closureActionLabel(closureStatus)}
+                                                            {t(closureActionKey(closureStatus))}
                                                         </button>
                                                         <button
                                                             type="button"
                                                             onClick={() => setActiveWorkId(work.id)}
                                                             className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
                                                         >
-                                                            Ver detalle
+                                                            {t('closureDashboard.actions.viewDetail')}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -1125,20 +1124,20 @@ export default function ClosureDashboard() {
                 <section className="rounded-[12px] border border-border bg-surface p-4 shadow-sm">
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-sm font-medium text-text-main">Incidencias de cierre</h3>
-                            <p className="mt-1 text-xs text-text-hint">Resumen operativo para localizar bloqueos con rapidez</p>
+                            <h3 className="text-sm font-medium text-text-main">{t('closureDashboard.incidents.title')}</h3>
+                            <p className="mt-1 text-xs text-text-hint">{t('closureDashboard.incidents.subtitle')}</p>
                         </div>
                         <button
                             type="button"
                             onClick={() => setStatusFilter('bloqueado')}
                             className="inline-flex items-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
                         >
-                            Ver bloqueados
+                            {t('closureDashboard.incidents.viewBlocked')}
                         </button>
                     </div>
 
                     {closureIncidents.length === 0 ? (
-                        <p className="text-sm text-text-hint">No hay incidencias relevantes para el alcance actual.</p>
+                        <p className="text-sm text-text-hint">{t('closureDashboard.incidents.empty')}</p>
                     ) : (
                         <ul className="space-y-2">
                             {closureIncidents.map((incident) => (
@@ -1160,14 +1159,14 @@ export default function ClosureDashboard() {
                         type="button"
                         className="fixed inset-0 z-40 bg-black/35"
                         onClick={() => setActiveWorkId(null)}
-                        aria-label="Cerrar detalle de revisión"
+                        aria-label={t('closureDashboard.detail.closeReviewAria')}
                     />
 
                     <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl overflow-y-auto border-l border-border bg-surface shadow-2xl">
                         <div className="sticky top-0 z-10 border-b border-border bg-surface px-5 py-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">Revisión de cierre</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('closureDashboard.detail.title')}</p>
                                     <h3 className="mt-1 text-base font-semibold text-text-main">
                                         {activeWork.numeroAviso} · {activeWork.estacion}
                                     </h3>
@@ -1177,37 +1176,37 @@ export default function ClosureDashboard() {
                                     onClick={() => setActiveWorkId(null)}
                                     className="rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-text-main"
                                 >
-                                    Cerrar
+                                    {t('common.actions.close')}
                                 </button>
                             </div>
                         </div>
 
                         <div className="space-y-5 px-5 py-5">
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Datos base</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.baseData')}</h4>
                                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-text-main">
-                                    <p><span className="text-text-hint">Cliente:</span> {activeWork.cliente}</p>
-                                    <p><span className="text-text-hint">Estación:</span> {activeWork.estacion}</p>
-                                    <p><span className="text-text-hint">Nº aviso:</span> {activeWork.numeroAviso}</p>
-                                    <p><span className="text-text-hint">Nº pedido:</span> {activeWork.numeroPedido}</p>
-                                    <p><span className="text-text-hint">Tipo de trabajo:</span> {activeWork.tipoTrabajo}</p>
-                                    <p><span className="text-text-hint">Responsable:</span> {activeWork.responsable}</p>
-                                    <p><span className="text-text-hint">Fecha encargo:</span> {formatDate(activeWork.fechaEncargo)}</p>
-                                    <p><span className="text-text-hint">Fecha fin real:</span> {formatDate(activeWork.fechaFinReal)}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.client')}:</span> {activeWork.cliente}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.station')}:</span> {activeWork.estacion}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.noticeNumber')}:</span> {activeWork.numeroAviso}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.orderNumber')}:</span> {activeWork.numeroPedido}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.workType')}:</span> {activeWork.tipoTrabajo}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.owner')}:</span> {activeWork.responsable}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.assignmentDate')}:</span> {formatDateValue(activeWork.fechaEncargo)}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.realEndDate')}:</span> {formatDateValue(activeWork.fechaFinReal)}</p>
                                 </div>
                             </section>
 
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Estado del flujo</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.flowState')}</h4>
                                 <div className="mt-3 flex flex-wrap gap-1.5">
                                     {FLOW_STEPS.map((step, index) => {
-                                        const currentIndex = FLOW_STEPS.findIndex((item) => item.id === activeWork.faseActual);
+                                        const currentIndex = FLOW_STEPS.findIndex((item) => item === activeWork.faseActual);
                                         const isDone = index < currentIndex;
-                                        const isCurrent = step.id === activeWork.faseActual;
+                                        const isCurrent = step === activeWork.faseActual;
 
                                         return (
                                             <span
-                                                key={step.id}
+                                                key={step}
                                                 className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${
                                                     isCurrent
                                                         ? 'bg-[var(--ciete-red)] text-white'
@@ -1216,7 +1215,7 @@ export default function ClosureDashboard() {
                                                           : 'bg-surface text-text-hint'
                                                 }`}
                                             >
-                                                {step.label}
+                                                {t(`closureDashboard.flow.${step}`)}
                                             </span>
                                         );
                                     })}
@@ -1224,54 +1223,56 @@ export default function ClosureDashboard() {
                             </section>
 
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Control económico</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.economicControl')}</h4>
                                 <div className="mt-3 space-y-2 text-xs text-text-main">
-                                    <p><span className="text-text-hint">Importe pedido:</span> {formatMoney(activeWork.importePedido)}</p>
-                                    <p><span className="text-text-hint">Importe trabajo:</span> {formatMoney(activeWork.importeTrabajo)}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.orderAmount')}:</span> {formatMoneyValue(activeWork.importePedido)}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.columns.workAmount')}:</span> {formatMoneyValue(activeWork.importeTrabajo)}</p>
                                     <p>
-                                        <span className="text-text-hint">Diferencia:</span>{' '}
+                                        <span className="text-text-hint">{t('closureDashboard.detail.difference')}:</span>{' '}
                                         <span className={amountDiff > 0 ? 'font-semibold text-state-blocked-text' : 'font-semibold text-state-done-text'}>
-                                            {formatMoney(amountDiff)}
+                                            {formatMoneyValue(amountDiff)}
                                         </span>
                                     </p>
                                 </div>
                                 {amountDiff > 0 && !activeWork.revisionEconomicaAprobada && (
                                     <p className="mt-3 rounded-md bg-state-blocked-bg px-2.5 py-2 text-xs font-medium text-state-blocked-text">
-                                        El importe supera el pedido y requiere validación económica antes del cierre.
+                                        {t('closureDashboard.messages.amountExceeded')}
                                     </p>
                                 )}
                             </section>
 
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Legalizaciones</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.legalizations')}</h4>
                                 <div className="mt-3 space-y-2 text-xs text-text-main">
                                     <p>
-                                        <span className="text-text-hint">Estado:</span>{' '}
+                                        <span className="text-text-hint">{t('closureDashboard.detail.state')}:</span>{' '}
                                         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${legalizationBadgeClass(activeWork.legalizacionEstado)}`}>
-                                            {LEGALIZATION_LABELS[activeWork.legalizacionEstado]}
+                                            {legalizationLabel(activeWork.legalizacionEstado)}
                                         </span>
                                     </p>
-                                    <p><span className="text-text-hint">Observaciones:</span> {activeWork.legalizacionObservaciones}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.detail.notes')}:</span> {activeWork.legalizacionObservaciones}</p>
                                     <p>
-                                        <span className="text-text-hint">Impacto en cierre:</span>{' '}
-                                        {activeWork.legalizacionCritica ? 'Bloquea cierre hasta completar validación.' : 'No bloquea cierre final.'}
+                                        <span className="text-text-hint">{t('closureDashboard.detail.closureImpact')}:</span>{' '}
+                                        {activeWork.legalizacionCritica
+                                            ? t('closureDashboard.detail.blocksClosure')
+                                            : t('closureDashboard.detail.doesNotBlockClosure')}
                                     </p>
                                 </div>
                             </section>
 
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Checklist final de validación</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.finalChecklist')}</h4>
                                 <ul className="mt-3 space-y-2">
                                     {detailChecks.map((check) => (
                                         <li key={check.id} className="rounded-md border border-border bg-surface px-3 py-2">
                                             <div className="flex items-center justify-between gap-3 text-xs">
-                                                <span className="text-text-main">{check.label}</span>
+                                                <span className="text-text-main">{t(check.labelKey)}</span>
                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${check.ok ? 'bg-state-done-bg text-state-done-text' : 'bg-state-blocked-bg text-state-blocked-text'}`}>
-                                                    {check.ok ? 'OK' : 'Pendiente'}
+                                                    {check.ok ? t('closureDashboard.detail.ok') : t('closureDashboard.detail.pending')}
                                                 </span>
                                             </div>
-                                            {check.note && (
-                                                <p className="mt-1 text-[11px] text-state-blocked-text">{check.note}</p>
+                                            {check.noteKey && (
+                                                <p className="mt-1 text-[11px] text-state-blocked-text">{t(check.noteKey)}</p>
                                             )}
                                         </li>
                                     ))}
@@ -1279,33 +1280,33 @@ export default function ClosureDashboard() {
                             </section>
 
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Historial y trazabilidad</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.traceability')}</h4>
                                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-text-main">
-                                    <p><span className="text-text-hint">Marcado terminado por:</span> {activeWork.trazabilidad?.marcadoTerminadoPor || '-'}</p>
-                                    <p><span className="text-text-hint">Fecha marcado terminado:</span> {activeWork.trazabilidad?.fechaMarcadoTerminado || '-'}</p>
-                                    <p><span className="text-text-hint">Fecha fin informada por:</span> {activeWork.trazabilidad?.fechaFinInformadaPor || '-'}</p>
-                                    <p><span className="text-text-hint">Momento fecha fin:</span> {activeWork.trazabilidad?.fechaFinInformadaAt || '-'}</p>
-                                    <p><span className="text-text-hint">Importe modificado por:</span> {activeWork.trazabilidad?.importeActualizadoPor || '-'}</p>
-                                    <p><span className="text-text-hint">Momento modificación:</span> {activeWork.trazabilidad?.importeActualizadoAt || '-'}</p>
-                                    <p><span className="text-text-hint">Cerrado por:</span> {activeWork.trazabilidad?.cerradoPor || '-'}</p>
-                                    <p><span className="text-text-hint">Fecha cierre:</span> {activeWork.trazabilidad?.fechaCierre ? formatDate(activeWork.trazabilidad.fechaCierre) : '-'}</p>
-                                    <p><span className="text-text-hint">Reabierto por:</span> {activeWork.trazabilidad?.reabiertoPor || '-'}</p>
-                                    <p><span className="text-text-hint">Fecha reapertura:</span> {activeWork.trazabilidad?.fechaReapertura ? formatDate(activeWork.trazabilidad.fechaReapertura) : '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.markedFinishedBy')}:</span> {activeWork.trazabilidad?.marcadoTerminadoPor || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.markedFinishedAt')}:</span> {activeWork.trazabilidad?.fechaMarcadoTerminado || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.endDateBy')}:</span> {activeWork.trazabilidad?.fechaFinInformadaPor || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.endDateAt')}:</span> {activeWork.trazabilidad?.fechaFinInformadaAt || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.amountUpdatedBy')}:</span> {activeWork.trazabilidad?.importeActualizadoPor || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.amountUpdatedAt')}:</span> {activeWork.trazabilidad?.importeActualizadoAt || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.closedBy')}:</span> {activeWork.trazabilidad?.cerradoPor || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.closedAt')}:</span> {activeWork.trazabilidad?.fechaCierre ? formatDateValue(activeWork.trazabilidad.fechaCierre) : '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.reopenedBy')}:</span> {activeWork.trazabilidad?.reabiertoPor || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.reopenedAt')}:</span> {activeWork.trazabilidad?.fechaReapertura ? formatDateValue(activeWork.trazabilidad.fechaReapertura) : '-'}</p>
                                 </div>
                                 {activeWork.trazabilidad?.reaperturaMotivo && (
                                     <p className="mt-2 text-xs text-text-main">
-                                        <span className="text-text-hint">Motivo de reapertura:</span> {activeWork.trazabilidad.reaperturaMotivo}
+                                        <span className="text-text-hint">{t('closureDashboard.traceability.reopenReason')}:</span> {activeWork.trazabilidad.reaperturaMotivo}
                                     </p>
                                 )}
                             </section>
 
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">Acción final</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.finalAction')}</h4>
 
                                 {detailStatus === 'cerrado' ? (
                                     <div className="mt-3 space-y-2">
                                         <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                                            Motivo de reapertura
+                                            {t('closureDashboard.traceability.reopenReason')}
                                             <textarea
                                                 value={reopenReason}
                                                 onChange={(event) => setReopenReason(event.target.value)}
@@ -1320,7 +1321,7 @@ export default function ClosureDashboard() {
                                             }}
                                             className="inline-flex items-center rounded-md bg-state-blocked-bg px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-state-blocked-text transition hover:opacity-90"
                                         >
-                                            Reabrir trabajo
+                                            {t('closureDashboard.actions.reopenWork')}
                                         </button>
                                     </div>
                                 ) : (
@@ -1334,12 +1335,12 @@ export default function ClosureDashboard() {
                                             disabled={detailStatus !== 'listo'}
                                             className="inline-flex items-center rounded-md bg-[var(--ciete-red)] px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-[var(--ciete-red-dark)] disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            Cerrar trabajo
+                                            {t('closureDashboard.actions.closeWork')}
                                         </button>
 
                                         {(detailStatus !== 'listo' || hasBlockingIssues) && (
                                             <p className="text-xs text-state-blocked-text">
-                                                El trabajo no puede cerrarse todavía. Revisa checklist e incidencias bloqueantes.
+                                                {t('closureDashboard.messages.cannotCloseYet')}
                                             </p>
                                         )}
                                     </div>
