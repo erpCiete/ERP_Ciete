@@ -5,7 +5,7 @@ const en = {
         panel: 'Panel',
         preferences: 'Preferences',
         footer: {
-            projectVersion: 'ciete project v1.',
+            projectVersion: 'Ciete ERP v1.1.0',
         },
         actions: {
             save: 'Save',
@@ -199,8 +199,8 @@ const en = {
         maintenance: {
             title: 'Maintenance mode',
             description: 'ERP availability control for technical and operational tasks.',
-            statusNormal: 'Normal mode',
-            statusMaintenance: 'Under maintenance',
+            statusNormal: 'Maintenance mode disabled',
+            statusMaintenance: 'Maintenance mode enabled',
             allowedAccessTitle: 'Allowed access',
             allowedAccessValue: 'Authorized administrators with maintenance secret token.',
             actionsTitle: 'Actions',

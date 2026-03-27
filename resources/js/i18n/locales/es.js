@@ -5,7 +5,7 @@ const es = {
         panel: 'Panel',
         preferences: 'Preferencias',
         footer: {
-            projectVersion: 'proyecto ciete v1.',
+            projectVersion: 'ERP Ciete v1.1.0',
         },
         actions: {
             save: 'Guardar',
@@ -199,8 +199,8 @@ const es = {
         maintenance: {
             title: 'Modo mantenimiento',
             description: 'Control de disponibilidad del ERP para tareas técnicas y operativas.',
-            statusNormal: 'Modo normal',
-            statusMaintenance: 'En mantenimiento',
+            statusNormal: 'Modo mantenimiento desactivado',
+            statusMaintenance: 'Modo mantenimiento activado',
             allowedAccessTitle: 'Acceso permitido',
             allowedAccessValue: 'Administradores autorizados con token secreto de mantenimiento.',
             actionsTitle: 'Acciones',

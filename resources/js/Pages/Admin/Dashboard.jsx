@@ -158,14 +158,8 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                     </div>
 
                     {/* Por ahora es solo visual para no tocar el estado real del entorno en este sprint. */}
-                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                    <div className="mt-3">
                         <div className="rounded-[10px] border border-border bg-surface-2 p-3">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                                {t('adminDashboard.maintenance.allowedAccessTitle')}
-                            </p>
-                            <p className="mt-2 text-xs text-text-main">{t('adminDashboard.maintenance.allowedAccessValue')}</p>
-                        </div>
-                        <div className="rounded-[10px] border border-border bg-surface-2 p-3 md:col-span-2">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">
                                 {t('adminDashboard.maintenance.actionsTitle')}
                             </p>
@@ -185,7 +179,6 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                                     {t('adminDashboard.maintenance.disable')}
                                 </button>
                             </div>
-                            <p className="mt-2 text-xs text-text-hint">{t('adminDashboard.maintenance.visualOnlyNotice')}</p>
                         </div>
                     </div>
                 </section>
