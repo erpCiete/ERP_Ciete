@@ -2,7 +2,7 @@
   <img src="public/favicon.svg" alt="ERP Ciete Logo" width="108">
 </p>
 
-<h1 align="center">ERP Ciete - Plataforma de gestion para ingenieria</h1>
+<h1 align="center">ERP Ciete - Plataforma de gestion para ingenieria v1.1.0</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 12">
@@ -28,22 +28,22 @@ Este repositorio contiene el estado funcional del MVP (Sprint 1), listo para evo
 ## Capacidades entregadas (MVP Sprint 1)
 
 - Autenticacion de usuarios:
-  - Inicio y cierre de sesion.
-  - Recuperacion y restablecimiento de password.
+    - Inicio y cierre de sesion.
+    - Recuperacion y restablecimiento de password.
 - Control de acceso:
-  - Middleware por rol (`role:admin`).
-  - Middleware por permiso (`permission:proyectos.ver`).
+    - Middleware por rol (`role:admin`).
+    - Middleware por permiso (`permission:proyectos.ver`).
 - Espacios de trabajo:
-  - Dashboard general de usuario autenticado.
-  - Dashboard administrativo (`/admin`) para perfil administrador.
-  - Vista de modulo de proyectos (`/proyectos`) con permiso dedicado.
+    - Dashboard general de usuario autenticado.
+    - Dashboard administrativo (`/admin`) para perfil administrador.
+    - Vista de modulo de proyectos (`/proyectos`) con permiso dedicado.
 - Perfil de usuario:
-  - Edicion de perfil.
-  - Cambio de password.
-  - Seleccion de avatar corporativo.
+    - Edicion de perfil.
+    - Cambio de password.
+    - Seleccion de avatar corporativo.
 - Experiencia de usuario:
-  - Interfaz bilingue (ES/EN).
-  - Navegacion responsive para desktop y mobile.
+    - Interfaz bilingue (ES/EN).
+    - Navegacion responsive para desktop y mobile.
 
 ## Arquitectura y tecnologia
 
