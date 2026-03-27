@@ -30,6 +30,12 @@ Route::middleware('auth')->group(function () {
             return Inertia::render('Admin/Dashboard');
         })->name('admin.dashboard');
     });
+
+    Route::middleware('role:control_cierre,admin')->group(function () {
+        Route::get('/cierre', function () {
+            return Inertia::render('Cierre/Dashboard');
+        })->name('cierre.dashboard');
+    });
 });
 
 require __DIR__.'/auth.php';

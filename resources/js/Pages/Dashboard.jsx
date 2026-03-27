@@ -78,6 +78,11 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                             {t('dashboard.projects')}
                         </Link>
                     )}
+                    {user.role_slugs.includes('control_cierre') && (
+                        <Link href={route('cierre.dashboard')} className="ciete-btn-secondary">
+                            {t('nav.closurePanel')}
+                        </Link>
+                    )}
                     {user.is_admin && (
                         <Link href={route('admin.dashboard')} className="ciete-btn-primary">
                             {t('dashboard.adminPanel')}

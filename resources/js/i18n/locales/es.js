@@ -45,6 +45,7 @@ const es = {
     nav: {
         home: 'Inicio',
         dashboard: 'Panel empleado',
+        closurePanel: 'Panel de cierre',
         adminPanel: 'Panel Admin',
         login: 'Login',
         register: 'Registro',
