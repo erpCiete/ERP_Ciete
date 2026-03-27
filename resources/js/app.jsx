@@ -29,10 +29,12 @@ createInertiaApp({
         ),
     setup({ el, App, props }) {
         const root = createRoot(el);
+        const initialLocale = props?.initialPage?.props?.locale?.current;
+        const supportedLocales = props?.initialPage?.props?.locale?.supported;
 
         root.render(
             <ThemeProvider>
-                <I18nProvider>
+                <I18nProvider initialLocale={initialLocale} supportedLocales={supportedLocales}>
                     <App {...props} />
                 </I18nProvider>
             </ThemeProvider>,

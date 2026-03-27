@@ -7,12 +7,12 @@ import {
     useMemo,
     useState,
 } from 'react';
+import { router } from '@inertiajs/react';
 import en from '@/i18n/locales/en';
 import es from '@/i18n/locales/es';
 
 const dictionaries = { es, en };
 const DEFAULT_LOCALE = 'es';
-const STORAGE_KEY = 'ciete.locale';
 
 export const SUPPORTED_LOCALES = Object.keys(dictionaries);
 
@@ -29,40 +29,84 @@ const interpolate = (template, params = {}) => {
     });
 };
 
-const resolveLocale = (value) => {
-    const shortLocale = String(value || '').toLowerCase().split('-')[0];
-    return SUPPORTED_LOCALES.includes(shortLocale) ? shortLocale : DEFAULT_LOCALE;
+const normalizeLocale = (value) => String(value || '').toLowerCase().split('-')[0];
+
+const resolveSupportedLocales = (value) => {
+    const locales = Array.isArray(value) ? value : SUPPORTED_LOCALES;
+    const normalizedLocales = locales
+        .map((locale) => normalizeLocale(locale))
+        .filter((locale) => SUPPORTED_LOCALES.includes(locale));
+
+    const uniqueLocales = Array.from(new Set(normalizedLocales));
+
+    return uniqueLocales.length > 0 ? uniqueLocales : [DEFAULT_LOCALE];
 };
 
-const getInitialLocale = () => {
-    if (typeof window === 'undefined') {
-        return DEFAULT_LOCALE;
+const resolveLocale = (value, supportedLocales) => {
+    const locale = normalizeLocale(value);
+
+    if (supportedLocales.includes(locale)) {
+        return locale;
     }
 
-    const storedLocale = window.localStorage.getItem(STORAGE_KEY);
-    if (storedLocale) {
-        return resolveLocale(storedLocale);
-    }
-
-    return resolveLocale(window.navigator.language);
+    return supportedLocales[0] ?? DEFAULT_LOCALE;
 };
 
-export function I18nProvider({ children }) {
-    const [locale, setLocale] = useState(getInitialLocale);
+export function I18nProvider({ children, initialLocale, supportedLocales }) {
+    const availableLocales = useMemo(() => resolveSupportedLocales(supportedLocales), [supportedLocales]);
+    const [locale, setLocale] = useState(() => resolveLocale(initialLocale, availableLocales));
 
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            window.localStorage.setItem(STORAGE_KEY, locale);
-        }
+        setLocale((currentLocale) => {
+            const nextLocale = resolveLocale(initialLocale, availableLocales);
+            return currentLocale === nextLocale ? currentLocale : nextLocale;
+        });
+    }, [initialLocale, availableLocales]);
 
+    useEffect(() => {
+        const removeListener = router.on('success', (event) => {
+            const pageProps = event?.detail?.page?.props;
+            const pageLocales = resolveSupportedLocales(pageProps?.locale?.supported ?? availableLocales);
+            const nextLocale = resolveLocale(pageProps?.locale?.current, pageLocales);
+
+            setLocale((currentLocale) => (currentLocale === nextLocale ? currentLocale : nextLocale));
+        });
+
+        return () => {
+            if (typeof removeListener === 'function') {
+                removeListener();
+            }
+        };
+    }, [availableLocales]);
+
+    useEffect(() => {
         if (typeof document !== 'undefined') {
             document.documentElement.setAttribute('lang', locale);
         }
     }, [locale]);
 
-    const changeLocale = useCallback((nextLocale) => {
-        setLocale(resolveLocale(nextLocale));
-    }, []);
+    const changeLocale = useCallback(
+        (nextLocale) => {
+            const resolvedLocale = resolveLocale(nextLocale, availableLocales);
+
+            if (resolvedLocale === locale) {
+                return;
+            }
+
+            const updateRoute = typeof route === 'function' ? route('locale.update') : '/locale';
+
+            router.post(
+                updateRoute,
+                { locale: resolvedLocale },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        },
+        [availableLocales, locale],
+    );
 
     const t = useCallback(
         (key, params = {}) => {
@@ -81,8 +125,8 @@ export function I18nProvider({ children }) {
     );
 
     const value = useMemo(
-        () => ({ locale, setLocale: changeLocale, t, supportedLocales: SUPPORTED_LOCALES }),
-        [locale, changeLocale, t],
+        () => ({ locale, setLocale: changeLocale, t, supportedLocales: availableLocales }),
+        [locale, changeLocale, t, availableLocales],
     );
 
     return createElement(I18nContext.Provider, { value }, children);

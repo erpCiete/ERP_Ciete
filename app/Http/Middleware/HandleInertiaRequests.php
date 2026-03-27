@@ -30,6 +30,21 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $defaultLocale = strtolower((string) config('app.locale', 'es'));
+        $supportedLocales = collect(config('app.supported_locales', []))
+            ->map(fn ($locale) => strtolower((string) $locale))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if (! $supportedLocales->contains($defaultLocale)) {
+            $supportedLocales->prepend($defaultLocale);
+        }
+
+        $currentLocale = strtolower((string) app()->getLocale());
+        if (! $supportedLocales->contains($currentLocale)) {
+            $currentLocale = $defaultLocale;
+        }
 
         if ($user) {
             $user->loadMissing([
@@ -73,6 +88,10 @@ class HandleInertiaRequests extends Middleware
                 'session' => [
                     'id' => $request->session()->getId(),
                 ],
+            ],
+            'locale' => [
+                'current' => $currentLocale,
+                'supported' => $supportedLocales->values()->all(),
             ],
         ];
     }
