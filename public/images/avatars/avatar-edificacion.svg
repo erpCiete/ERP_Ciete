@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Avatar Edificacion">
+  <rect x="18" y="30" width="24" height="48" fill="#003EFF"/>
+  <rect x="44" y="22" width="38" height="56" fill="#FE0000"/>
+  <rect x="52" y="30" width="10" height="10" fill="#000000"/>
+  <rect x="64" y="30" width="10" height="10" fill="#1F2937"/>
+  <rect x="52" y="44" width="10" height="10" fill="#1F2937"/>
+  <rect x="64" y="44" width="10" height="10" fill="#000000"/>
+  <rect x="30" y="38" width="8" height="8" fill="#FE0000"/>
+  <rect x="14" y="78" width="72" height="6" fill="#1F2937"/>
+</svg>

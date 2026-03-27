@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Avatar Agua">
+  <rect x="16" y="16" width="68" height="68" fill="none" stroke="#1F2937" stroke-width="4"/>
+  <path d="M50 24 L66 50 C66 61 59 70 50 76 C41 70 34 61 34 50 Z" fill="#003EFF"/>
+  <path d="M50 30 L60 50 C60 57 56 63 50 67 C44 63 40 57 40 50 Z" fill="#FE0000"/>
+  <rect x="48" y="36" width="4" height="28" fill="#000000"/>
+</svg>

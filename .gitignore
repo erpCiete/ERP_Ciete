@@ -1,0 +1,45 @@
+# Dependencies
+/vendor
+/node_modules
+
+# Build artifacts
+/public/build
+/public/hot
+/public/storage
+
+# Laravel runtime
+/storage/*.key
+/storage/pail
+/database/*.sqlite*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+/auth.json
+
+# PHP tooling caches
+/.phpunit.cache
+/.phpunit.result.cache
+/.phpactor.json
+
+# Local VM configs
+Homestead.json
+Homestead.yaml
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editors and IDEs
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+
+# OS files
+.DS_Store
+Thumbs.db

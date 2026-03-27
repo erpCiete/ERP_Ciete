@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Avatar Carreteras">
+  <path d="M30 84 L44 16 L56 16 L70 84 Z" fill="#1F2937"/>
+  <path d="M36 84 L48 16" stroke="#003EFF" stroke-width="4" fill="none"/>
+  <path d="M64 84 L52 16" stroke="#003EFF" stroke-width="4" fill="none"/>
+  <rect x="48" y="24" width="4" height="8" fill="#FE0000"/>
+  <rect x="48" y="40" width="4" height="8" fill="#FE0000"/>
+  <rect x="48" y="56" width="4" height="8" fill="#FE0000"/>
+  <rect x="48" y="72" width="4" height="8" fill="#FE0000"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Avatar Medio ambiente">
+  <rect x="16" y="16" width="68" height="68" fill="none" stroke="#003EFF" stroke-width="4"/>
+  <path d="M50 24 L68 44 L50 74 L32 44 Z" fill="#FE0000"/>
+  <path d="M50 24 L50 74 L68 44 Z" fill="#003EFF"/>
+  <rect x="48" y="28" width="4" height="44" fill="#000000"/>
+  <rect x="28" y="72" width="44" height="6" fill="#1F2937"/>
+</svg>
