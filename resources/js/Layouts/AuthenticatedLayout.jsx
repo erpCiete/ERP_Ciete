@@ -8,10 +8,15 @@ export default function AuthenticatedLayout({ header, children }) {
     const { t } = useI18n();
 
     const navLinkClass = (active) =>
-        `flex items-center p-2 text-sm font-medium rounded-lg transition-colors ${
+        `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none ${
             active
-                ? 'bg-[var(--ciete-red)] text-white hover:bg-[var(--ciete-red-dark)]'
-                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                ? 'text-[var(--ciete-red)]'
+                : 'text-white/75 hover:text-[var(--ciete-red)] focus-visible:text-[var(--ciete-red)]'
+        }`;
+
+    const navLinkLabelClass = (active) =>
+        `relative inline-block after:absolute after:bottom-[-2px] after:left-0 after:h-px after:w-full after:origin-left after:bg-[var(--ciete-red)] after:content-[''] after:transition-transform after:duration-200 ${
+            active ? 'after:scale-x-0' : 'after:scale-x-0 group-hover:after:scale-x-100'
         }`;
 
     return (
@@ -30,7 +35,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1">
                                 <Link href={route('dashboard')} className={navLinkClass(route().current('dashboard'))}>
-                                    {t('nav.dashboard')}
+                                    <span className={navLinkLabelClass(route().current('dashboard'))}>{t('nav.dashboard')}</span>
                                 </Link>
                             </div>
                         </div>
@@ -41,10 +46,10 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1 text-white/70">
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.clients')}
+                                    <span className={navLinkLabelClass(false)}>{t('nav.clients')}</span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.stations')}
+                                    <span className={navLinkLabelClass(false)}>{t('nav.stations')}</span>
                                 </Link>
                             </div>
                         </div>
@@ -55,13 +60,13 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1 text-white/70">
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.works')}
+                                    <span className={navLinkLabelClass(false)}>{t('nav.works')}</span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.orders')}
+                                    <span className={navLinkLabelClass(false)}>{t('nav.orders')}</span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.legalizations')}
+                                    <span className={navLinkLabelClass(false)}>{t('nav.legalizations')}</span>
                                 </Link>
                             </div>
                         </div>
@@ -72,7 +77,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1 text-white/70">
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.reports')}
+                                    <span className={navLinkLabelClass(false)}>{t('nav.reports')}</span>
                                 </Link>
                             </div>
                         </div>

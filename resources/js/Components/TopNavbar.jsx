@@ -33,9 +33,18 @@ export default function TopNavbar({ header }) {
     const prefsDrawerId = 'mobile-prefs-drawer';
 
     const navItems = [
-        { key: 'nav.home', href: route('index') },
-        ...(user?.is_admin ? [{ key: 'nav.adminPanel', href: route('admin.dashboard') }] : []),
+        { key: 'nav.home', href: route('index'), active: route().current('index') },
+        ...(user?.is_admin
+            ? [{ key: 'nav.adminPanel', href: route('admin.dashboard'), active: route().current('admin.dashboard') }]
+            : []),
     ];
+
+    const topNavLinkClass = (active) =>
+        `relative inline-flex items-center whitespace-nowrap pb-[3px] transition-colors duration-200 focus-visible:outline-none after:absolute after:bottom-0 after:left-0 after:h-px after:w-full after:origin-left after:bg-[var(--ciete-red)] after:content-[''] after:transition-transform after:duration-200 ${
+            active
+                ? 'text-[var(--ciete-red)] after:scale-x-0'
+                : 'text-text-main/60 hover:text-[var(--ciete-red)] after:scale-x-0 hover:after:scale-x-100 focus-visible:text-[var(--ciete-red)] focus-visible:after:scale-x-100'
+        }`;
 
     const sidebarSections = useMemo(() => {
         const generalItems = [
@@ -263,11 +272,11 @@ export default function TopNavbar({ header }) {
                         </button>
 
                         <div className="hidden items-center gap-4 md:flex">
-                            <nav className="flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-text-main/50">
+                            <nav className="flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-widest">
                                 {navItems.map((item, index) => (
                                     <div key={item.key} className="flex items-center">
                                         {index > 0 && <span className="text-border/40 font-light select-none mx-[6px]">|</span>}
-                                        <Link href={item.href} className="hover:text-primary transition-colors whitespace-nowrap">
+                                        <Link href={item.href} className={topNavLinkClass(item.active)}>
                                             {t(item.key)}
                                         </Link>
                                     </div>
