@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -26,6 +29,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin', function () {
             return Inertia::render('Admin/Dashboard');
         })->name('admin.dashboard');
+    });
+
+    Route::middleware('role:control_cierre,admin')->group(function () {
+        Route::get('/cierre', function () {
+            return Inertia::render('Cierre/Dashboard');
+        })->name('cierre.dashboard');
     });
 });
 

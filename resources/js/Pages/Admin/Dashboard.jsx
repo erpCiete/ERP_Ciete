@@ -5,6 +5,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 export default function AdminDashboard({ stats = {}, users = [], activity = [] }) {
     const user = usePage().props.auth.user;
     const { t } = useI18n();
+    const maintenanceVisualState = 'normal';
 
     const adminModules = [
         { key: 'users', color: 'border-l-state-progress-dot', href: '#' },
@@ -48,6 +49,16 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
         const candidate = t(`adminDashboard.activity.actions.${key}`);
         return candidate.startsWith('adminDashboard.activity.actions.') ? action : candidate;
     };
+
+    const maintenanceStateBadgeClass =
+        maintenanceVisualState === 'maintenance'
+            ? 'bg-state-blocked-bg text-state-blocked-text'
+            : 'bg-state-done-bg text-state-done-text';
+
+    const maintenanceStateLabel =
+        maintenanceVisualState === 'maintenance'
+            ? t('adminDashboard.maintenance.statusMaintenance')
+            : t('adminDashboard.maintenance.statusNormal');
 
     return (
         <AuthenticatedLayout
@@ -134,6 +145,43 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                         <p className="text-sm text-text-muted">{user?.contexto?.codigo ?? '-'}</p>
                     </div>
                 </div>
+
+                <section className="rounded-[12px] border border-border bg-surface p-4 shadow-sm">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <h3 className="text-sm font-medium text-text-main">{t('adminDashboard.maintenance.title')}</h3>
+                            <p className="mt-1 text-xs text-text-hint">{t('adminDashboard.maintenance.description')}</p>
+                        </div>
+                        <span className={`inline-flex h-fit items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${maintenanceStateBadgeClass}`}>
+                            {maintenanceStateLabel}
+                        </span>
+                    </div>
+
+                    {/* Por ahora es solo visual para no tocar el estado real del entorno en este sprint. */}
+                    <div className="mt-3">
+                        <div className="rounded-[10px] border border-border bg-surface-2 p-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">
+                                {t('adminDashboard.maintenance.actionsTitle')}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="inline-flex items-center rounded-md bg-[var(--ciete-red)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white opacity-60"
+                                >
+                                    {t('adminDashboard.maintenance.enable')}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="inline-flex items-center rounded-md border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main opacity-60"
+                                >
+                                    {t('adminDashboard.maintenance.disable')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 <div className="overflow-hidden rounded-[12px] border border-border bg-surface">
                     <div className="border-b border-border px-4 py-3">

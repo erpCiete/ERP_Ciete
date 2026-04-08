@@ -2,6 +2,7 @@ import CieteMark from '@/Components/CieteMark';
 import GlobalPreferenceSelectors from '@/Components/GlobalPreferenceSelectors';
 import MobilePreferencesDrawer from '@/Components/MobilePreferencesDrawer';
 import MobileSidebarDrawer from '@/Components/MobileSidebarDrawer';
+import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
 import { Link, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -20,6 +21,7 @@ export default function TopNavbar({ header }) {
     const { t } = useI18n();
     const { auth } = usePage().props;
     const user = auth.user;
+    const hasClosureRole = user?.role_slugs?.includes('control_cierre');
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isPrefsOpen, setIsPrefsOpen] = useState(false);
@@ -33,20 +35,39 @@ export default function TopNavbar({ header }) {
     const prefsDrawerId = 'mobile-prefs-drawer';
 
     const navItems = [
-        { key: 'nav.home', href: route('index') },
-        ...(user?.is_admin ? [{ key: 'nav.adminPanel', href: route('admin.dashboard') }] : []),
+        { key: 'nav.home', href: route('index'), active: route().current('index') },
+        ...(hasClosureRole
+            ? [{ key: 'nav.closurePanel', href: route('cierre.dashboard'), active: route().current('cierre.dashboard') }]
+            : []),
+        ...(user?.is_admin
+            ? [{ key: 'nav.adminPanel', href: route('admin.dashboard'), active: route().current('admin.dashboard') }]
+            : []),
     ];
+
+    const topNavLinkClass = (active) =>
+        `inline-flex items-center whitespace-nowrap pb-[3px] transition-colors duration-200 focus-visible:outline-none ${
+            active
+                ? 'text-[var(--ciete-red)]'
+                : 'text-text-main/60 hover:text-[var(--ciete-red)] focus-visible:text-[var(--ciete-red)]'
+        }`;
+
+    const topNavLinkLabelClass = (active) =>
+        `relative inline-block after:absolute after:bottom-[-1px] after:left-0 after:h-px after:w-full after:origin-left after:bg-[var(--ciete-red)] after:content-[''] after:transition-transform after:duration-200 ${
+            active ? 'after:scale-x-0' : 'after:scale-x-0 group-hover:after:scale-x-100'
+        }`;
 
     const sidebarSections = useMemo(() => {
         const generalItems = [
             {
                 id: 'home',
+                key: 'nav.home',
                 label: t('nav.home'),
                 href: route('index'),
                 active: route().current('index'),
             },
             {
                 id: 'dashboard',
+                key: 'nav.dashboard',
                 label: t('nav.dashboard'),
                 href: route('dashboard'),
                 active: route().current('dashboard'),
@@ -56,6 +77,7 @@ export default function TopNavbar({ header }) {
         if (user?.permission_slugs?.includes('proyectos.ver')) {
             generalItems.push({
                 id: 'projects',
+                key: 'nav.projects',
                 label: t('nav.projects'),
                 href: route('proyectos.index'),
                 active: route().current('proyectos.index'),
@@ -65,9 +87,20 @@ export default function TopNavbar({ header }) {
         if (user?.is_admin) {
             generalItems.push({
                 id: 'admin',
+                key: 'nav.adminPanel',
                 label: t('nav.adminPanel'),
                 href: route('admin.dashboard'),
                 active: route().current('admin.dashboard'),
+            });
+        }
+
+        if (user?.role_slugs?.includes('control_cierre')) {
+            generalItems.push({
+                id: 'closure',
+                key: 'nav.closurePanel',
+                label: t('nav.closurePanel'),
+                href: route('cierre.dashboard'),
+                active: route().current('cierre.dashboard'),
             });
         }
 
@@ -81,23 +114,23 @@ export default function TopNavbar({ header }) {
                 id: 'masters',
                 label: t('nav.groups.masters'),
                 items: [
-                    { id: 'clients', label: t('nav.clients') },
-                    { id: 'stations', label: t('nav.stations') },
+                    { id: 'clients', key: 'nav.clients', label: t('nav.clients') },
+                    { id: 'stations', key: 'nav.stations', label: t('nav.stations') },
                 ],
             },
             {
                 id: 'operations',
                 label: t('nav.groups.operations'),
                 items: [
-                    { id: 'works', label: t('nav.works') },
-                    { id: 'orders', label: t('nav.orders') },
-                    { id: 'legalizations', label: t('nav.legalizations') },
+                    { id: 'works', key: 'nav.works', label: t('nav.works') },
+                    { id: 'orders', key: 'nav.orders', label: t('nav.orders') },
+                    { id: 'legalizations', key: 'nav.legalizations', label: t('nav.legalizations') },
                 ],
             },
             {
                 id: 'reports',
                 label: t('nav.groups.reports'),
-                items: [{ id: 'reports', label: t('nav.reports') }],
+                items: [{ id: 'reports', key: 'nav.reports', label: t('nav.reports') }],
             },
         ];
     }, [t, user]);
@@ -263,15 +296,22 @@ export default function TopNavbar({ header }) {
                         </button>
 
                         <div className="hidden items-center gap-4 md:flex">
-                            <nav className="flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-text-main/50">
-                                {navItems.map((item, index) => (
-                                    <div key={item.key} className="flex items-center">
-                                        {index > 0 && <span className="text-border/40 font-light select-none mx-[6px]">|</span>}
-                                        <Link href={item.href} className="hover:text-primary transition-colors whitespace-nowrap">
-                                            {t(item.key)}
-                                        </Link>
-                                    </div>
-                                ))}
+                            <nav className="flex items-center text-[10px] sm:text-[11px] font-bold uppercase tracking-widest">
+                                {navItems.map((item, index) => {
+                                    const ItemIcon = getNavigationIcon(item.key);
+
+                                    return (
+                                        <div key={item.key} className="flex items-center">
+                                            {index > 0 && <span className="text-border/40 font-light select-none mx-[6px]">|</span>}
+                                            <Link href={item.href} className={`group ${topNavLinkClass(item.active)}`}>
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    {ItemIcon && <ItemIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                                    <span className={topNavLinkLabelClass(item.active)}>{t(item.key)}</span>
+                                                </span>
+                                            </Link>
+                                        </div>
+                                    );
+                                })}
                             </nav>
 
                             <GlobalPreferenceSelectors compact />

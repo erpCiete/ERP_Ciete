@@ -1,0 +1,19 @@
+{
+  "success": false,
+  "message": "Los datos proporcionados no son válidos.",
+  "error_code": "VALIDATION_ERROR",
+  "errors": {
+    "nombre": [
+      "El campo nombre de la estación es obligatorio."
+    ],
+    "id_empresa": [
+      "Operación denegada: La empresa seleccionada no pertenece a su contexto activo."
+    ],
+    "estado": [
+      "El valor seleccionado para estado no es válido. Opciones: activa, inactiva, baja."
+    ]
+  },
+  "meta": {
+    "timestamp": "2026-04-08T10:16:05Z"
+  }
+}

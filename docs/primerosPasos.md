@@ -73,12 +73,11 @@ php artisan migrate
 
 Con estas migraciones se crea automáticamente el usuario administrador para el panel:
 
-- email: `admin@admin.es`
-- password: `admin1234*`
+- email: `admin@ciete.es`
+- password: `Admin1234!`
 - role: `admin`
 
-Importante: el login de Laravel usa la tabla `users`.  
-La tabla `usuarios` del archivo `database/schema/erp_ciete_base.sql` pertenece al esquema ERP y no sustituye a `users` para autenticación web.
+Importante: el login usa el modelo `App\Models\User` sobre la tabla `usuarios`.
 
 ### 8. Comprobación del arranque del proyecto
 

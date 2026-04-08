@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "message": "Estación de servicio creada con éxito.",
+  "data": {
+    "id": 204,
+    "nombre": "E.S. Barajas T4",
+    "direccion": "Avenida de la Hispanidad s/n",
+    "localidad": "Madrid",
+    "provincia": "Madrid",
+    "id_empresa": 2,
+    "cliente_nombre": "Cepsa",
+    "estado": "activa",
+    "creado_el": "2026-04-08T10:15:22Z"
+  },
+  "meta": {
+    "timestamp": "2026-04-08T10:15:22Z"
+  }
+}

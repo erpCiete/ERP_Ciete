@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "message": "Clientes recuperados correctamente.",
+  "data": [
+    {
+      "id": 1,
+      "razon_social": "Repsol Comercial de Productos Petrolíferos, S.A.",
+      "nombre_comercial": "Repsol",
+      "cif": "A80298830",
+      "telefono_principal": "+34 900 100 100",
+      "email_principal": "proveedores@repsol.com",
+      "estado": "activo",
+      "creado_el": "2026-03-24T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "razon_social": "Compañía Española de Petróleos, S.A.",
+      "nombre_comercial": "Cepsa",
+      "cif": "A28003119",
+      "telefono_principal": "+34 913 376 000",
+      "email_principal": "facturacion@cepsa.com",
+      "estado": "activo",
+      "creado_el": "2026-03-24T08:15:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 2,
+    "timestamp": "2026-04-08T09:50:00Z"
+  }
+}

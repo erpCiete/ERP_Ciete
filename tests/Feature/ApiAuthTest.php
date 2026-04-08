@@ -15,7 +15,7 @@ class ApiAuthTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'nombre_usuario' => $user->nombre_usuario,
+            'email' => $user->email,
             'password' => 'password',
         ]);
 

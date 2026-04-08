@@ -1,0 +1,20 @@
+{
+  "success": false,
+  "message": "Los datos proporcionados no son válidos.",
+  "error_code": "VALIDATION_ERROR",
+  "errors": {
+    "razon_social": [
+      "La razón social es obligatoria."
+    ],
+    "cif": [
+      "El formato del CIF/NIF no es válido.",
+      "El CIF introducido ya está registrado en el sistema."
+    ],
+    "email_principal": [
+      "El correo electrónico debe ser una dirección válida."
+    ]
+  },
+  "meta": {
+    "timestamp": "2026-04-08T10:31:02Z"
+  }
+}

@@ -1,0 +1,101 @@
+# Bitacora BACK · Miguel Taborda
+
+## General
+### Objetivo de la semana
+- 
+
+## 2026-03-23
+### Objetivo del dia
+- 
+
+### Tareas realizadas
+- 
+
+### Archivos tocados
+- 
+
+### Errores / bloqueos
+| Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+### Decisiones tomadas
+- 
+
+### Pendiente para mañana
+- 
+
+### Handoff
+- 
+
+## 2026-03-24
+### Objetivo del dia
+- 
+
+### Tareas realizadas
+- 
+
+### Archivos tocados
+- 
+
+### Errores / bloqueos
+| Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+### Decisiones tomadas
+- 
+
+### Pendiente para mañana
+- 
+
+### Handoff
+- 
+
+## 2026-03-25
+### Objetivo del dia
+- 
+
+### Tareas realizadas
+- 
+
+### Archivos tocados
+- 
+
+### Errores / bloqueos
+| Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+### Decisiones tomadas
+- 
+
+### Pendiente para mañana
+- 
+
+### Handoff
+- 
+
+## 2026-03-26
+### Objetivo del dia
+- 
+
+### Tareas realizadas
+- 
+
+### Archivos tocados
+- 
+
+### Errores / bloqueos
+| Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
+### Decisiones tomadas
+- 
+
+### Pendiente para mañana
+- 
+
+### Handoff
+- 

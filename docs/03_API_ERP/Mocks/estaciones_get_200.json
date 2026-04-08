@@ -1,0 +1,33 @@
+{
+  "success": true,
+  "message": "Estaciones recuperadas correctamente.",
+  "data": [
+    {
+      "id": 105,
+      "nombre": "E.S. Las Tablas",
+      "direccion": "Av. del Camino de Santiago, 15",
+      "localidad": "Madrid",
+      "provincia": "Madrid",
+      "id_empresa": 1,
+      "cliente_nombre": "Repsol",
+      "estado": "activa"
+    },
+    {
+      "id": 106,
+      "nombre": "E.S. Alcobendas Norte",
+      "direccion": "Carretera de Fuencarral km 14",
+      "localidad": "Alcobendas",
+      "provincia": "Madrid",
+      "id_empresa": 1,
+      "cliente_nombre": "Repsol",
+      "estado": "inactiva"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 4,
+    "per_page": 15,
+    "total": 58,
+    "timestamp": "2026-04-08T09:45:00Z"
+  }
+}

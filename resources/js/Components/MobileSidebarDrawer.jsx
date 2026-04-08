@@ -1,4 +1,5 @@
 import CieteMark from '@/Components/CieteMark';
+import { getNavigationIcon } from '@/Components/navigationIcons';
 import { Link } from '@inertiajs/react';
 
 export default function MobileSidebarDrawer({
@@ -11,6 +12,9 @@ export default function MobileSidebarDrawer({
     user,
     t,
 }) {
+    const SettingsIcon = getNavigationIcon('nav.configuration');
+    const LogOutIcon = getNavigationIcon('common.actions.logOut');
+
     return (
         <>
             {open && (
@@ -56,6 +60,7 @@ export default function MobileSidebarDrawer({
                                 </p>
                                 <div className="space-y-1">
                                     {section.items.map((item) => {
+                                        const ItemIcon = getNavigationIcon(item.key);
                                         const baseClass = `flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                             item.active
                                                 ? 'bg-[var(--ciete-red)] text-white hover:bg-[var(--ciete-red-dark)]'
@@ -65,6 +70,7 @@ export default function MobileSidebarDrawer({
                                         if (!item.href) {
                                             return (
                                                 <span key={item.id} className={`${baseClass} opacity-60`}>
+                                                    {ItemIcon && <ItemIcon className="mr-2 h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
                                                     {item.label}
                                                 </span>
                                             );
@@ -77,6 +83,7 @@ export default function MobileSidebarDrawer({
                                                 className={baseClass}
                                                 onClick={onNavigate}
                                             >
+                                                {ItemIcon && <ItemIcon className="mr-2 h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
                                                 {item.label}
                                             </Link>
                                         );
@@ -104,9 +111,10 @@ export default function MobileSidebarDrawer({
 
                     <Link
                         href={route('profile.edit')}
-                        className="mb-1 block px-1 text-[10px] text-white/60 transition-colors hover:text-white"
+                        className="mb-1 inline-flex items-center gap-1.5 px-1 text-[10px] text-white/60 transition-colors hover:text-white"
                         onClick={onNavigate}
                     >
+                        {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
                         {t('nav.configuration')}
                     </Link>
 
@@ -114,9 +122,10 @@ export default function MobileSidebarDrawer({
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="w-full px-1 text-left text-[10px] font-bold uppercase tracking-widest text-white/70 transition-colors hover:text-primary"
+                        className="inline-flex w-full items-center gap-1.5 px-1 text-left text-[10px] font-bold uppercase tracking-widest text-white/70 transition-colors hover:text-primary"
                         onClick={onNavigate}
                     >
+                        {LogOutIcon && <LogOutIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
                         {t('common.actions.logOut')}
                     </Link>
                 </div>

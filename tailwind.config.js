@@ -13,7 +13,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['"DM Sans"', ...defaultTheme.fontFamily.sans],
+                sans: ['Inter', '"Segoe UI"', 'Roboto', 'Arial', 'sans-serif', ...defaultTheme.fontFamily.sans],
                 mono: ['"JetBrains Mono"', ...defaultTheme.fontFamily.mono],
             },
             colors: {

@@ -1,17 +1,34 @@
 import CieteMark from '@/Components/CieteMark';
 import TopNavbar from '@/Components/TopNavbar';
+import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
 import { Link, usePage } from '@inertiajs/react';
 
-export default function AuthenticatedLayout({ header, children }) {
+export default function AuthenticatedLayout({ header, children, contentWidthClass = 'max-w-[1400px]' }) {
     const user = usePage().props.auth.user;
     const { t } = useI18n();
+    const hasClosureRole = user?.role_slugs?.includes('control_cierre');
+    const DashboardIcon = getNavigationIcon('nav.dashboard');
+    const ClosureIcon = getNavigationIcon('nav.closurePanel');
+    const ClientsIcon = getNavigationIcon('nav.clients');
+    const StationsIcon = getNavigationIcon('nav.stations');
+    const WorksIcon = getNavigationIcon('nav.works');
+    const OrdersIcon = getNavigationIcon('nav.orders');
+    const LegalizationsIcon = getNavigationIcon('nav.legalizations');
+    const ReportsIcon = getNavigationIcon('nav.reports');
+    const SettingsIcon = getNavigationIcon('nav.configuration');
+    const LogOutIcon = getNavigationIcon('common.actions.logOut');
 
     const navLinkClass = (active) =>
-        `flex items-center p-2 text-sm font-medium rounded-lg transition-colors ${
+        `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none ${
             active
-                ? 'bg-[var(--ciete-red)] text-white hover:bg-[var(--ciete-red-dark)]'
-                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                ? 'text-[var(--ciete-red)]'
+                : 'text-white/75 hover:text-[var(--ciete-red)] focus-visible:text-[var(--ciete-red)]'
+        }`;
+
+    const navLinkLabelClass = (active) =>
+        `relative inline-block after:absolute after:bottom-[-2px] after:left-0 after:h-px after:w-full after:origin-left after:bg-[var(--ciete-red)] after:content-[''] after:transition-transform after:duration-200 ${
+            active ? 'after:scale-x-0' : 'after:scale-x-0 group-hover:after:scale-x-100'
         }`;
 
     return (
@@ -30,8 +47,19 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1">
                                 <Link href={route('dashboard')} className={navLinkClass(route().current('dashboard'))}>
-                                    {t('nav.dashboard')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {DashboardIcon && <DashboardIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(route().current('dashboard'))}>{t('nav.dashboard')}</span>
+                                    </span>
                                 </Link>
+                                {hasClosureRole && (
+                                    <Link href={route('cierre.dashboard')} className={navLinkClass(route().current('cierre.dashboard'))}>
+                                        <span className="inline-flex items-center gap-2">
+                                            {ClosureIcon && <ClosureIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                            <span className={navLinkLabelClass(route().current('cierre.dashboard'))}>{t('nav.closurePanel')}</span>
+                                        </span>
+                                    </Link>
+                                )}
                             </div>
                         </div>
 
@@ -41,10 +69,16 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1 text-white/70">
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.clients')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {ClientsIcon && <ClientsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(false)}>{t('nav.clients')}</span>
+                                    </span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.stations')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {StationsIcon && <StationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(false)}>{t('nav.stations')}</span>
+                                    </span>
                                 </Link>
                             </div>
                         </div>
@@ -55,13 +89,22 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1 text-white/70">
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.works')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {WorksIcon && <WorksIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(false)}>{t('nav.works')}</span>
+                                    </span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.orders')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {OrdersIcon && <OrdersIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(false)}>{t('nav.orders')}</span>
+                                    </span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.legalizations')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {LegalizationsIcon && <LegalizationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(false)}>{t('nav.legalizations')}</span>
+                                    </span>
                                 </Link>
                             </div>
                         </div>
@@ -72,7 +115,10 @@ export default function AuthenticatedLayout({ header, children }) {
                             </p>
                             <div className="space-y-1 text-white/70">
                                 <Link href="#" className={navLinkClass(false)}>
-                                    {t('nav.reports')}
+                                    <span className="inline-flex items-center gap-2">
+                                        {ReportsIcon && <ReportsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(false)}>{t('nav.reports')}</span>
+                                    </span>
                                 </Link>
                             </div>
                         </div>
@@ -95,16 +141,18 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                     <Link
                         href={route('profile.edit')}
-                        className="mb-1 block px-2 text-left text-[10px] text-white/50 transition-colors hover:text-white"
+                        className="mb-1 inline-flex items-center gap-1.5 px-2 text-left text-[10px] text-white/50 transition-colors hover:text-white"
                     >
+                        {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
                         {t('nav.configuration')}
                     </Link>
                     <Link
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="w-full px-2 text-left text-[10px] font-bold uppercase tracking-widest text-text-hint transition-colors hover:text-primary"
+                        className="inline-flex w-full items-center gap-1.5 px-2 text-left text-[10px] font-bold uppercase tracking-widest text-text-hint transition-colors hover:text-primary"
                     >
+                        {LogOutIcon && <LogOutIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
                         {t('common.actions.logOut')}
                     </Link>
                 </div>
@@ -114,7 +162,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 <TopNavbar header={header} />
 
                 <main className="p-4 md:p-8">
-                    <div className="mx-auto max-w-[1400px]">{children}</div>
+                    <div className={`mx-auto w-full ${contentWidthClass}`}>{children}</div>
                 </main>
 
                 <footer className="mt-auto border-t border-border p-6 text-center text-[10px] uppercase tracking-widest text-text-hint">
