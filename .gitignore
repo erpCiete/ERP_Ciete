@@ -60,7 +60,16 @@ Thumbs.db
 #!/docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
 
 # 2) Estado final: cada persona deja activa SOLO su linea.
-#    Ahora mismo queda configurado para Pablo.
+#    Estado actual del repositorio: SOLO Pablo activo.
+#
+#    Si otra persona quiere dejarlo preparado en su equipo:
+#    - comenta la linea activa de Pablo
+#    - descomenta SOLO su propia linea
+#    - no descomentes mas de una linea
+#
+#    Ejemplo para Carlos Puchol:
+#    - cambiar `!**/Bitacora/General/pablo.md` por comentario
+#    - descomentar `#!**/Bitacora/BACK/carlos_puchol.md`
 
 # Backend
 #!**/Bitacora/BACK/alex_puma.md
