@@ -88,6 +88,16 @@ php artisan key:generate
 
 ```
 
+
+comandos utiles:
+```bash
+php artisan config:clear
+php artisan cache:clear
+php artisan migrate:fresh --seed
+php artisan optimize:clear
+
+```
+
 Si usas SQLite en local:
 
 ```bash
