@@ -79,7 +79,7 @@ Este repositorio contiene el estado funcional del MVP (Sprint 1), listo para evo
 ### Instalacion
 
 ```bash
-git clone https://github.com/erp-abaco-ciete/abaco-e1-interns.git
+git clone https://github.com/erpCiete/ERP_Ciete/
 cd abaco-e1-interns
 composer install
 npm install
