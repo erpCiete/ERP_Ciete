@@ -54,22 +54,10 @@ Thumbs.db
 !/docs/05-SPRINTS/Sprint_*/Bitacora/FRONT/
 !/docs/05-SPRINTS/Sprint_*/Bitacora/General/
 
-# Bitacoras: uso previsto
-# 1) Primera subida de plantillas: descomenta SOLO la siguiente linea,
-#    haz el commit inicial de las bitacoras y vuelve a comentarla.
-#!/docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
-
-# 2) Estado final: cada persona deja activa SOLO su linea.
-#    Estado actual del repositorio: SOLO Pablo activo.
-#
-#    Si otra persona quiere dejarlo preparado en su equipo:
-#    - comenta la linea activa de Pablo
-#    - descomenta SOLO su propia linea
-#    - no descomentes mas de una linea
-#
-#    Ejemplo para Carlos Puchol:
-#    - cambiar `!**/Bitacora/General/pablo.md` por comentario
-#    - descomentar `#!**/Bitacora/BACK/carlos_puchol.md`
+# Bitacoras personales
+# Todas las bitacoras se ignoran por defecto.
+# Cada persona debe dejar activa SOLO su propia linea.
+# Si cambias de persona, comenta la linea actual y descomenta solo la tuya.
 
 # Backend
 #!**/Bitacora/BACK/alex_puma.md
@@ -86,6 +74,7 @@ Thumbs.db
 #!**/Bitacora/FRONT/jimmy_tasmonte.md
 
 # Coordinacion general
+# Configuracion actual: Pablo
 !**/Bitacora/General/pablo.md
 
 # Documentacion raiz de sprint
