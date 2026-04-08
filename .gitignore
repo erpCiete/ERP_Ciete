@@ -39,7 +39,47 @@ pnpm-debug.log*
 /.nova
 /.vscode
 /.zed
+/.agents
+/.codex
+/skills-lock.json
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Sprint documentation safety
+/docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
+!/docs/05-SPRINTS/Sprint_*/Bitacora/
+!/docs/05-SPRINTS/Sprint_*/Bitacora/BACK/
+!/docs/05-SPRINTS/Sprint_*/Bitacora/FRONT/
+!/docs/05-SPRINTS/Sprint_*/Bitacora/General/
+
+# Bitacoras: uso previsto
+# 1) Primera subida de plantillas: descomenta SOLO la siguiente linea,
+#    haz el commit inicial de las bitacoras y vuelve a comentarla.
+#!/docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
+
+# 2) Estado final: cada persona deja activa SOLO su linea.
+#    Ahora mismo queda configurado para Pablo.
+
+# Backend
+#!**/Bitacora/BACK/alex_puma.md
+#!**/Bitacora/BACK/carlos_puchol.md
+#!**/Bitacora/BACK/chad_arzaga.md
+#!**/Bitacora/BACK/eduardo_jimenez.md
+#!**/Bitacora/BACK/miguel_taborda.md
+
+# Frontend
+#!**/Bitacora/FRONT/carlos_daniel_garrido.md
+#!**/Bitacora/FRONT/daniel_bascope.md
+#!**/Bitacora/FRONT/daniel_lopez.md
+#!**/Bitacora/FRONT/jhon_sebastian_becerra.md
+#!**/Bitacora/FRONT/jimmy_tasmonte.md
+
+# Coordinacion general
+!**/Bitacora/General/pablo.md
+
+# Documentacion raiz de sprint
+# En la raiz de cada sprint solo se debe subir la vision general.
+/docs/05-SPRINTS/Sprint_*/*.md
+!/docs/05-SPRINTS/Sprint_*/00_Sprint_*_Vision_General.md
