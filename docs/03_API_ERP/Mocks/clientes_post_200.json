@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Cliente creado con éxito.",
+  "data": {
+    "id": 3,
+    "razon_social": "Redexis Gas, S.A.",
+    "nombre_comercial": "Redexis",
+    "cif": "A86100000",
+    "telefono_principal": "+34 900 811 000",
+    "email_principal": "gestion.obras@redexis.com",
+    "estado": "activo",
+    "creado_el": "2026-04-08T10:30:15Z"
+  },
+  "meta": {
+    "timestamp": "2026-04-08T10:30:15Z"
+  }
+}
