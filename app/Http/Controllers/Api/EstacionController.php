@@ -3,79 +3,78 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Estacion;
+use App\Http\Requests\Api\EstacionStoreRequest;
+use App\Http\Requests\Api\EstacionUpdateRequest;
+use App\Http\Resources\Api\EstacionResource;
 use Illuminate\Http\JsonResponse;
 
 class EstacionController extends Controller
 {
     /**
      * Listado de estaciones.
-     * Filtrar SIEMPRE por el contexto del cliente (Repsol/Cepsa).
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        //TODO: Extraer el cliente_id del contexto del usuario autenticado o del request
-        // $clienteId = $request->user()->contexto_cliente_id;
+        // Importante: usamos paginate para que coincida con tu lógica de 'meta'
+        $estaciones = Estacion::paginate(10);
 
-        //TODO: Aplicar paginación y retornar respuesta estándar (BE-06)
         return response()->json([
             'success' => true,
-            'message' => 'Listado de estaciones obtenido (Stub)',
-            'data'    => [],
+            'message' => 'Listado de estaciones obtenido correctamente',
+            'data'    => EstacionResource::collection($estaciones),
             'meta'    => [
-                'timestamp' => now()->toIso8601String()
+                'timestamp' => now()->toIso8601String(),
+                'pagination' => [
+                    'total' => $estaciones->total(),
+                    'count' => $estaciones->count(),
+                    'per_page' => $estaciones->perPage(),
+                    'current_page' => $estaciones->currentPage(),
+                    'total_pages' => $estaciones->lastPage()
+                ]
             ]
-        ]);
-        
+        ], 200);
     }
 
-    /**
-     * Crear una nueva estación.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(EstacionStoreRequest $request): JsonResponse
     {
-        // TODO: Validar permisos (RBAC) para creación.
-        // TODO: Validar payload y asegurar que la estación se asigna al cliente correcto.
+        $estacion = Estacion::create($request->validated());
 
         return response()->json([
             'success' => true,
-            'message' => 'Estación creada exitosamente (Stub)',
-            'data'    => null,
+            'message' => 'Estación creada exitosamente',
+            'data'    => new EstacionResource($estacion),
         ], 201);
     }
 
-    /**
-     * Detalle de una estación específica.
-     */
-    public function show(string $id): JsonResponse
+    public function show(Estacion $estacion): JsonResponse
     {
-        // TODO: Validar que el ID pertenece al cliente del usuario en sesión.
         return response()->json([
             'success' => true,
-            'message' => 'Detalle de la estación (Stub)',
-            'data'    => ['id' => $id],
+            'message' => 'Detalle de la estación obtenido',
+            'data'    => new EstacionResource($estacion),
         ]);
     }
 
-    /**
-     * Actualizar una estación existente.
-     */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(EstacionUpdateRequest $request, Estacion $estacion): JsonResponse
     {
-        // TODO: Validar permisos (RBAC) para actualización.
-        // TODO: Validar payload y asegurar que la estación se asigna al cliente correcto.
+        $estacion->update($request->validated());
+
         return response()->json([
             'success' => true,
-            'message' => 'Estación actualizada exitosamente (Stub)',
-            'data'    => ['id' => $id],
+            'message' => 'Estación actualizada exitosamente',
+            'data'    => new EstacionResource($estacion),
         ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Estacion $estacion): JsonResponse
     {
-        //
+        $estacion->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Estación eliminada correctamente',
+            'data'    => null,
+        ]);
     }
 }
