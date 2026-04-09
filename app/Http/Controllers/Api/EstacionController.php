@@ -7,20 +7,16 @@ use App\Models\Estacion;
 use App\Http\Requests\Api\EstacionStoreRequest;
 use App\Http\Requests\Api\EstacionUpdateRequest;
 use App\Http\Resources\Api\EstacionResource;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class EstacionController extends Controller
 {
     /**
      * Listado de estaciones.
-     * Usa EstacionResource para formatear y permite paginación.
      */
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        // En un caso real aquí filtraríamos por cliente_id
-        // $estaciones = Estacion::where('cliente_id', $request->user()->cliente_id)->paginate();
-        
+        // Importante: usamos paginate para que coincida con tu lógica de 'meta'
         $estaciones = Estacion::paginate(10);
 
         return response()->json([
@@ -37,15 +33,11 @@ class EstacionController extends Controller
                     'total_pages' => $estaciones->lastPage()
                 ]
             ]
-        ]);
+        ], 200);
     }
 
-    /**
-     * Crear una nueva estación usando EstacionStoreRequest.
-     */
     public function store(EstacionStoreRequest $request): JsonResponse
     {
-        // El método validated() solo devuelve los datos que pasaron la regla
         $estacion = Estacion::create($request->validated());
 
         return response()->json([
@@ -55,9 +47,6 @@ class EstacionController extends Controller
         ], 201);
     }
 
-    /**
-     * Detalle de una estación específica.
-     */
     public function show(Estacion $estacion): JsonResponse
     {
         return response()->json([
@@ -67,9 +56,6 @@ class EstacionController extends Controller
         ]);
     }
 
-    /**
-     * Actualizar una estación usando EstacionUpdateRequest.
-     */
     public function update(EstacionUpdateRequest $request, Estacion $estacion): JsonResponse
     {
         $estacion->update($request->validated());
@@ -81,9 +67,6 @@ class EstacionController extends Controller
         ]);
     }
 
-    /**
-     * Eliminar una estación.
-     */
     public function destroy(Estacion $estacion): JsonResponse
     {
         $estacion->delete();

@@ -7,12 +7,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class EstacionResource extends JsonResource
 {
-    public function toArray(Request $request): array {
-    return [
-        'id' => $this->id,
-        'nombre' => $this->nombre,
-        'codigo_estacion' => $this->codigo,
-        'creado_el' => $this->created_at->format('d-m-Y'),
-    ];
-}
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'nombre_estacion' => $this->nombre, // <--- Esto es lo que el test busca
+            'identificador_interno' => $this->codigo, // <--- Esto es lo que el test busca
+            'direccion_completa' => $this->direccion,
+            'cliente_id' => $this->cliente_id,
+        ];
+    }
 }

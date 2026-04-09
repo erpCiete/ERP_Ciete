@@ -30,7 +30,7 @@ Route::prefix('v1')->middleware('web')->group(function () {
 
         Route::apiResource('pedidos', PedidoController::class);
 
-        Route::get('estaciones', [EstacionController::class, 'index'])->name('estaciones.index');
+        Route::apiResource('estaciones', EstacionController::class); //
         Route::get('facturacion/pendientes', [FacturacionController::class, 'index'])->name('facturacion.pendientes');
         Route::get('informes/obras', [InformeController::class, 'index'])->name('informes.obras');
     });
