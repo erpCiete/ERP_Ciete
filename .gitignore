@@ -61,7 +61,7 @@ Thumbs.db
 
 # Backend
 #!**/Bitacora/BACK/alex_puma.md
-#!**/Bitacora/BACK/carlos_puchol.md
+!**/Bitacora/BACK/carlos_puchol.md
 #!**/Bitacora/BACK/chad_arzaga.md
 #!**/Bitacora/BACK/eduardo_jimenez.md
 #!**/Bitacora/BACK/miguel_taborda.md
@@ -75,7 +75,7 @@ Thumbs.db
 
 # Coordinacion general
 # Configuracion actual: Pablo
-!**/Bitacora/General/pablo.md
+#!**/Bitacora/General/pablo.md
 
 # Documentacion raiz de sprint
 # En la raiz de cada sprint solo se debe subir la vision general.
