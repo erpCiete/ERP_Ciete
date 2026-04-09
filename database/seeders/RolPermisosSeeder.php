@@ -29,6 +29,11 @@ class RolPermisosSeeder extends Seeder
                 'proyectos.reabrir',
                 'proyectos_cerrados.editar',
                 'proyectos_cerrados.reabrir',
+                'pedidos.ver',
+                'legalizaciones.ver',
+                'estaciones.gestionar',
+                'empresas_contactos.gestionar',
+                'reportes.ver',
             ],
             'consulta' => [
                 'proyectos.ver',

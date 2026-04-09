@@ -86,7 +86,7 @@ export default function InstitutionalHero({ shouldReduceMotion = false }) {
                         ))}
                     </div>
 
-                    <h1 className="text-3xl font-semibold tracking-tight text-[var(--ciete-slate)] sm:text-4xl">
+                    <h1 className="text-3xl font-semibold tracking-tight text-(--ciete-slate) sm:text-4xl">
                         {t('welcome.home.hero.title')}
                     </h1>
                     <p className="mt-3 text-base font-medium text-text-main sm:text-lg">

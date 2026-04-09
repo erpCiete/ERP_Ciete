@@ -22,6 +22,10 @@ export default function TopNavbar({ header }) {
     const { auth } = usePage().props;
     const user = auth.user;
     const hasClosureRole = user?.role_slugs?.includes('control_cierre');
+    const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
+    const canViewEstaciones = user?.permission_slugs?.some((permission) =>
+        ['estaciones.ver', 'estaciones.gestionar'].includes(permission)
+    );
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isPrefsOpen, setIsPrefsOpen] = useState(false);
@@ -45,14 +49,14 @@ export default function TopNavbar({ header }) {
     ];
 
     const topNavLinkClass = (active) =>
-        `inline-flex items-center whitespace-nowrap pb-[3px] transition-colors duration-200 focus-visible:outline-none ${
+        `inline-flex items-center whitespace-nowrap pb-[3px] transition-colors duration-200 focus-visible:outline-hidden ${
             active
-                ? 'text-[var(--ciete-red)]'
-                : 'text-text-main/60 hover:text-[var(--ciete-red)] focus-visible:text-[var(--ciete-red)]'
+                ? 'text-(--ciete-red)'
+                : 'text-text-main/60 hover:text-(--ciete-red) focus-visible:text-(--ciete-red)'
         }`;
 
     const topNavLinkLabelClass = (active) =>
-        `relative inline-block after:absolute after:bottom-[-1px] after:left-0 after:h-px after:w-full after:origin-left after:bg-[var(--ciete-red)] after:content-[''] after:transition-transform after:duration-200 ${
+        `relative inline-block after:absolute after:-bottom-px after:left-0 after:h-px after:w-full after:origin-left after:bg-(--ciete-red) after:content-[''] after:transition-transform after:duration-200 ${
             active ? 'after:scale-x-0' : 'after:scale-x-0 group-hover:after:scale-x-100'
         }`;
 
@@ -114,8 +118,24 @@ export default function TopNavbar({ header }) {
                 id: 'masters',
                 label: t('nav.groups.masters'),
                 items: [
-                    { id: 'clients', key: 'nav.clients', label: t('nav.clients') },
-                    { id: 'stations', key: 'nav.stations', label: t('nav.stations') },
+                    ...(canManageClientes
+                        ? [{
+                              id: 'clients',
+                              key: 'nav.clients',
+                              label: t('nav.clients'),
+                              href: route('clientes.index'),
+                              active: route().current('clientes.*'),
+                          }]
+                        : []),
+                    ...(canViewEstaciones
+                        ? [{
+                              id: 'stations',
+                              key: 'nav.stations',
+                              label: t('nav.stations'),
+                              href: route('estaciones.index'),
+                              active: route().current('estaciones.*'),
+                          }]
+                        : []),
                 ],
             },
             {
@@ -132,8 +152,8 @@ export default function TopNavbar({ header }) {
                 label: t('nav.groups.reports'),
                 items: [{ id: 'reports', key: 'nav.reports', label: t('nav.reports') }],
             },
-        ];
-    }, [t, user]);
+        ].filter((section) => section.items.length > 0);
+    }, [canManageClientes, canViewEstaciones, t, user]);
 
     const closeSidebar = useCallback((restoreFocus = true) => {
         setIsSidebarOpen(false);
@@ -252,7 +272,7 @@ export default function TopNavbar({ header }) {
 
     return (
         <>
-            <header className="sticky top-0 z-40 flex min-h-[52px] w-full items-center border-b border-border bg-surface px-3 md:min-h-[64px] md:px-8 shadow-sm">
+            <header className="sticky top-0 z-40 flex min-h-13 w-full items-center border-b border-border bg-surface px-3 shadow-sm md:min-h-16 md:px-8">
                 <div className="w-full">
                     <div className="flex items-center gap-2">
                         <button
@@ -288,10 +308,10 @@ export default function TopNavbar({ header }) {
                             aria-controls={prefsDrawerId}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface-2 md:hidden"
                         >
-                            <span className="inline-flex flex-col gap-[3px]">
-                                <span className="h-[2px] w-4 rounded bg-text-main" />
-                                <span className="h-[2px] w-4 rounded bg-text-main" />
-                                <span className="h-[2px] w-4 rounded bg-text-main" />
+                            <span className="inline-flex flex-col gap-0.75">
+                                <span className="h-0.5 w-4 rounded-sm bg-text-main" />
+                                <span className="h-0.5 w-4 rounded-sm bg-text-main" />
+                                <span className="h-0.5 w-4 rounded-sm bg-text-main" />
                             </span>
                         </button>
 
@@ -302,7 +322,7 @@ export default function TopNavbar({ header }) {
 
                                     return (
                                         <div key={item.key} className="flex items-center">
-                                            {index > 0 && <span className="text-border/40 font-light select-none mx-[6px]">|</span>}
+                                            {index > 0 && <span className="mx-1.5 select-none font-light text-border/40">|</span>}
                                             <Link href={item.href} className={`group ${topNavLinkClass(item.active)}`}>
                                                 <span className="inline-flex items-center gap-1.5">
                                                     {ItemIcon && <ItemIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}

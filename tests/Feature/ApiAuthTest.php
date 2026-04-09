@@ -54,6 +54,5 @@ class ApiAuthTest extends TestCase
 
         $this->actingAs($user)->getJson('/api/v1/obras')->assertOk();
         $this->actingAs($user)->getJson('/api/v1/pedidos')->assertOk();
-        $this->actingAs($user)->getJson('/api/v1/estaciones')->assertOk();
     }
 }

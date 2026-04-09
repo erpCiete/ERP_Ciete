@@ -11,19 +11,25 @@
             (function () {
                 const DEFAULT_THEME = 'light';
                 const STORAGE_KEY = 'ciete.theme';
+                const getSystemTheme = () => {
+                    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+                        ? 'dark'
+                        : DEFAULT_THEME;
+                };
+
+                const applyTheme = (theme) => {
+                    document.documentElement.setAttribute('data-theme', theme);
+                    document.documentElement.style.colorScheme = theme;
+                };
 
                 try {
                     const storedTheme = window.localStorage.getItem(STORAGE_KEY);
                     const isValidTheme = storedTheme === 'light' || storedTheme === 'dark';
-                    const resolvedTheme = isValidTheme
-                        ? storedTheme
-                        : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : DEFAULT_THEME);
+                    const resolvedTheme = isValidTheme ? storedTheme : getSystemTheme();
 
-                    document.documentElement.setAttribute('data-theme', resolvedTheme);
-                    document.documentElement.style.colorScheme = resolvedTheme;
-                } catch (error) {
-                    document.documentElement.setAttribute('data-theme', DEFAULT_THEME);
-                    document.documentElement.style.colorScheme = DEFAULT_THEME;
+                    applyTheme(resolvedTheme);
+                } catch {
+                    applyTheme(getSystemTheme());
                 }
             })();
         </script>

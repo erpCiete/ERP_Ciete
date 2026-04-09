@@ -22,9 +22,9 @@ export default function ThemeSelector({ compact = false, className = '' }) {
                             key={code}
                             type="button"
                             onClick={() => setTheme(code)}
-                            className={`rounded px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                            className={`rounded-sm px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
                                 isActive
-                                    ? 'bg-[var(--ciete-red)] text-white'
+                                    ? 'bg-(--ciete-red) text-white'
                                     : 'text-text-muted hover:bg-surface-2'
                             }`}
                             aria-pressed={isActive}

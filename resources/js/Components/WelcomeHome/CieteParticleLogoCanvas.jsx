@@ -131,50 +131,16 @@ export default function CieteParticleLogoCanvas({
         let width = 0;
         let height = 0;
         let lastTimestamp = performance.now();
+        let documentVisible = typeof document === 'undefined' ? true : document.visibilityState !== 'hidden';
+        let viewportVisible = true;
 
-        const updateCanvasSize = () => {
-            const rect = wrapper.getBoundingClientRect();
-            width = Math.max(180, Math.floor(rect.width));
-            height = Math.max(180, Math.floor(rect.height));
+        const canAnimate = () => documentVisible && viewportVisible;
 
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            canvas.width = Math.floor(width * dpr);
-            canvas.height = Math.floor(height * dpr);
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
-            context.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const renderParticles = (timestamp) => {
+            if (!width || !height) {
+                return;
+            }
 
-            const palette = getLogoPalette();
-            particles = buildParticles(width, height, shouldReduceMotion, palette);
-        };
-
-        const onPointerMove = (event) => {
-            const rect = canvas.getBoundingClientRect();
-            pointer.x = event.clientX - rect.left;
-            pointer.y = event.clientY - rect.top;
-            pointer.active = true;
-        };
-
-        const onPointerLeave = () => {
-            pointer.active = false;
-        };
-
-        updateCanvasSize();
-
-        let resizeObserver;
-        if (typeof ResizeObserver !== 'undefined') {
-            resizeObserver = new ResizeObserver(updateCanvasSize);
-            resizeObserver.observe(wrapper);
-        } else {
-            window.addEventListener('resize', updateCanvasSize);
-        }
-
-        if (pointerEnabled) {
-            wrapper.addEventListener('pointermove', onPointerMove);
-            wrapper.addEventListener('pointerleave', onPointerLeave);
-        }
-
-        const renderFrame = (timestamp) => {
             const frameDelta = clamp((timestamp - lastTimestamp) / 16.667, 0.65, 2.1);
             lastTimestamp = timestamp;
 
@@ -220,18 +186,130 @@ export default function CieteParticleLogoCanvas({
                 context.arc(particle.x, particle.y, particle.size, 0, TWO_PI);
                 context.fill();
             }
+        };
+
+        const stopAnimation = () => {
+            if (!frameId) {
+                return;
+            }
+
+            window.cancelAnimationFrame(frameId);
+            frameId = 0;
+        };
+
+        const renderFrame = (timestamp) => {
+            renderParticles(timestamp);
+
+            if (!canAnimate()) {
+                frameId = 0;
+                return;
+            }
 
             frameId = window.requestAnimationFrame(renderFrame);
         };
 
-        frameId = window.requestAnimationFrame(renderFrame);
+        const startAnimation = () => {
+            if (frameId || !canAnimate()) {
+                return;
+            }
+
+            lastTimestamp = performance.now();
+            frameId = window.requestAnimationFrame(renderFrame);
+        };
+
+        const updateCanvasSize = () => {
+            const rect = wrapper.getBoundingClientRect();
+            width = Math.max(180, Math.floor(rect.width));
+            height = Math.max(180, Math.floor(rect.height));
+
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(width * dpr);
+            canvas.height = Math.floor(height * dpr);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            context.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const palette = getLogoPalette();
+            particles = buildParticles(width, height, shouldReduceMotion, palette);
+            renderParticles(performance.now());
+        };
+
+        const onPointerMove = (event) => {
+            const rect = canvas.getBoundingClientRect();
+            pointer.x = event.clientX - rect.left;
+            pointer.y = event.clientY - rect.top;
+            pointer.active = true;
+        };
+
+        const onPointerLeave = () => {
+            pointer.active = false;
+        };
+
+        const onVisibilityChange = () => {
+            documentVisible = document.visibilityState !== 'hidden';
+
+            if (documentVisible) {
+                startAnimation();
+                return;
+            }
+
+            stopAnimation();
+        };
+
+        updateCanvasSize();
+
+        let resizeObserver;
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver(updateCanvasSize);
+            resizeObserver.observe(wrapper);
+        } else {
+            window.addEventListener('resize', updateCanvasSize);
+        }
+
+        if (pointerEnabled) {
+            wrapper.addEventListener('pointermove', onPointerMove);
+            wrapper.addEventListener('pointerleave', onPointerLeave);
+        }
+
+        let intersectionObserver;
+        if (typeof IntersectionObserver !== 'undefined') {
+            intersectionObserver = new IntersectionObserver(
+                ([entry]) => {
+                    viewportVisible = Boolean(entry?.isIntersecting);
+
+                    if (viewportVisible) {
+                        startAnimation();
+                        return;
+                    }
+
+                    stopAnimation();
+                },
+                { threshold: 0.08 },
+            );
+
+            intersectionObserver.observe(wrapper);
+        }
+
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', onVisibilityChange);
+        }
+
+        startAnimation();
 
         return () => {
-            window.cancelAnimationFrame(frameId);
+            stopAnimation();
             if (resizeObserver) {
                 resizeObserver.disconnect();
             } else {
                 window.removeEventListener('resize', updateCanvasSize);
+            }
+
+            if (intersectionObserver) {
+                intersectionObserver.disconnect();
+            }
+
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', onVisibilityChange);
             }
 
             if (pointerEnabled) {

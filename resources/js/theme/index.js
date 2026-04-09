@@ -14,9 +14,9 @@ export const SUPPORTED_THEMES = ['light', 'dark'];
 
 const ThemeContext = createContext(undefined);
 
-const resolveTheme = (value) => {
+const normalizeTheme = (value) => {
     const normalized = String(value || '').toLowerCase();
-    return SUPPORTED_THEMES.includes(normalized) ? normalized : DEFAULT_THEME;
+    return SUPPORTED_THEMES.includes(normalized) ? normalized : null;
 };
 
 const getSystemTheme = () => {
@@ -31,18 +31,19 @@ const getSystemTheme = () => {
     return DEFAULT_THEME;
 };
 
-const getInitialTheme = () => {
+const getStoredThemePreference = () => {
     if (typeof window === 'undefined') {
-        return DEFAULT_THEME;
+        return null;
     }
 
-    const storedTheme = window.localStorage.getItem(STORAGE_KEY);
-    if (storedTheme) {
-        return resolveTheme(storedTheme);
+    try {
+        return normalizeTheme(window.localStorage.getItem(STORAGE_KEY));
+    } catch {
+        return null;
     }
-
-    return getSystemTheme();
 };
+
+const resolveTheme = (themePreference, systemTheme) => themePreference ?? systemTheme;
 
 const applyTheme = (theme) => {
     if (typeof document === 'undefined') {
@@ -54,23 +55,70 @@ const applyTheme = (theme) => {
 };
 
 export function ThemeProvider({ children }) {
-    const [theme, setTheme] = useState(getInitialTheme);
+    const [themePreference, setThemePreference] = useState(getStoredThemePreference);
+    const [systemTheme, setSystemTheme] = useState(getSystemTheme);
+    const theme = useMemo(
+        () => resolveTheme(themePreference, systemTheme),
+        [themePreference, systemTheme],
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+            return undefined;
+        }
+
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = (event) => {
+            setSystemTheme(event.matches ? 'dark' : DEFAULT_THEME);
+        };
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', handleChange);
+
+            return () => {
+                mediaQuery.removeEventListener('change', handleChange);
+            };
+        }
+
+        mediaQuery.addListener(handleChange);
+
+        return () => {
+            mediaQuery.removeListener(handleChange);
+        };
+    }, []);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            window.localStorage.setItem(STORAGE_KEY, theme);
+            try {
+                if (themePreference) {
+                    window.localStorage.setItem(STORAGE_KEY, themePreference);
+                } else {
+                    window.localStorage.removeItem(STORAGE_KEY);
+                }
+            } catch {
+                // Ignore storage failures and keep the in-memory theme working.
+            }
         }
 
         applyTheme(theme);
-    }, [theme]);
+    }, [theme, themePreference]);
 
     const changeTheme = useCallback((nextTheme) => {
-        setTheme(resolveTheme(nextTheme));
+        const normalizedTheme = normalizeTheme(nextTheme);
+
+        if (!normalizedTheme) {
+            return;
+        }
+
+        setThemePreference(normalizedTheme);
     }, []);
 
     const toggleTheme = useCallback(() => {
-        setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
-    }, []);
+        setThemePreference((currentThemePreference) => {
+            const activeTheme = resolveTheme(currentThemePreference, systemTheme);
+            return activeTheme === 'dark' ? 'light' : 'dark';
+        });
+    }, [systemTheme]);
 
     const value = useMemo(
         () => ({

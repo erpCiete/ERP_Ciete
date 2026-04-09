@@ -8,12 +8,12 @@ export default function ProyectosIndex() {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold leading-tight text-[var(--ciete-slate)]">{t('proyectos.header')}</h2>}
+            header={<h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">{t('proyectos.header')}</h2>}
         >
             <Head title={t('proyectos.headTitle')} />
 
             <div className="ciete-panel mx-auto max-w-4xl space-y-4">
-                <h3 className="text-2xl font-semibold text-[var(--ciete-slate)]">
+                <h3 className="text-2xl font-semibold text-(--ciete-slate)">
                     {t('proyectos.title')}
                 </h3>
                 <p className="text-sm text-text-muted">{t('proyectos.description')}</p>

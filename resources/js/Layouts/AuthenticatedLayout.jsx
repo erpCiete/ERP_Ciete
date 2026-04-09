@@ -8,6 +8,10 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
     const user = usePage().props.auth.user;
     const { t } = useI18n();
     const hasClosureRole = user?.role_slugs?.includes('control_cierre');
+    const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
+    const canViewEstaciones = user?.permission_slugs?.some((permission) =>
+        ['estaciones.ver', 'estaciones.gestionar'].includes(permission)
+    );
     const DashboardIcon = getNavigationIcon('nav.dashboard');
     const ClosureIcon = getNavigationIcon('nav.closurePanel');
     const ClientsIcon = getNavigationIcon('nav.clients');
@@ -20,14 +24,14 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
 
     const navLinkClass = (active) =>
-        `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none ${
+        `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-hidden ${
             active
-                ? 'text-[var(--ciete-red)]'
-                : 'text-white/75 hover:text-[var(--ciete-red)] focus-visible:text-[var(--ciete-red)]'
+                ? 'text-(--ciete-red)'
+                : 'text-white/75 hover:text-(--ciete-red) focus-visible:text-(--ciete-red)'
         }`;
 
     const navLinkLabelClass = (active) =>
-        `relative inline-block after:absolute after:bottom-[-2px] after:left-0 after:h-px after:w-full after:origin-left after:bg-[var(--ciete-red)] after:content-[''] after:transition-transform after:duration-200 ${
+        `relative inline-block after:absolute after:bottom-[-2px] after:left-0 after:h-px after:w-full after:origin-left after:bg-(--ciete-red) after:content-[''] after:transition-transform after:duration-200 ${
             active ? 'after:scale-x-0' : 'after:scale-x-0 group-hover:after:scale-x-100'
         }`;
 
@@ -63,25 +67,31 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                             </div>
                         </div>
 
-                        <div>
-                            <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/40">
-                                {t('nav.groups.masters')}
-                            </p>
-                            <div className="space-y-1 text-white/70">
-                                <Link href="#" className={navLinkClass(false)}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {ClientsIcon && <ClientsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.clients')}</span>
-                                    </span>
-                                </Link>
-                                <Link href="#" className={navLinkClass(false)}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {StationsIcon && <StationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.stations')}</span>
-                                    </span>
-                                </Link>
+                        {(canManageClientes || canViewEstaciones) && (
+                            <div>
+                                <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/40">
+                                    {t('nav.groups.masters')}
+                                </p>
+                                <div className="space-y-1 text-white/70">
+                                    {canManageClientes && (
+                                        <Link href={route('clientes.index')} className={navLinkClass(route().current('clientes.*'))}>
+                                            <span className="inline-flex items-center gap-2">
+                                                {ClientsIcon && <ClientsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                                <span className={navLinkLabelClass(route().current('clientes.*'))}>{t('nav.clients')}</span>
+                                            </span>
+                                        </Link>
+                                    )}
+                                    {canViewEstaciones && (
+                                        <Link href={route('estaciones.index')} className={navLinkClass(route().current('estaciones.*'))}>
+                                            <span className="inline-flex items-center gap-2">
+                                                {StationsIcon && <StationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                                <span className={navLinkLabelClass(route().current('estaciones.*'))}>{t('nav.stations')}</span>
+                                            </span>
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div>
                             <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/40">

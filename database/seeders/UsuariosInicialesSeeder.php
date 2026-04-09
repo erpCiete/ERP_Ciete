@@ -15,6 +15,14 @@ class UsuariosInicialesSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call([
+            ContextosClienteSeeder::class,
+            DatosBaseSeeder::class,
+            RolesSeeder::class,
+            PermisosSeeder::class,
+            RolPermisosSeeder::class,
+        ]);
+
         // Credenciales de arranque:
         // admin@ciete.es / Admin1234!
         // cesar@ciete.es / Cesar1234!

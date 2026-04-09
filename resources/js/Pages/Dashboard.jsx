@@ -47,7 +47,7 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-[var(--ciete-slate)]">
+                <h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">
                     {t('dashboard.header')}
                 </h2>
             }
