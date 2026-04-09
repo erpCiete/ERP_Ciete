@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EstacionController;
 use App\Http\Controllers\Api\FacturacionController;
 use App\Http\Controllers\Api\InformeController;
@@ -20,6 +21,9 @@ Route::prefix('v1')->middleware('web')->group(function () {
     });
 
     Route::middleware('auth')->group(function () {
+        Route::apiResource('clientes', ClienteController::class);
+        Route::apiResource('estaciones', EstacionController::class);
+
         Route::apiResource('obras', ObraController::class);
         Route::patch('obras/{obra}/estado', [ObraController::class, 'updateEstado'])->name('obras.updateEstado');
 
@@ -30,7 +34,6 @@ Route::prefix('v1')->middleware('web')->group(function () {
 
         Route::apiResource('pedidos', PedidoController::class);
 
-        Route::get('estaciones', [EstacionController::class, 'index'])->name('estaciones.index');
         Route::get('facturacion/pendientes', [FacturacionController::class, 'index'])->name('facturacion.pendientes');
         Route::get('informes/obras', [InformeController::class, 'index'])->name('informes.obras');
     });
