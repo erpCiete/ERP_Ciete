@@ -3,78 +3,86 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Estacion;
+use App\Models\EstacionServicio;
 use App\Http\Requests\Api\EstacionStoreRequest;
 use App\Http\Requests\Api\EstacionUpdateRequest;
 use App\Http\Resources\Api\EstacionResource;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class EstacionController extends Controller
 {
-    /**
-     * Listado de estaciones.
-     */
-    public function index(): JsonResponse
-    {
-        // Importante: usamos paginate para que coincida con tu lógica de 'meta'
-        $estaciones = Estacion::paginate(10);
+    use ApiResponse;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Listado de estaciones obtenido correctamente',
-            'data'    => EstacionResource::collection($estaciones),
-            'meta'    => [
-                'timestamp' => now()->toIso8601String(),
-                'pagination' => [
-                    'total' => $estaciones->total(),
-                    'count' => $estaciones->count(),
-                    'per_page' => $estaciones->perPage(),
-                    'current_page' => $estaciones->currentPage(),
-                    'total_pages' => $estaciones->lastPage()
-                ]
-            ]
-        ], 200);
+    /**
+     * Listado de estaciones con capacidad de búsqueda dinámica.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $query = EstacionServicio::query()->with('empresaCliente');
+
+        // Búsqueda dinámica implementada (Tarea B6)
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre', 'like', "%{$search}%")
+                  ->orWhere('poblacion', 'like', "%{$search}%")
+                  ->orWhere('codigo_estacion_interno', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = $request->input('per_page', 15);
+        $estaciones = $query->latest('id_estacion_servicio')->paginate($perPage);
+
+        return $this->successResponse(
+            EstacionResource::collection($estaciones),
+            'Listado de estaciones obtenido correctamente'
+        );
     }
 
     public function store(EstacionStoreRequest $request): JsonResponse
     {
-        $estacion = Estacion::create($request->validated());
+        $estacion = EstacionServicio::create($request->validated());
+        
+        // Cargamos la relación para devolver el JSON completo al front
+        $estacion->load('empresaCliente');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Estación creada exitosamente',
-            'data'    => new EstacionResource($estacion),
-        ], 201);
+        return $this->successResponse(
+            new EstacionResource($estacion),
+            'Estación de servicio creada con éxito',
+            201
+        );
     }
 
-    public function show(Estacion $estacion): JsonResponse
+    public function show(EstacionServicio $estacione): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Detalle de la estación obtenido',
-            'data'    => new EstacionResource($estacion),
-        ]);
+        // Nota: Laravel inyecta $estacione (singular de la ruta definida en apiResource)
+        $estacione->load('empresaCliente');
+
+        return $this->successResponse(
+            new EstacionResource($estacione),
+            'Detalle de la estación obtenido'
+        );
     }
 
-    public function update(EstacionUpdateRequest $request, Estacion $estacion): JsonResponse
+    public function update(EstacionUpdateRequest $request, EstacionServicio $estacione): JsonResponse
     {
-        $estacion->update($request->validated());
+        $estacione->update($request->validated());
+        $estacione->load('empresaCliente');
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Estación actualizada exitosamente',
-            'data'    => new EstacionResource($estacion),
-        ]);
+        return $this->successResponse(
+            new EstacionResource($estacione),
+            'Estación actualizada exitosamente'
+        );
     }
 
-    public function destroy(Estacion $estacion): JsonResponse
+    public function destroy(EstacionServicio $estacione): JsonResponse
     {
-        $estacion->delete();
+        $estacione->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Estación eliminada correctamente',
-            'data'    => null,
-        ]);
+        return $this->successResponse(
+            null,
+            'Estación eliminada correctamente'
+        );
     }
 }

@@ -51,12 +51,16 @@ class EstacionServicio extends Model
         return [
             'latitud_wgs84' => 'decimal:8',
             'longitud_wgs84' => 'decimal:8',
-            'f_baja' => 'date',
             'activo' => 'boolean',
+            'f_baja' => 'date',
         ];
     }
 
-    public function empresa(): BelongsTo
+    /**
+     * Relación con la Empresa Cliente (Repsol o Cepsa).
+     * Asegura que el modelo Empresa existe o ajústalo al nombre real de tu modelo.
+     */
+    public function empresaCliente(): BelongsTo
     {
         return $this->belongsTo(Empresa::class, 'id_empresa_cliente', 'id_empresa');
     }
