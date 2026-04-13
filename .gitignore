@@ -64,22 +64,23 @@ Thumbs.db
 !/docs/05-SPRINTS/Sprint_*/Bitacora/FRONT/
 !/docs/05-SPRINTS/Sprint_*/Bitacora/General/
 
-# Bitacoras personales — TODAS integradas en versionDesplegada
+# Bitacoras personales — solo Pablo sube desde versionDesplegada
+# Cada dev sube la suya desde su propia rama.
 # Backend
-!**/Bitacora/BACK/alex_puma.md
-!**/Bitacora/BACK/carlos_puchol.md
-!**/Bitacora/BACK/chad_arzaga.md
-!**/Bitacora/BACK/eduardo_jimenez.md
-!**/Bitacora/BACK/miguel_taborda.md
+#!**/Bitacora/BACK/alex_puma.md
+#!**/Bitacora/BACK/carlos_puchol.md
+#!**/Bitacora/BACK/chad_arzaga.md
+#!**/Bitacora/BACK/eduardo_jimenez.md
+#!**/Bitacora/BACK/miguel_taborda.md
 
 # Frontend
-!**/Bitacora/FRONT/carlos_daniel_garrido.md
-!**/Bitacora/FRONT/daniel_bascope.md
-!**/Bitacora/FRONT/daniel_lopez.md
-!**/Bitacora/FRONT/jhon_sebastian_becerra.md
-!**/Bitacora/FRONT/jimmy_tasmonte.md
+#!**/Bitacora/FRONT/carlos_daniel_garrido.md
+#!**/Bitacora/FRONT/daniel_bascope.md
+#!**/Bitacora/FRONT/daniel_lopez.md
+#!**/Bitacora/FRONT/jhon_sebastian_becerra.md
+#!**/Bitacora/FRONT/jimmy_tasmonte.md
 
-# Coordinacion general
+# Coordinacion general (Pablo — unica bitacora que sube versionDesplegada)
 !**/Bitacora/General/pablo.md
 
 # Documentacion raiz de sprint
