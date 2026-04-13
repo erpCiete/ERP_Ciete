@@ -73,12 +73,7 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    {user.permission_slugs.includes('proyectos.ver') && (
-                        <Link href={route('proyectos.index')} className="ciete-btn-secondary">
-                            {t('dashboard.projects')}
-                        </Link>
-                    )}
-                    {user.role_slugs.includes('control_cierre') && (
+                    {user.role_slugs.includes('cierre') && (
                         <Link href={route('cierre.dashboard')} className="ciete-btn-secondary">
                             {t('nav.closurePanel')}
                         </Link>

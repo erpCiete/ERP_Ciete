@@ -6,7 +6,7 @@ const CIF_LETTER_ONLY_TYPES = new Set(['N', 'P', 'Q', 'R', 'S', 'W']);
 const SPANISH_POSTAL_CODE_PATTERN = /^(0[1-9]|[1-4]\d|5[0-2])\d{3}$/;
 const INTERNAL_STATION_CODE_PATTERN = /^[A-Z0-9]{2,10}(?:-[A-Z0-9]{2,10})*-\d{2,6}$/;
 const REPSOL_STATION_CODE_PATTERN = /^REPSOL-\d{4,6}$/;
-const CEPSA_STATION_CODE_PATTERN = /^CEPSA-\d{4,6}$/;
+const MOEVE_STATION_CODE_PATTERN = /^MOEVE-\d{4,6}$/;
 
 export function isBlank(value) {
     return String(value ?? '').trim() === '';
@@ -139,12 +139,12 @@ export function hasValidRepsolStationCode(value) {
     return REPSOL_STATION_CODE_PATTERN.test(normalizedValue);
 }
 
-export function hasValidCepsaStationCode(value) {
+export function hasValidMoeveStationCode(value) {
     const normalizedValue = normalizeStationCode(value);
 
     if (normalizedValue === '') {
         return true;
     }
 
-    return CEPSA_STATION_CODE_PATTERN.test(normalizedValue);
+    return MOEVE_STATION_CODE_PATTERN.test(normalizedValue);
 }

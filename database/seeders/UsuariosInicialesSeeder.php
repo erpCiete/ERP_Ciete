@@ -15,18 +15,12 @@ class UsuariosInicialesSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            ContextosClienteSeeder::class,
-            DatosBaseSeeder::class,
-            RolesSeeder::class,
-            PermisosSeeder::class,
-            RolPermisosSeeder::class,
-        ]);
-
         // Credenciales de arranque:
         // admin@ciete.es / Admin1234!
         // cesar@ciete.es / Cesar1234!
         // usuario@ciete.es / Usuario1234!
+        // moeve@ciete.es / Moeve1234!
+        // repsol@ciete.es / Repsol1234!
         $usuarios = [
             [
                 'nombre' => 'Administrador',
@@ -37,6 +31,7 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contexto' => 3,
                 'id_contacto_empresa' => 1,
                 'rol' => 'admin',
+                'contextos' => [1, 2, 3], // acceso a todos
             ],
             [
                 'nombre' => 'Cesar',
@@ -46,7 +41,8 @@ class UsuariosInicialesSeeder extends Seeder
                 'password' => 'Cesar1234!',
                 'id_contexto' => 3,
                 'id_contacto_empresa' => null,
-                'rol' => 'control_cierre',
+                'rol' => 'cierre',
+                'contextos' => [1, 2, 3],
             ],
             [
                 'nombre' => 'Usuario',
@@ -56,7 +52,30 @@ class UsuariosInicialesSeeder extends Seeder
                 'password' => 'Usuario1234!',
                 'id_contexto' => 3,
                 'id_contacto_empresa' => null,
-                'rol' => 'gestor',
+                'rol' => 'usuario',
+                'contextos' => [1, 2],
+            ],
+            [
+                'nombre' => 'Gestor',
+                'apellidos' => 'Moeve',
+                'nombre_usuario' => 'moeve',
+                'email' => 'moeve@ciete.es',
+                'password' => 'Moeve1234!',
+                'id_contexto' => 1,
+                'id_contacto_empresa' => null,
+                'rol' => 'gestor_moeve',
+                'contextos' => [1],
+            ],
+            [
+                'nombre' => 'Gestor',
+                'apellidos' => 'Repsol',
+                'nombre_usuario' => 'repsol',
+                'email' => 'repsol@ciete.es',
+                'password' => 'Repsol1234!',
+                'id_contexto' => 2,
+                'id_contacto_empresa' => null,
+                'rol' => 'gestor_repsol',
+                'contextos' => [2],
             ],
         ];
 
@@ -88,6 +107,17 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_rol' => $roleId,
                 'created_at' => now(),
             ]);
+
+            // Asignar contextos al usuario
+            DB::table('usuario_contextos')->where('id_usuario', $usuario->id_usuario)->delete();
+            foreach ($item['contextos'] as $idx => $ctxId) {
+                DB::table('usuario_contextos')->insert([
+                    'id_usuario' => $usuario->id_usuario,
+                    'id_contexto' => $ctxId,
+                    'es_contexto_principal' => $ctxId === $item['id_contexto'],
+                    'activo' => true,
+                ]);
+            }
         }
     }
 }

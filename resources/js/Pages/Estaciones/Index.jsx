@@ -168,7 +168,7 @@ export default function EstacionesIndex() {
                                 <tr>
                                     <th className="px-5 py-3">{t('estaciones.columns.station')}</th>
                                     <th className="px-5 py-3">{t('estaciones.columns.client')}</th>
-                                    <th className="px-5 py-3">{t('estaciones.columns.codes')}</th>
+                                    <th className="px-5 py-3">{t('estaciones.columns.code')}</th>
                                     <th className="px-5 py-3">{t('estaciones.columns.location')}</th>
                                     <th className="px-5 py-3">{t('estaciones.columns.status')}</th>
                                     {canManageEstaciones && <th className="px-5 py-3 text-right">{t('estaciones.columns.actions')}</th>}
@@ -216,7 +216,7 @@ export default function EstacionesIndex() {
                                         <td className="px-5 py-4 align-top">
                                             <div>
                                                 <p className="font-semibold text-text-main">{estacion.nombre}</p>
-                                                <p className="text-xs text-text-muted">{estacion.tipo || 'N/A'}</p>
+                                                <p className="text-xs text-text-muted">{estacion.estado || 'N/A'}</p>
                                             </div>
                                         </td>
                                         <td className="px-5 py-4 align-top">
@@ -226,11 +226,7 @@ export default function EstacionesIndex() {
                                             </div>
                                         </td>
                                         <td className="px-5 py-4 align-top text-text-muted">
-                                            <div className="space-y-1 text-xs">
-                                                <p>{t('estaciones.fields.internalCode')}: {estacion.codigo_estacion_interno || 'N/A'}</p>
-                                                <p>{t('estaciones.fields.repsolCode')}: {estacion.cod_repsol || 'N/A'}</p>
-                                                <p>{t('estaciones.fields.cepsaCode')}: {estacion.cod_cepsa || 'N/A'}</p>
-                                            </div>
+                                            <p className="text-sm font-medium">{estacion.codigo_estacion || 'N/A'}</p>
                                         </td>
                                         <td className="px-5 py-4 align-top text-text-muted">
                                             {[estacion.direccion, estacion.poblacion, estacion.provincia].filter(Boolean).join(', ') || 'N/A'}

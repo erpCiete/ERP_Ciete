@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n';
 import { Head, router } from '@inertiajs/react';
 import { useCallback, useDeferredValue, useEffect, useState } from 'react';
 
-const CONTEXT_OPTIONS = ['repsol', 'cepsa', 'bp', 'galp', 'otros'];
+const CONTEXT_OPTIONS = ['repsol', 'moeve', 'bp', 'galp', 'otros'];
 
 export default function ClientesIndex() {
     const { t } = useI18n();

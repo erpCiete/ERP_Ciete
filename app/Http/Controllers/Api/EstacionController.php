@@ -36,9 +36,7 @@ class EstacionController extends Controller
                 $query->where(function ($nested) use ($search): void {
                     $nested
                         ->where('nombre', 'like', "%{$search}%")
-                        ->orWhere('codigo_estacion_interno', 'like', "%{$search}%")
-                        ->orWhere('cod_repsol', 'like', "%{$search}%")
-                        ->orWhere('cod_cepsa', 'like', "%{$search}%")
+                        ->orWhere('codigo_estacion', 'like', "%{$search}%")
                         ->orWhere('direccion', 'like', "%{$search}%")
                         ->orWhere('poblacion', 'like', "%{$search}%")
                         ->orWhere('provincia', 'like', "%{$search}%")

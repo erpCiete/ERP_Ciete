@@ -27,7 +27,7 @@ class ClienteResource extends JsonResource
     {
         $value = strtolower(trim((string) $this->nombre_comercial));
 
-        foreach (['repsol', 'cepsa', 'bp', 'galp'] as $operator) {
+        foreach (['repsol', 'moeve', 'bp', 'galp'] as $operator) {
             if ($value !== '' && str_contains($value, $operator)) {
                 return $operator;
             }

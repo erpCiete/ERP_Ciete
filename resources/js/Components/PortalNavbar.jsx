@@ -11,7 +11,7 @@ export default function PortalNavbar({ user = null, canLogin = true }) {
         ? [
               { key: 'nav.home', href: route('index') },
               { key: 'nav.dashboard', href: route('dashboard') },
-              ...(user.role_slugs?.includes('control_cierre')
+              ...(user.role_slugs?.includes('cierre')
                   ? [{ key: 'nav.closurePanel', href: route('cierre.dashboard') }]
                   : []),
               ...(user.is_admin

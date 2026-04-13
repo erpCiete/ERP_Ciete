@@ -75,7 +75,7 @@ class LoginRequest extends FormRequest
             return;
         }
 
-        RateLimiter::hit($this->throttleKey());
+        RateLimiter::hit($this->throttleKey(), 300);
 
         throw ValidationException::withMessages([
             'email' => trans('auth.failed'),
@@ -84,6 +84,8 @@ class LoginRequest extends FormRequest
 
     /**
      * Ensure the login request is not rate limited.
+     *
+     * Allows 5 attempts per 5 minutes per email+IP combination.
      *
      * @throws ValidationException
      */

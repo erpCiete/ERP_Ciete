@@ -2,6 +2,7 @@ import { Activity, BookOpen, Globe, LifeBuoy, MessageSquare } from 'lucide-react
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n';
+import { router } from '@inertiajs/react';
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -147,6 +148,14 @@ export default function SupportDock({ shouldReduceMotion = false }) {
                                 onClick={() => {
                                     if (item.id === 'web') {
                                         window.location.assign(cieteWebsiteUrl);
+                                    } else if (item.id === 'messages') {
+                                        router.visit(route('messages.index'));
+                                    } else if (item.id === 'manual') {
+                                        router.visit(route('help'));
+                                    } else if (item.id === 'support') {
+                                        router.visit(route('support'));
+                                    } else if (item.id === 'status') {
+                                        router.visit(route('status'));
                                     }
                                 }}
                                 animate={{

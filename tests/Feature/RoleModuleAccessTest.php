@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Database\Seeders\UsuariosInicialesSeeder;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,9 +11,9 @@ class RoleModuleAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_shared_modules_are_available_to_admin_control_cierre_and_gestor(): void
+    public function test_shared_modules_are_available_to_admin_cierre_and_usuario(): void
     {
-        $this->seed(UsuariosInicialesSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $users = [
             User::query()->where('email', 'admin@ciete.es')->firstOrFail(),
@@ -22,10 +22,6 @@ class RoleModuleAccessTest extends TestCase
         ];
 
         foreach ($users as $user) {
-            $this->actingAs($user)
-                ->get('/proyectos')
-                ->assertOk();
-
             $this->actingAs($user)
                 ->get('/clientes')
                 ->assertOk();
@@ -36,9 +32,9 @@ class RoleModuleAccessTest extends TestCase
         }
     }
 
-    public function test_cierre_panel_is_only_available_to_control_cierre(): void
+    public function test_cierre_panel_is_only_available_to_cierre(): void
     {
-        $this->seed(UsuariosInicialesSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
         $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
@@ -59,7 +55,7 @@ class RoleModuleAccessTest extends TestCase
 
     public function test_admin_panel_is_only_available_to_admin(): void
     {
-        $this->seed(UsuariosInicialesSeeder::class);
+        $this->seed(DatabaseSeeder::class);
 
         $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
         $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();

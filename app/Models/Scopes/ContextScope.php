@@ -11,14 +11,16 @@ class ContextScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
-        $contextId = Auth::user()?->id_contexto;
+        $user = Auth::user();
 
-        if ($contextId === null) {
+        if ($user === null) {
             return;
         }
 
         $table = (string) $builder->getModel()->getTable();
 
-        $builder->where("{$table}.id_contexto", '=', $contextId);
+        $contextIds = $user->getAccessibleContextIds();
+
+        $builder->whereIn("{$table}.id_contexto", $contextIds);
     }
 }

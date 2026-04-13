@@ -47,6 +47,16 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# SQL dumps (root level)
+/*.sql
+
+# Local scripts (tooling personal, no production)
+/scripts/
+
+# Documentos originales Abaco (excels, PDFs, reuniones)
+# Son archivos fuente que NO deben subir al repositorio (pesados, binarios).
+/docs/Abaco/
+
 # Sprint documentation safety
 /docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
 !/docs/05-SPRINTS/Sprint_*/Bitacora/
@@ -54,30 +64,26 @@ Thumbs.db
 !/docs/05-SPRINTS/Sprint_*/Bitacora/FRONT/
 !/docs/05-SPRINTS/Sprint_*/Bitacora/General/
 
-# Bitacoras personales
-# Todas las bitacoras se ignoran por defecto.
-# Cada persona debe dejar activa SOLO su propia linea.
-# Si cambias de persona, comenta la linea actual y descomenta solo la tuya.
-
+# Bitacoras personales — TODAS integradas en versionDesplegada
 # Backend
-#!**/Bitacora/BACK/alex_puma.md
-#!**/Bitacora/BACK/carlos_puchol.md
-#!**/Bitacora/BACK/chad_arzaga.md
-#!**/Bitacora/BACK/eduardo_jimenez.md
-#!**/Bitacora/BACK/miguel_taborda.md
+!**/Bitacora/BACK/alex_puma.md
+!**/Bitacora/BACK/carlos_puchol.md
+!**/Bitacora/BACK/chad_arzaga.md
+!**/Bitacora/BACK/eduardo_jimenez.md
+!**/Bitacora/BACK/miguel_taborda.md
 
 # Frontend
-#!**/Bitacora/FRONT/carlos_daniel_garrido.md
-#!**/Bitacora/FRONT/daniel_bascope.md
-#!**/Bitacora/FRONT/daniel_lopez.md
-#!**/Bitacora/FRONT/jhon_sebastian_becerra.md
-#!**/Bitacora/FRONT/jimmy_tasmonte.md
+!**/Bitacora/FRONT/carlos_daniel_garrido.md
+!**/Bitacora/FRONT/daniel_bascope.md
+!**/Bitacora/FRONT/daniel_lopez.md
+!**/Bitacora/FRONT/jhon_sebastian_becerra.md
+!**/Bitacora/FRONT/jimmy_tasmonte.md
 
 # Coordinacion general
-# Configuracion actual: Pablo
 !**/Bitacora/General/pablo.md
 
 # Documentacion raiz de sprint
-# En la raiz de cada sprint solo se debe subir la vision general.
+# En la raiz de cada sprint solo se debe subir la vision general y el plan del sprint.
 /docs/05-SPRINTS/Sprint_*/*.md
 !/docs/05-SPRINTS/Sprint_*/00_Sprint_*_Vision_General.md
+!/docs/05-SPRINTS/Sprint_*/SPRINT_*_PLAN.md

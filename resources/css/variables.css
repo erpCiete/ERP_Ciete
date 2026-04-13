@@ -78,12 +78,12 @@
     --color-state-blocked-dot: var(--theme-state-blocked-dot);
 
     /* Clientes */
-    --theme-client-repsol: #cc0000;
-    --theme-client-cepsa: #f97316;
+    --theme-client-repsol: #f97316;
+    --theme-client-moeve: #0066cc;
     --theme-client-bp: #16a34a;
     --theme-client-galp: #0033ff;
     --color-client-repsol: var(--theme-client-repsol);
-    --color-client-cepsa: var(--theme-client-cepsa);
+    --color-client-moeve: var(--theme-client-moeve);
     --color-client-bp: var(--theme-client-bp);
     --color-client-galp: var(--theme-client-galp);
 
@@ -182,12 +182,12 @@
     --color-state-blocked-dot: var(--theme-state-blocked-dot);
 
     /* Clientes */
-    --theme-client-repsol: #cc0000;
-    --theme-client-cepsa: #f97316;
+    --theme-client-repsol: #f97316;
+    --theme-client-moeve: #3b82f6;
     --theme-client-bp: #16a34a;
     --theme-client-galp: #5b82ff;
     --color-client-repsol: var(--theme-client-repsol);
-    --color-client-cepsa: var(--theme-client-cepsa);
+    --color-client-moeve: var(--theme-client-moeve);
     --color-client-bp: var(--theme-client-bp);
     --color-client-galp: var(--theme-client-galp);
 

@@ -50,7 +50,7 @@ class ClientesEstacionesApiTest extends TestCase
         Empresa::query()->create([
             'id_contexto' => $otherContext->id_contexto,
             'nombre' => 'Cliente Oculto',
-            'nombre_comercial' => 'Cepsa Norte',
+            'nombre_comercial' => 'Moeve Norte',
             'cif' => $this->makeValidNif(12345679),
             'tipo_empresa' => 'cliente',
             'activo' => true,
@@ -126,7 +126,7 @@ class ClientesEstacionesApiTest extends TestCase
         ]);
         $estacion = $this->createEstacion($user, $cliente, [
             'nombre' => 'Estacion Visible',
-            'codigo_estacion_interno' => 'EST-001',
+            'codigo_estacion' => 'EST-001',
         ]);
 
         $this->actingAs($user)
@@ -147,15 +147,14 @@ class ClientesEstacionesApiTest extends TestCase
         $user = $this->createUserWithPermissions(['estaciones.gestionar']);
         $cliente = $this->createCliente($user, [
             'nombre' => 'Cliente Operador',
-            'nombre_comercial' => 'Cepsa Test',
+            'nombre_comercial' => 'Moeve Test',
             'cif' => $this->makeValidNif(32345678),
         ]);
 
         $createPayload = [
             'id_empresa_cliente' => $cliente->id_empresa,
             'nombre' => 'Estacion Nueva',
-            'codigo_estacion_interno' => 'EST-900',
-            'cod_repsol' => 'REPSOL-0900',
+            'codigo_estacion' => 'EST-900',
             'direccion' => 'Calle Mayor 1',
             'codigo_postal' => '41001',
             'poblacion' => 'Sevilla',
@@ -194,7 +193,7 @@ class ClientesEstacionesApiTest extends TestCase
         $user = $this->createUserWithPermissions(['estaciones.gestionar']);
         $cliente = $this->createCliente($user, [
             'nombre' => 'Cliente Codigos',
-            'nombre_comercial' => 'Cepsa Codigos',
+            'nombre_comercial' => 'Moeve Codigos',
             'cif' => $this->makeValidNif(42345678),
         ]);
 
@@ -202,15 +201,11 @@ class ClientesEstacionesApiTest extends TestCase
             ->postJson('/api/v1/estaciones', [
                 'id_empresa_cliente' => $cliente->id_empresa,
                 'nombre' => 'Estacion Invalida',
-                'codigo_estacion_interno' => 'estacion-xx',
-                'cod_repsol' => 'REP-900',
-                'cod_cepsa' => '12345',
+                'codigo_estacion' => 'EST-VALID',
                 'codigo_postal' => '99999',
             ])
             ->assertStatus(422)
-            ->assertJsonMissingPath('errors.codigo_estacion_interno')
-            ->assertJsonMissingPath('errors.cod_repsol')
-            ->assertJsonMissingPath('errors.cod_cepsa')
+            ->assertJsonMissingPath('errors.codigo_estacion')
             ->assertJsonPath('errors.codigo_postal.0', 'Introduce un codigo postal espanol valido.');
     }
 
@@ -265,7 +260,7 @@ class ClientesEstacionesApiTest extends TestCase
             'id_contexto' => $user->id_contexto,
             'id_empresa_cliente' => $cliente->id_empresa,
             'nombre' => 'Estacion ' . Str::random(6),
-            'codigo_estacion_interno' => 'EST-' . random_int(100, 99999),
+            'codigo_estacion' => 'EST-' . random_int(100, 99999),
             'codigo_postal' => '41001',
             'direccion' => 'Direccion ' . Str::random(6),
             'poblacion' => 'Madrid',

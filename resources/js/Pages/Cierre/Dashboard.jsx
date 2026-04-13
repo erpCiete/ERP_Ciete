@@ -54,8 +54,8 @@ const INITIAL_WORKS = [
     },
     {
         id: 2,
-        cliente: 'Cepsa',
-        estacion: 'Cepsa Arcos',
+        cliente: 'Moeve',
+        estacion: 'Moeve Arcos',
         numeroAviso: 'AV-24045',
         numeroPedido: 'PED-9040',
         tipoTrabajo: 'Actualización cuadro eléctrico',
@@ -132,8 +132,8 @@ const INITIAL_WORKS = [
     },
     {
         id: 4,
-        cliente: 'Cepsa',
-        estacion: 'Cepsa Seseña',
+        cliente: 'Moeve',
+        estacion: 'Moeve Seseña',
         numeroAviso: 'AV-24022',
         numeroPedido: 'PED-8991',
         tipoTrabajo: 'Mantenimiento preventivo',
@@ -210,8 +210,8 @@ const INITIAL_WORKS = [
     },
     {
         id: 6,
-        cliente: 'Cepsa',
-        estacion: 'Cepsa Albacete Centro',
+        cliente: 'Moeve',
+        estacion: 'Moeve Albacete Centro',
         numeroAviso: 'AV-24066',
         numeroPedido: 'PED-9078',
         tipoTrabajo: 'Actualización PCI',
@@ -807,7 +807,7 @@ export default function ClosureDashboard() {
                             >
                                 <option value="todos">{t('closureDashboard.filters.all')}</option>
                                 <option value="repsol">Repsol</option>
-                                <option value="cepsa">Cepsa</option>
+                                <option value="moeve">Moeve</option>
                             </select>
                         </label>
 

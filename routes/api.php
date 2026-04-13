@@ -3,11 +3,6 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EstacionController;
-use App\Http\Controllers\Api\FacturacionController;
-use App\Http\Controllers\Api\InformeController;
-use App\Http\Controllers\Api\LegalizacionController;
-use App\Http\Controllers\Api\ObraController;
-use App\Http\Controllers\Api\PedidoController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('web')->group(function () {
@@ -39,17 +34,5 @@ Route::prefix('v1')->middleware('web')->group(function () {
             Route::match(['put', 'patch'], 'estaciones/{estacion}', [EstacionController::class, 'update']);
             Route::delete('estaciones/{estacion}', [EstacionController::class, 'destroy']);
         });
-
-        Route::apiResource('obras', ObraController::class);
-        Route::patch('obras/{obra}/estado', [ObraController::class, 'updateEstado'])->name('obras.updateEstado');
-
-        Route::get('obras/{obra}/legalizaciones', [LegalizacionController::class, 'index'])
-            ->name('obras.legalizaciones.index');
-        Route::post('obras/{obra}/legalizaciones', [LegalizacionController::class, 'store'])
-            ->name('obras.legalizaciones.store');
-
-        Route::apiResource('pedidos', PedidoController::class);
-        Route::get('facturacion/pendientes', [FacturacionController::class, 'index'])->name('facturacion.pendientes');
-        Route::get('informes/obras', [InformeController::class, 'index'])->name('informes.obras');
     });
 });

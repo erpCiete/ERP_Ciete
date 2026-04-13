@@ -21,7 +21,7 @@ export default function TopNavbar({ header }) {
     const { t } = useI18n();
     const { auth } = usePage().props;
     const user = auth.user;
-    const hasClosureRole = user?.role_slugs?.includes('control_cierre');
+    const hasClosureRole = user?.role_slugs?.includes('cierre');
     const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
     const canViewEstaciones = user?.permission_slugs?.some((permission) =>
         ['estaciones.ver', 'estaciones.gestionar'].includes(permission)
@@ -78,16 +78,6 @@ export default function TopNavbar({ header }) {
             },
         ];
 
-        if (user?.permission_slugs?.includes('proyectos.ver')) {
-            generalItems.push({
-                id: 'projects',
-                key: 'nav.projects',
-                label: t('nav.projects'),
-                href: route('proyectos.index'),
-                active: route().current('proyectos.index'),
-            });
-        }
-
         if (user?.is_admin) {
             generalItems.push({
                 id: 'admin',
@@ -98,7 +88,7 @@ export default function TopNavbar({ header }) {
             });
         }
 
-        if (user?.role_slugs?.includes('control_cierre')) {
+        if (user?.role_slugs?.includes('cierre')) {
             generalItems.push({
                 id: 'closure',
                 key: 'nav.closurePanel',

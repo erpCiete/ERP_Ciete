@@ -16,7 +16,7 @@ const EMPTY_FORM = {
     activo: true,
 };
 
-const CONTEXT_OPTIONS = ['repsol', 'cepsa', 'bp', 'galp', 'otros'];
+const CONTEXT_OPTIONS = ['repsol', 'moeve', 'bp', 'galp', 'otros'];
 const CLIENTE_FIELDS = ['nombre', 'nombre_comercial', 'razon_social', 'cif', 'web', 'observaciones', 'activo'];
 
 function validateClienteForm(form, t) {

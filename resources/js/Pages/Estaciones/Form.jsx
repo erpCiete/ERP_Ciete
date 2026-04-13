@@ -15,10 +15,8 @@ import {
 const EMPTY_FORM = {
     id_empresa_cliente: '',
     nombre: '',
-    codigo_estacion_interno: '',
-    cod_repsol: '',
-    cod_cepsa: '',
-    tipo: '',
+    codigo_estacion: '',
+    estado: '',
     direccion: '',
     codigo_postal: '',
     poblacion: '',
@@ -31,10 +29,8 @@ const EMPTY_FORM = {
 const ESTACION_FIELDS = [
     'id_empresa_cliente',
     'nombre',
-    'codigo_estacion_interno',
-    'cod_repsol',
-    'cod_cepsa',
-    'tipo',
+    'codigo_estacion',
+    'estado',
     'direccion',
     'codigo_postal',
     'poblacion',
@@ -57,20 +53,14 @@ function validateEstacionForm(form, t) {
         nextErrors.nombre = t('common.validation.maxLength', { max: 180 });
     }
 
-    if (exceedsMaxLength(form.codigo_estacion_interno, 32)) {
-        nextErrors.codigo_estacion_interno = t('common.validation.maxLength', { max: 32 });
+    if (isBlank(form.codigo_estacion)) {
+        nextErrors.codigo_estacion = t('common.validation.required');
+    } else if (exceedsMaxLength(form.codigo_estacion, 80)) {
+        nextErrors.codigo_estacion = t('common.validation.maxLength', { max: 80 });
     }
 
-    if (exceedsMaxLength(form.cod_repsol, 13)) {
-        nextErrors.cod_repsol = t('common.validation.maxLength', { max: 13 });
-    }
-
-    if (exceedsMaxLength(form.cod_cepsa, 12)) {
-        nextErrors.cod_cepsa = t('common.validation.maxLength', { max: 12 });
-    }
-
-    if (exceedsMaxLength(form.tipo, 120)) {
-        nextErrors.tipo = t('common.validation.maxLength', { max: 120 });
+    if (exceedsMaxLength(form.estado, 50)) {
+        nextErrors.estado = t('common.validation.maxLength', { max: 50 });
     }
 
     if (exceedsMaxLength(form.direccion, 255)) {
@@ -102,10 +92,8 @@ function normalizeEstacion(estacion) {
     return {
         id_empresa_cliente: estacion?.id_empresa_cliente ? String(estacion.id_empresa_cliente) : '',
         nombre: estacion?.nombre ?? '',
-        codigo_estacion_interno: estacion?.codigo_estacion_interno ?? '',
-        cod_repsol: estacion?.cod_repsol ?? '',
-        cod_cepsa: estacion?.cod_cepsa ?? '',
-        tipo: estacion?.tipo ?? '',
+        codigo_estacion: estacion?.codigo_estacion ?? '',
+        estado: estacion?.estado ?? '',
         direccion: estacion?.direccion ?? '',
         codigo_postal: estacion?.codigo_postal ?? '',
         poblacion: estacion?.poblacion ?? '',
@@ -328,59 +316,33 @@ export default function EstacionesForm({ estacionId = null }) {
                         </label>
 
                         <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.internalCode')}</span>
+                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.stationCode')}</span>
                             <input
                                 type="text"
-                                value={form.codigo_estacion_interno}
-                                maxLength={32}
-                                onBlur={() => markFieldTouched('codigo_estacion_interno')}
-                                onChange={(event) => updateField('codigo_estacion_interno', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('codigo_estacion_interno'))}
+                                value={form.codigo_estacion}
+                                required
+                                maxLength={80}
+                                onBlur={() => markFieldTouched('codigo_estacion')}
+                                onChange={(event) => updateField('codigo_estacion', event.target.value)}
+                                aria-invalid={Boolean(getFieldError('codigo_estacion'))}
                                 className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
                             />
-                            <InputError message={getFieldError('codigo_estacion_interno')} className="mt-2" />
+                            <InputError message={getFieldError('codigo_estacion')} className="mt-2" />
                         </label>
 
                         <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.type')}</span>
+                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.status')}</span>
                             <input
                                 type="text"
-                                value={form.tipo}
-                                maxLength={120}
-                                onBlur={() => markFieldTouched('tipo')}
-                                onChange={(event) => updateField('tipo', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('tipo'))}
+                                value={form.estado}
+                                maxLength={50}
+                                onBlur={() => markFieldTouched('estado')}
+                                onChange={(event) => updateField('estado', event.target.value)}
+                                aria-invalid={Boolean(getFieldError('estado'))}
+                                placeholder={t('estaciones.fields.statusPlaceholder')}
                                 className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
                             />
-                            <InputError message={getFieldError('tipo')} className="mt-2" />
-                        </label>
-
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.repsolCode')}</span>
-                            <input
-                                type="text"
-                                value={form.cod_repsol}
-                                maxLength={13}
-                                onBlur={() => markFieldTouched('cod_repsol')}
-                                onChange={(event) => updateField('cod_repsol', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('cod_repsol'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('cod_repsol')} className="mt-2" />
-                        </label>
-
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.cepsaCode')}</span>
-                            <input
-                                type="text"
-                                value={form.cod_cepsa}
-                                maxLength={12}
-                                onBlur={() => markFieldTouched('cod_cepsa')}
-                                onChange={(event) => updateField('cod_cepsa', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('cod_cepsa'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('cod_cepsa')} className="mt-2" />
+                            <InputError message={getFieldError('estado')} className="mt-2" />
                         </label>
 
                         <label className="block md:col-span-2">

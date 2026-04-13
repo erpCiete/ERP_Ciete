@@ -7,7 +7,7 @@ import { Link, usePage } from '@inertiajs/react';
 export default function AuthenticatedLayout({ header, children, contentWidthClass = 'max-w-[1400px]' }) {
     const user = usePage().props.auth.user;
     const { t } = useI18n();
-    const hasClosureRole = user?.role_slugs?.includes('control_cierre');
+    const hasClosureRole = user?.role_slugs?.includes('cierre');
     const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
     const canViewEstaciones = user?.permission_slugs?.some((permission) =>
         ['estaciones.ver', 'estaciones.gestionar'].includes(permission)

@@ -69,7 +69,7 @@
     --color-state-blocked-dot: var(--theme-state-blocked-dot);
 
     --color-client-repsol: var(--theme-client-repsol);
-    --color-client-cepsa: var(--theme-client-cepsa);
+    --color-client-moeve: var(--theme-client-moeve);
     --color-client-bp: var(--theme-client-bp);
     --color-client-galp: var(--theme-client-galp);
 }

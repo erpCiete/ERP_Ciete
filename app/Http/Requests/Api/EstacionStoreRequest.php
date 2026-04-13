@@ -21,36 +21,20 @@ class EstacionStoreRequest extends BaseApiRequest
                 ),
             ],
             'nombre' => ['required', 'string', 'max:180'],
-            'codigo_estacion_interno' => [
-                'nullable',
+            'codigo_estacion' => [
+                'required',
                 'string',
-                'max:32',
-                Rule::unique('estaciones_servicio', 'codigo_estacion_interno')->where(
+                'max:80',
+                Rule::unique('estaciones_servicio', 'codigo_estacion')->where(
                     fn($query) => $query->where('id_contexto', $contextId)
                 ),
             ],
-            'cod_repsol' => [
-                'nullable',
-                'string',
-                'max:13',
-                Rule::unique('estaciones_servicio', 'cod_repsol')->where(
-                    fn($query) => $query->where('id_contexto', $contextId)
-                ),
-            ],
-            'cod_cepsa' => [
-                'nullable',
-                'string',
-                'max:12',
-                Rule::unique('estaciones_servicio', 'cod_cepsa')->where(
-                    fn($query) => $query->where('id_contexto', $contextId)
-                ),
-            ],
-            'tipo' => ['nullable', 'string', 'max:120'],
             'direccion' => ['nullable', 'string', 'max:255'],
             'codigo_postal' => ['nullable', 'string', 'size:5', new ValidSpanishPostalCode()],
             'poblacion' => ['nullable', 'string', 'max:120'],
             'provincia' => ['nullable', 'string', 'max:120'],
             'pais' => ['nullable', 'string', 'max:120'],
+            'estado' => ['nullable', 'string', 'max:50'],
             'observaciones' => ['nullable', 'string'],
             'activo' => ['sometimes', 'boolean'],
         ];
@@ -61,10 +45,7 @@ class EstacionStoreRequest extends BaseApiRequest
         $this->merge([
             'id_empresa_cliente' => $this->input('id_empresa_cliente'),
             'nombre' => $this->normalizeNullableString($this->input('nombre')),
-            'codigo_estacion_interno' => $this->normalizeNullableString($this->input('codigo_estacion_interno')),
-            'cod_repsol' => $this->normalizeNullableString($this->input('cod_repsol')),
-            'cod_cepsa' => $this->normalizeNullableString($this->input('cod_cepsa')),
-            'tipo' => $this->normalizeNullableString($this->input('tipo')),
+            'codigo_estacion' => $this->normalizeNullableString($this->input('codigo_estacion')),
             'direccion' => $this->normalizeNullableString($this->input('direccion')),
             'codigo_postal' => ValidSpanishPostalCode::normalize($this->input('codigo_postal')),
             'poblacion' => $this->normalizeNullableString($this->input('poblacion')),

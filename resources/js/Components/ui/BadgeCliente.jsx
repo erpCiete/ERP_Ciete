@@ -1,6 +1,6 @@
 const KNOWN_CLIENTS = {
     repsol: 'Repsol',
-    cepsa: 'Cepsa',
+    moeve: 'Moeve',
     bp: 'BP',
     galp: 'Galp',
 };

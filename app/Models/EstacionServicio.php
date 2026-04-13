@@ -6,6 +6,7 @@ use App\Traits\HasContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class EstacionServicio extends Model
 {
@@ -19,12 +20,8 @@ class EstacionServicio extends Model
     protected $fillable = [
         'id_contexto',
         'id_empresa_cliente',
+        'codigo_estacion',
         'nombre',
-        'codigo_estacion_interno',
-        'cod_repsol',
-        'cod_cepsa',
-        'concesion',
-        'tipo',
         'direccion',
         'codigo_postal',
         'poblacion',
@@ -32,18 +29,8 @@ class EstacionServicio extends Model
         'pais',
         'latitud_wgs84',
         'longitud_wgs84',
-        'delegacion',
-        'delegado',
-        'tecnico_gestion',
-        'telefono_tecnico_gestion',
-        'email_tecnico_gestion',
-        'responsable_es_gestor',
-        'telefono_movil',
-        'telefono_oficina',
-        'sede',
-        'tipo_mantenimiento',
+        'estado',
         'f_baja',
-        'razon_modificacion',
         'observaciones',
         'activo',
     ];
@@ -66,5 +53,15 @@ class EstacionServicio extends Model
     public function empresa(): BelongsTo
     {
         return $this->belongsTo(Empresa::class, 'id_empresa_cliente', 'id_empresa');
+    }
+
+    public function moeveExt(): HasOne
+    {
+        return $this->hasOne(EstacionMoeveExt::class, 'id_estacion_servicio', 'id_estacion_servicio');
+    }
+
+    public function repsolExt(): HasOne
+    {
+        return $this->hasOne(EstacionRepsolExt::class, 'id_estacion_servicio', 'id_estacion_servicio');
     }
 }

@@ -65,4 +65,44 @@ class HasContextTest extends TestCase
 
         $this->assertSame([$empresaVisible->id_empresa], $ids);
     }
+
+    public function test_user_with_multiple_contexts_sees_data_from_all_assigned_contexts(): void
+    {
+        $contexto1 = ContextoCliente::factory()->create();
+        $contexto2 = ContextoCliente::factory()->create();
+        $contexto3 = ContextoCliente::factory()->create();
+
+        $user = User::factory()->create([
+            'id_contexto' => $contexto1->id_contexto,
+        ]);
+
+        // Assign contexts 1 and 2 via pivot
+        $user->contextos()->attach([
+            $contexto1->id_contexto => ['es_contexto_principal' => true, 'activo' => true],
+            $contexto2->id_contexto => ['es_contexto_principal' => false, 'activo' => true],
+        ]);
+
+        $empresa1 = Empresa::withoutGlobalScopes()->create([
+            'id_contexto' => $contexto1->id_contexto,
+            'nombre' => 'Empresa contexto 1',
+            'tipo_empresa' => 'cliente',
+        ]);
+        $empresa2 = Empresa::withoutGlobalScopes()->create([
+            'id_contexto' => $contexto2->id_contexto,
+            'nombre' => 'Empresa contexto 2',
+            'tipo_empresa' => 'cliente',
+        ]);
+        Empresa::withoutGlobalScopes()->create([
+            'id_contexto' => $contexto3->id_contexto,
+            'nombre' => 'Empresa contexto 3 oculta',
+            'tipo_empresa' => 'cliente',
+        ]);
+
+        $this->actingAs($user);
+
+        $ids = Empresa::query()->pluck('id_empresa')->sort()->values()->all();
+
+        $expected = collect([$empresa1->id_empresa, $empresa2->id_empresa])->sort()->values()->all();
+        $this->assertSame($expected, $ids);
+    }
 }

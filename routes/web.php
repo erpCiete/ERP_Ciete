@@ -1,31 +1,29 @@
 <?php
 
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\MaintenanceController;
+use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StatusController;
+use App\Http\Controllers\SupportController;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
+use App\Models\MensajeInterno;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
-Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->middleware('auth')->name('index');
-
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'maintenance'])->group(function () {
+    Route::get('/', function () {
+        return Inertia::render('Welcome');
+    })->name('index');
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-
-    Route::middleware('permission:proyectos.ver')->group(function () {
-        Route::get('/proyectos', function () {
-            return Inertia::render('Proyectos/Index');
-        })->name('proyectos.index');
-    });
 
     Route::middleware('permission:empresas_contactos.gestionar')->group(function () {
         Route::get('/clientes', function () {
@@ -61,13 +59,40 @@ Route::middleware('auth')->group(function () {
         })->name('estaciones.edit');
     });
 
+    Route::get('/ayuda', function () {
+        return Inertia::render('Help');
+    })->name('help');
+
+    Route::get('/estado', [StatusController::class, 'index'])->name('status');
+
+    Route::get('/mensajes', [MessageController::class, 'index'])->name('messages.index');
+    Route::post('/mensajes', [MessageController::class, 'store'])->name('messages.store');
+    Route::get('/mensajes/{mensaje}', [MessageController::class, 'show'])
+        ->where('mensaje', '[0-9]+')
+        ->name('messages.show');
+    Route::post('/mensajes/{mensaje}/leer', [MessageController::class, 'markRead'])
+        ->where('mensaje', '[0-9]+')
+        ->name('messages.read');
+    Route::post('/mensajes/{mensaje}/archivar', [MessageController::class, 'archive'])
+        ->where('mensaje', '[0-9]+')
+        ->name('messages.archive');
+
+    Route::get('/soporte', [SupportController::class, 'index'])->name('support');
+    Route::post('/soporte', [SupportController::class, 'send'])->name('support.send');
+
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin', function () {
             return Inertia::render('Admin/Dashboard');
         })->name('admin.dashboard');
+
+        Route::post('/admin/maintenance', [MaintenanceController::class, 'toggle'])
+            ->name('admin.maintenance.toggle');
+
+        Route::post('/mensajes/broadcast', [MessageController::class, 'broadcast'])
+            ->name('messages.broadcast');
     });
 
-    Route::middleware('role:control_cierre')->group(function () {
+    Route::middleware('role:cierre')->group(function () {
         Route::get('/cierre', function () {
             return Inertia::render('Cierre/Dashboard');
         })->name('cierre.dashboard');

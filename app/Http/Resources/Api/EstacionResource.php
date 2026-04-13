@@ -15,15 +15,13 @@ class EstacionResource extends JsonResource
             'id' => $this->id_estacion_servicio,
             'id_empresa_cliente' => $this->id_empresa_cliente,
             'nombre' => $this->nombre,
-            'codigo_estacion_interno' => $this->codigo_estacion_interno,
-            'cod_repsol' => $this->cod_repsol,
-            'cod_cepsa' => $this->cod_cepsa,
-            'tipo' => $this->tipo,
+            'codigo_estacion' => $this->codigo_estacion,
             'direccion' => $this->direccion,
             'codigo_postal' => $this->codigo_postal,
             'poblacion' => $this->poblacion,
             'provincia' => $this->provincia,
             'pais' => $this->pais,
+            'estado' => $this->estado,
             'observaciones' => $this->observaciones,
             'activo' => (bool) $this->activo,
             'empresa' => $empresa ? [
@@ -40,7 +38,7 @@ class EstacionResource extends JsonResource
     {
         $normalized = strtolower(trim($value));
 
-        foreach (['repsol', 'cepsa', 'bp', 'galp'] as $operator) {
+        foreach (['repsol', 'moeve', 'bp', 'galp'] as $operator) {
             if ($normalized !== '' && str_contains($normalized, $operator)) {
                 return $operator;
             }
