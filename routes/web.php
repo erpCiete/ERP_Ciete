@@ -6,6 +6,8 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\TrabajoController;
+use App\Http\Controllers\ImportacionController;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
 use App\Models\MensajeInterno;
@@ -107,6 +109,36 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             ])->toResponse(request())->setStatusCode($status);
         })->name('preview.error');
     }
+
+    //Modulo de Trabajos (Obras) - SPRINT 03
+    Route::middleware('permission:trabajos.ver')->group(function () {
+        // Rutas de visualización y formularios
+        Route::get('/trabajos', [TrabajoController::class, 'index'])->name('trabajos.index');
+        Route::get('/trabajos/crear', [TrabajoController::class, 'create'])->name('trabajos.create');
+        Route::get('/trabajos/{trabajo}/editar', [TrabajoController::class, 'edit'])->name('trabajos.edit');
+        
+        // Rutas de acción (mutaciones) con permisos específicos
+        Route::post('/trabajos', [TrabajoController::class, 'store'])
+            ->name('trabajos.store')
+            ->middleware('permission:trabajos.crear');
+            
+        Route::put('/trabajos/{trabajo}', [TrabajoController::class, 'update'])
+            ->name('trabajos.update')
+            ->middleware('permission:trabajos.editar');
+            
+        Route::delete('/trabajos/{trabajo}', [TrabajoController::class, 'destroy'])
+            ->name('trabajos.destroy')
+            ->middleware('permission:trabajos.eliminar');
+    });
+
+    //Modulo de Importaciones - SPRINT 03
+    Route::middleware('permission:importaciones.gestionar')->group(function () {
+        Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
+        Route::get('/importaciones/subir', [ImportacionController::class, 'create'])->name('importaciones.create');
+        Route::post('/importaciones/procesar', [ImportacionController::class, 'store'])->name('importaciones.store');
+        Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');
+        Route::post('/importaciones/confirmar/{id}', [ImportacionController::class, 'confirm'])->name('importaciones.confirm');
+    });
 });
 
 require __DIR__ . '/auth.php';
