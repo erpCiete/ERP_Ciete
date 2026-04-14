@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EstacionController;
+use App\Http\Controllers\Api\TrabajoController as TrabajoApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('web')->group(function () {
@@ -34,5 +35,11 @@ Route::prefix('v1')->middleware('web')->group(function () {
             Route::match(['put', 'patch'], 'estaciones/{estacion}', [EstacionController::class, 'update']);
             Route::delete('estaciones/{estacion}', [EstacionController::class, 'destroy']);
         });
+    });
+
+    Route::middleware('auth')->group(function () {
+        // API de Trabajos (Obras) - Acceso controlado por permiso de ver
+        Route::apiResource('trabajos', TrabajoApiController::class)
+            ->middleware('permission:trabajos.ver');
     });
 });
