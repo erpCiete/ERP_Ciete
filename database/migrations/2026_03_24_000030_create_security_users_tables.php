@@ -22,6 +22,7 @@ return new class extends Migration
             $table->dateTime('email_verificado_at')->nullable();
             $table->string('password', 255);
             $table->string('telefono', 30)->nullable();
+            $table->string('avatar_key', 32)->default('avatar-ciete-logo');
             $table->rememberToken();
             $table->dateTime('ultimo_login_at')->nullable();
             $table->boolean('activo')->default(true);
@@ -94,6 +95,30 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
         });
+
+        Schema::create('usuario_contextos', function (Blueprint $table) {
+            $table->bigIncrements('id_usuario_contexto');
+            $table->unsignedBigInteger('id_usuario');
+            $table->unsignedBigInteger('id_contexto');
+            $table->boolean('es_contexto_principal')->default(false);
+            $table->boolean('activo')->default(true);
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->unique(['id_usuario', 'id_contexto'], 'uq_usuario_contexto');
+            $table->index('id_contexto', 'idx_usuario_contextos_contexto');
+
+            $table->foreign('id_usuario', 'fk_usuario_contextos_usuario')
+                ->references('id_usuario')
+                ->on('usuarios')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+
+            $table->foreign('id_contexto', 'fk_usuario_contextos_contexto')
+                ->references('id_contexto')
+                ->on('contextos_cliente')
+                ->cascadeOnUpdate()
+                ->restrictOnDelete();
+        });
     }
 
     /**
@@ -101,6 +126,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('usuario_contextos');
         Schema::dropIfExists('sesiones_login');
         Schema::dropIfExists('usuario_roles');
         Schema::dropIfExists('usuarios');

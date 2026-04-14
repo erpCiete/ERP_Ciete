@@ -2,7 +2,7 @@
   <img src="public/favicon.svg" alt="ERP Ciete Logo" width="108">
 </p>
 
-<h1 align="center">ERP Ciete - Plataforma de gestion para ingenieria v1.1.0</h1>
+<h1 align="center">ERP Ciete - Plataforma de gestion para ingenieria v1.2.0</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 12">
@@ -31,12 +31,12 @@ Este repositorio contiene el estado funcional del MVP (Sprint 1), listo para evo
     - Inicio y cierre de sesion.
     - Recuperacion y restablecimiento de password.
 - Control de acceso:
-    - Middleware por rol (`role:admin`).
-    - Middleware por permiso (`permission:proyectos.ver`).
+    - Middleware por rol (`role:admin`, `role:cierre`).
+    - Middleware por permiso (`permission:trabajos.ver`).
 - Espacios de trabajo:
     - Dashboard general de usuario autenticado.
     - Dashboard administrativo (`/admin`) para perfil administrador.
-    - Vista de modulo de proyectos (`/proyectos`) con permiso dedicado.
+    - Panel de cierre (`/cierre`) para control de trabajos cerrados.
 - Perfil de usuario:
     - Edicion de perfil.
     - Cambio de password.
@@ -88,8 +88,8 @@ php artisan key:generate
 
 ```
 
-
 comandos utiles:
+
 ```bash
 php artisan config:clear
 php artisan cache:clear

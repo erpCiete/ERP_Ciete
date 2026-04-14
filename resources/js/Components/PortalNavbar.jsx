@@ -11,7 +11,7 @@ export default function PortalNavbar({ user = null, canLogin = true }) {
         ? [
               { key: 'nav.home', href: route('index') },
               { key: 'nav.dashboard', href: route('dashboard') },
-              ...(user.role_slugs?.includes('control_cierre')
+              ...(user.role_slugs?.includes('cierre')
                   ? [{ key: 'nav.closurePanel', href: route('cierre.dashboard') }]
                   : []),
               ...(user.is_admin
@@ -28,7 +28,7 @@ export default function PortalNavbar({ user = null, canLogin = true }) {
                 <Link href={route('index')} className="flex items-center gap-2.5">
                     {/* Logo compartido: evitar variantes distintas en navbar. */}
                     <CieteMark className="w-8" />
-                    <span className="text-sm font-semibold tracking-wide text-[var(--ciete-slate)]">
+                    <span className="text-sm font-semibold tracking-wide text-(--ciete-slate)">
                         {t('nav.brand')}
                     </span>
                 </Link>

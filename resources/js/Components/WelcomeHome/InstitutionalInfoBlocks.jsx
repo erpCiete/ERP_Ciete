@@ -15,7 +15,7 @@ function InstitutionalCard({ title, items, shouldReduceMotion = false }) {
             transition={{ duration: 0.2, ease: 'easeOut' }}
             className="mx-auto w-full rounded-xl border border-border bg-surface p-6 shadow-sm"
         >
-            <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--ciete-red)]">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-(--ciete-red)">
                 {title}
             </h3>
             <ul className="mt-4 space-y-3">
@@ -23,7 +23,7 @@ function InstitutionalCard({ title, items, shouldReduceMotion = false }) {
                     <li key={item} className="flex items-start gap-3">
                         <span
                             aria-hidden
-                            className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-[var(--ciete-red)]"
+                            className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-(--ciete-red)"
                         />
                         <span className="text-sm leading-relaxed text-text-muted">{item}</span>
                     </li>

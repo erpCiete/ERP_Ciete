@@ -14,7 +14,7 @@ class PasswordConfirmationTest extends TestCase
     {
         $this->assertFalse(Route::has('password.confirm'));
 
-        $this->get('/confirm-password')->assertNotFound();
-        $this->post('/confirm-password', ['password' => 'password'])->assertNotFound();
+        $this->get('/confirm-password')->assertRedirect('/login');
+        $this->post('/confirm-password', ['password' => 'password'])->assertStatus(405);
     }
 }

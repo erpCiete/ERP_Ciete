@@ -1,6 +1,7 @@
 import {
     createContext,
     createElement,
+    startTransition,
     useCallback,
     useContext,
     useEffect,
@@ -8,13 +9,15 @@ import {
     useState,
 } from 'react';
 import { router } from '@inertiajs/react';
-import en from '@/i18n/locales/en';
-import es from '@/i18n/locales/es';
 
-const dictionaries = { es, en };
 const DEFAULT_LOCALE = 'es';
+const localeLoaders = {
+    es: () => import('./locales/es').then((module) => module.default),
+    en: () => import('./locales/en').then((module) => module.default),
+};
+const loadedDictionaries = new Map();
 
-export const SUPPORTED_LOCALES = Object.keys(dictionaries);
+export const SUPPORTED_LOCALES = Object.keys(localeLoaders);
 
 const I18nContext = createContext(undefined);
 
@@ -52,32 +55,118 @@ const resolveLocale = (value, supportedLocales) => {
     return supportedLocales[0] ?? DEFAULT_LOCALE;
 };
 
+async function loadDictionary(locale) {
+    const normalizedLocale = SUPPORTED_LOCALES.includes(locale) ? locale : DEFAULT_LOCALE;
+
+    if (loadedDictionaries.has(normalizedLocale)) {
+        return loadedDictionaries.get(normalizedLocale);
+    }
+
+    const dictionary = await localeLoaders[normalizedLocale]();
+    loadedDictionaries.set(normalizedLocale, dictionary);
+
+    return dictionary;
+}
+
+function readLoadedDictionaries(locales) {
+    return locales.reduce((catalog, locale) => {
+        const dictionary = loadedDictionaries.get(locale);
+
+        if (dictionary) {
+            catalog[locale] = dictionary;
+        }
+
+        return catalog;
+    }, {});
+}
+
+export async function preloadLocaleDictionaries(locales) {
+    const normalizedLocales = resolveSupportedLocales(locales);
+    const requiredLocales = Array.from(new Set([DEFAULT_LOCALE, ...normalizedLocales]));
+
+    await Promise.all(requiredLocales.map((locale) => loadDictionary(locale)));
+}
+
 export function I18nProvider({ children, initialLocale, supportedLocales }) {
     const availableLocales = useMemo(() => resolveSupportedLocales(supportedLocales), [supportedLocales]);
-    const [locale, setLocale] = useState(() => resolveLocale(initialLocale, availableLocales));
+    const resolvedInitialLocale = useMemo(
+        () => resolveLocale(initialLocale, availableLocales),
+        [initialLocale, availableLocales],
+    );
+    const [locale, setLocale] = useState(resolvedInitialLocale);
+    const [dictionaries, setDictionaries] = useState(() =>
+        readLoadedDictionaries([DEFAULT_LOCALE, resolvedInitialLocale]),
+    );
 
-    useEffect(() => {
-        setLocale((currentLocale) => {
-            const nextLocale = resolveLocale(initialLocale, availableLocales);
-            return currentLocale === nextLocale ? currentLocale : nextLocale;
+    const syncLoadedDictionaries = useCallback((locales) => {
+        setDictionaries((currentDictionaries) => {
+            const nextDictionaries = readLoadedDictionaries(locales);
+            let changed = false;
+            const mergedDictionaries = { ...currentDictionaries };
+
+            for (const [localeKey, dictionary] of Object.entries(nextDictionaries)) {
+                if (mergedDictionaries[localeKey] === dictionary) {
+                    continue;
+                }
+
+                mergedDictionaries[localeKey] = dictionary;
+                changed = true;
+            }
+
+            return changed ? mergedDictionaries : currentDictionaries;
         });
-    }, [initialLocale, availableLocales]);
+    }, []);
 
     useEffect(() => {
+        let cancelled = false;
+
+        preloadLocaleDictionaries([resolvedInitialLocale]).then(() => {
+            if (cancelled) {
+                return;
+            }
+
+            startTransition(() => {
+                syncLoadedDictionaries([DEFAULT_LOCALE, resolvedInitialLocale]);
+                setLocale((currentLocale) =>
+                    currentLocale === resolvedInitialLocale ? currentLocale : resolvedInitialLocale,
+                );
+            });
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [resolvedInitialLocale, syncLoadedDictionaries]);
+
+    useEffect(() => {
+        let cancelled = false;
+
         const removeListener = router.on('success', (event) => {
             const pageProps = event?.detail?.page?.props;
             const pageLocales = resolveSupportedLocales(pageProps?.locale?.supported ?? availableLocales);
             const nextLocale = resolveLocale(pageProps?.locale?.current, pageLocales);
 
-            setLocale((currentLocale) => (currentLocale === nextLocale ? currentLocale : nextLocale));
+            preloadLocaleDictionaries([nextLocale]).then(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                startTransition(() => {
+                    syncLoadedDictionaries([DEFAULT_LOCALE, nextLocale]);
+                    setLocale((currentLocale) =>
+                        currentLocale === nextLocale ? currentLocale : nextLocale,
+                    );
+                });
+            });
         });
 
         return () => {
+            cancelled = true;
             if (typeof removeListener === 'function') {
                 removeListener();
             }
         };
-    }, [availableLocales]);
+    }, [availableLocales, syncLoadedDictionaries]);
 
     useEffect(() => {
         if (typeof document !== 'undefined') {
@@ -121,7 +210,7 @@ export function I18nProvider({ children, initialLocale, supportedLocales }) {
 
             return interpolate(template, params);
         },
-        [locale],
+        [dictionaries, locale],
     );
 
     const value = useMemo(

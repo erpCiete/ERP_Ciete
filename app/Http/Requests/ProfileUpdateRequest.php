@@ -31,6 +31,11 @@ class ProfileUpdateRequest extends FormRequest
                 'string',
                 Rule::in($allowedAvatarKeys),
             ],
+            'email_recuperacion' => [
+                'nullable',
+                'email',
+                'max:180',
+            ],
         ];
     }
 }

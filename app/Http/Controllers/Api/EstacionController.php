@@ -3,79 +3,95 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Api\EstacionStoreRequest;
+use App\Http\Requests\Api\EstacionUpdateRequest;
+use App\Http\Resources\Api\EstacionResource;
+use App\Models\EstacionServicio;
+use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class EstacionController extends Controller
 {
-    /**
-     * Listado de estaciones.
-     * Filtrar SIEMPRE por el contexto del cliente (Repsol/Cepsa).
-     */
+    use ApiResponse;
+
     public function index(Request $request): JsonResponse
     {
-        //TODO: Extraer el cliente_id del contexto del usuario autenticado o del request
-        // $clienteId = $request->user()->contexto_cliente_id;
+        $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
+        $search = trim((string) $request->input('search', ''));
+        $clienteId = $request->integer('cliente_id');
+        $operador = trim((string) $request->input('operador', ''));
 
-        //TODO: Aplicar paginación y retornar respuesta estándar (BE-06)
-        return response()->json([
-            'success' => true,
-            'message' => 'Listado de estaciones obtenido (Stub)',
-            'data'    => [],
-            'meta'    => [
-                'timestamp' => now()->toIso8601String()
-            ]
-        ]);
-        
+        $estaciones = EstacionServicio::query()
+            ->with('empresa')
+            ->when($clienteId > 0, function ($query) use ($clienteId): void {
+                $query->where('id_empresa_cliente', $clienteId);
+            })
+            ->when($operador !== '', function ($query) use ($operador): void {
+                $query->whereHas('empresa', function ($empresaQuery) use ($operador): void {
+                    $empresaQuery->where('nombre_comercial', 'like', "%{$operador}%");
+                });
+            })
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($nested) use ($search): void {
+                    $nested
+                        ->where('nombre', 'like', "%{$search}%")
+                        ->orWhere('codigo_estacion', 'like', "%{$search}%")
+                        ->orWhere('direccion', 'like', "%{$search}%")
+                        ->orWhere('poblacion', 'like', "%{$search}%")
+                        ->orWhere('provincia', 'like', "%{$search}%")
+                        ->orWhereHas('empresa', function ($empresaQuery) use ($search): void {
+                            $empresaQuery
+                                ->where('nombre', 'like', "%{$search}%")
+                                ->orWhere('nombre_comercial', 'like', "%{$search}%")
+                                ->orWhere('razon_social', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('nombre')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return $this->paginatedResponse(
+            $estaciones,
+            EstacionResource::collection($estaciones->getCollection())->resolve(),
+            'Listado de estaciones obtenido',
+        );
     }
 
-    /**
-     * Crear una nueva estación.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(EstacionStoreRequest $request): JsonResponse
     {
-        // TODO: Validar permisos (RBAC) para creación.
-        // TODO: Validar payload y asegurar que la estación se asigna al cliente correcto.
+        $estacion = EstacionServicio::create($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Estación creada exitosamente (Stub)',
-            'data'    => null,
-        ], 201);
+        return $this->successResponse(
+            (new EstacionResource($estacion->load('empresa')))->resolve(),
+            'Estacion creada correctamente',
+            201,
+        );
     }
 
-    /**
-     * Detalle de una estación específica.
-     */
-    public function show(string $id): JsonResponse
+    public function show(EstacionServicio $estacion): JsonResponse
     {
-        // TODO: Validar que el ID pertenece al cliente del usuario en sesión.
-        return response()->json([
-            'success' => true,
-            'message' => 'Detalle de la estación (Stub)',
-            'data'    => ['id' => $id],
-        ]);
+        return $this->successResponse(
+            (new EstacionResource($estacion->load('empresa')))->resolve(),
+            'Detalle de estacion obtenido',
+        );
     }
 
-    /**
-     * Actualizar una estación existente.
-     */
-    public function update(Request $request, string $id): JsonResponse
+    public function update(EstacionUpdateRequest $request, EstacionServicio $estacion): JsonResponse
     {
-        // TODO: Validar permisos (RBAC) para actualización.
-        // TODO: Validar payload y asegurar que la estación se asigna al cliente correcto.
-        return response()->json([
-            'success' => true,
-            'message' => 'Estación actualizada exitosamente (Stub)',
-            'data'    => ['id' => $id],
-        ]);
+        $estacion->update($request->validated());
+
+        return $this->successResponse(
+            (new EstacionResource($estacion->fresh()->load('empresa')))->resolve(),
+            'Estacion actualizada correctamente',
+        );
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(EstacionServicio $estacion): JsonResponse
     {
-        //
+        $estacion->delete();
+
+        return $this->successResponse(null, 'Estacion eliminada correctamente');
     }
 }

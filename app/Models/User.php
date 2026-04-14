@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -30,6 +32,7 @@ class User extends Authenticatable
         'apellidos',
         'nombre_usuario',
         'email',
+        'email_recuperacion',
         'email_verificado_at',
         'password',
         'telefono',
@@ -102,6 +105,16 @@ class User extends Authenticatable
         return $this->hasOne(ContextoCliente::class, 'id_contexto', 'id_contexto');
     }
 
+    public function contextos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            ContextoCliente::class,
+            'usuario_contextos',
+            'id_usuario',
+            'id_contexto'
+        )->withPivot('es_contexto_principal', 'activo');
+    }
+
 
     public function permissions()
     {
@@ -167,7 +180,7 @@ class User extends Authenticatable
     {
         return $this->roles()
             ->pluck('slug')
-            ->map(fn (string $slug): string => $slug)
+            ->map(fn(string $slug): string => $slug)
             ->values()
             ->all();
     }
@@ -176,8 +189,44 @@ class User extends Authenticatable
     {
         return $this->permissions()
             ->pluck('permisos.slug')
-            ->map(fn (string $slug): string => $slug)
+            ->map(fn(string $slug): string => $slug)
             ->values()
             ->all();
+    }
+
+    public function getAccessibleContextIds(): array
+    {
+        $ids = $this->contextos()
+            ->wherePivot('activo', true)
+            ->pluck('contextos_cliente.id_contexto')
+            ->all();
+
+        return $ids !== [] ? $ids : [$this->id_contexto];
+    }
+
+    /**
+     * Send the password reset notification in Spanish.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
+
+    /**
+     * Route notifications to the recovery email if set, otherwise the main email.
+     */
+    public function routeNotificationForMail($notification = null): string
+    {
+        return $this->email_recuperacion ?: $this->email;
+    }
+
+    public function mensajesRecibidos(): HasMany
+    {
+        return $this->hasMany(MensajeInterno::class, 'id_destinatario', 'id_usuario');
+    }
+
+    public function mensajesEnviados(): HasMany
+    {
+        return $this->hasMany(MensajeInterno::class, 'id_remitente', 'id_usuario');
     }
 }

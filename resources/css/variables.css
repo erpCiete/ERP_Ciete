@@ -1,127 +1,207 @@
 :root {
-  /* Colores de marca */
-  --color-primary: #E8000D;
-  --color-primary-strong: #FE0000;
-  --color-primary-hover: #c40009;
-  --color-primary-light: #fff0f0;
-  --color-secondary: #2d3748;
-  --color-accent: #0033FF;
-  --color-accent-light: #eff2ff;
-  --color-brand-black: #1a1a1a;
+    /* Colores de marca */
+    --theme-primary: #e8000d;
+    --theme-primary-strong: #fe0000;
+    --theme-primary-hover: #c40009;
+    --theme-primary-light: #fff0f0;
+    --theme-secondary: #2d3748;
+    --theme-accent: #0033ff;
+    --theme-accent-light: #eff2ff;
+    --theme-brand-black: #1a1a1a;
+    --color-primary: var(--theme-primary);
+    --color-primary-strong: var(--theme-primary-strong);
+    --color-primary-hover: var(--theme-primary-hover);
+    --color-primary-light: var(--theme-primary-light);
+    --color-secondary: var(--theme-secondary);
+    --color-accent: var(--theme-accent);
+    --color-accent-light: var(--theme-accent-light);
+    --color-brand-black: var(--theme-brand-black);
 
-  /* Neutros */
-  --color-bg-page: #f4f5f7;
-  --color-surface: #ffffff;
-  --color-surface-2: #f8f9fb;
-  --color-border: #e3e6ea;
-  --color-border-heavy: #c9cdd4;
-  --color-text-main: #1a1a1a;
-  --color-text-muted: #5c6370;
-  --color-text-hint: #9aa0aa;
+    /* Neutros */
+    --color-bg-page: #f4f5f7;
+    --theme-surface: #ffffff;
+    --theme-surface-2: #f8f9fb;
+    --theme-border: #e3e6ea;
+    --theme-border-heavy: #c9cdd4;
+    --theme-text-main: #1a1a1a;
+    --theme-text-muted: #5c6370;
+    --theme-text-hint: #9aa0aa;
+    --color-surface: var(--theme-surface);
+    --color-surface-2: var(--theme-surface-2);
+    --color-border: var(--theme-border);
+    --color-border-heavy: var(--theme-border-heavy);
+    --color-text-main: var(--theme-text-main);
+    --color-text-muted: var(--theme-text-muted);
+    --color-text-hint: var(--theme-text-hint);
 
-  /* Estados semánticos */
-  --color-state-pending-bg: #fffbeb;
-  --color-state-pending-text: #92400e;
-  --color-state-pending-dot: #f59e0b;
-  
-  --color-state-progress-bg: #eff2ff;
-  --color-state-progress-text: #1e3a8a;
-  --color-state-progress-dot: #0033FF;
-  
-  --color-state-done-bg: #f0fdf4;
-  --color-state-done-text: #14532d;
-  --color-state-done-dot: #22c55e;
-  
-  --color-state-billed-bg: #f5f3ff;
-  --color-state-billed-text: #4c1d95;
-  --color-state-billed-dot: #8b5cf6;
-  
-  --color-state-closed-bg: #f9fafb;
-  --color-state-closed-text: #374151;
-  --color-state-closed-dot: #6b7280;
-  
-  --color-state-blocked-bg: #fff0f0;
-  --color-state-blocked-text: #7f1d1d;
-  --color-state-blocked-dot: #E8000D;
+    /* Estados semánticos */
+    --theme-state-pending-bg: #fffbeb;
+    --theme-state-pending-text: #92400e;
+    --theme-state-pending-dot: #f59e0b;
+    --color-state-pending-bg: var(--theme-state-pending-bg);
+    --color-state-pending-text: var(--theme-state-pending-text);
+    --color-state-pending-dot: var(--theme-state-pending-dot);
 
-  /* Clientes */
-  --color-client-repsol: #cc0000;
-  --color-client-cepsa: #f97316;
-  --color-client-bp: #16a34a;
-  --color-client-galp: #0033FF;
+    --theme-state-progress-bg: #eff2ff;
+    --theme-state-progress-text: #1e3a8a;
+    --theme-state-progress-dot: #0033ff;
+    --color-state-progress-bg: var(--theme-state-progress-bg);
+    --color-state-progress-text: var(--theme-state-progress-text);
+    --color-state-progress-dot: var(--theme-state-progress-dot);
 
-  /* Prueba inicio - tokens visuales */
-  --prueba-tech-line: rgba(21, 28, 38, 0.06);
-  --prueba-tech-line-soft: rgba(21, 28, 38, 0.05);
-  --prueba-tech-node: rgba(232, 0, 13, 0.22);
-  --prueba-tech-accent: rgba(232, 0, 13, 0.13);
-  --prueba-tech-neutral: rgba(21, 28, 38, 0.08);
-  --prueba-hero-shine: rgba(255, 255, 255, 0.95);
-  --prueba-logo-shell-border: var(--color-border);
-  --prueba-logo-shell-start: rgba(255, 255, 255, 0.97);
-  --prueba-logo-shell-end: rgba(248, 249, 251, 0.9);
-  --prueba-logo-red: #FE0000;
-  --prueba-logo-blue: #003EFF;
-  --prueba-logo-overlap: #0A0A0A;
+    --theme-state-done-bg: #f0fdf4;
+    --theme-state-done-text: #14532d;
+    --theme-state-done-dot: #22c55e;
+    --color-state-done-bg: var(--theme-state-done-bg);
+    --color-state-done-text: var(--theme-state-done-text);
+    --color-state-done-dot: var(--theme-state-done-dot);
+
+    --theme-state-billed-bg: #f5f3ff;
+    --theme-state-billed-text: #4c1d95;
+    --theme-state-billed-dot: #8b5cf6;
+    --color-state-billed-bg: var(--theme-state-billed-bg);
+    --color-state-billed-text: var(--theme-state-billed-text);
+    --color-state-billed-dot: var(--theme-state-billed-dot);
+
+    --theme-state-closed-bg: #f9fafb;
+    --theme-state-closed-text: #374151;
+    --theme-state-closed-dot: #6b7280;
+    --color-state-closed-bg: var(--theme-state-closed-bg);
+    --color-state-closed-text: var(--theme-state-closed-text);
+    --color-state-closed-dot: var(--theme-state-closed-dot);
+
+    --theme-state-blocked-bg: #fff0f0;
+    --theme-state-blocked-text: #7f1d1d;
+    --theme-state-blocked-dot: #e8000d;
+    --color-state-blocked-bg: var(--theme-state-blocked-bg);
+    --color-state-blocked-text: var(--theme-state-blocked-text);
+    --color-state-blocked-dot: var(--theme-state-blocked-dot);
+
+    /* Clientes */
+    --theme-client-repsol: #f97316;
+    --theme-client-moeve: #0066cc;
+    --theme-client-bp: #16a34a;
+    --theme-client-galp: #0033ff;
+    --color-client-repsol: var(--theme-client-repsol);
+    --color-client-moeve: var(--theme-client-moeve);
+    --color-client-bp: var(--theme-client-bp);
+    --color-client-galp: var(--theme-client-galp);
+
+    /* Prueba inicio - tokens visuales */
+    --prueba-tech-line: rgba(21, 28, 38, 0.06);
+    --prueba-tech-line-soft: rgba(21, 28, 38, 0.05);
+    --prueba-tech-node: rgba(232, 0, 13, 0.22);
+    --prueba-tech-accent: rgba(232, 0, 13, 0.13);
+    --prueba-tech-neutral: rgba(21, 28, 38, 0.08);
+    --prueba-hero-shine: rgba(255, 255, 255, 0.95);
+    --prueba-logo-shell-border: var(--color-border);
+    --prueba-logo-shell-start: rgba(255, 255, 255, 0.97);
+    --prueba-logo-shell-end: rgba(248, 249, 251, 0.9);
+    --prueba-logo-red: #fe0000;
+    --prueba-logo-blue: #003eff;
+    --prueba-logo-overlap: #0a0a0a;
 }
 
-[data-theme='dark'] {
-  /* Colores de marca */
-  --color-primary: #E8000D;
-  --color-primary-strong: #FE0000;
-  --color-primary-hover: #c40009;
-  --color-primary-light: #33151a;
-  --color-secondary: #111827;
-  --color-accent: #5b82ff;
-  --color-accent-light: #1a284e;
-  --color-brand-black: #f5f7ff;
+[data-theme="dark"] {
+    /* Colores de marca */
+    --theme-primary: #e8000d;
+    --theme-primary-strong: #fe0000;
+    --theme-primary-hover: #c40009;
+    --theme-primary-light: #33151a;
+    --theme-secondary: #111827;
+    --theme-accent: #5b82ff;
+    --theme-accent-light: #1a284e;
+    --theme-brand-black: #f5f7ff;
+    --color-primary: var(--theme-primary);
+    --color-primary-strong: var(--theme-primary-strong);
+    --color-primary-hover: var(--theme-primary-hover);
+    --color-primary-light: var(--theme-primary-light);
+    --color-secondary: var(--theme-secondary);
+    --color-accent: var(--theme-accent);
+    --color-accent-light: var(--theme-accent-light);
+    --color-brand-black: var(--theme-brand-black);
 
-  /* Neutros */
-  --color-bg-page: #0f1115;
-  --color-surface: #161a22;
-  --color-surface-2: #1d2330;
-  --color-border: #2d3647;
-  --color-border-heavy: #465066;
-  --color-text-main: #f2f5fb;
-  --color-text-muted: #b5bfd1;
-  --color-text-hint: #8d97aa;
+    /* Neutros */
+    --color-bg-page: #0f1115;
+    --theme-surface: #161a22;
+    --theme-surface-2: #1d2330;
+    --theme-border: #2d3647;
+    --theme-border-heavy: #465066;
+    --theme-text-main: #f2f5fb;
+    --theme-text-muted: #b5bfd1;
+    --theme-text-hint: #8d97aa;
+    --color-surface: var(--theme-surface);
+    --color-surface-2: var(--theme-surface-2);
+    --color-border: var(--theme-border);
+    --color-border-heavy: var(--theme-border-heavy);
+    --color-text-main: var(--theme-text-main);
+    --color-text-muted: var(--theme-text-muted);
+    --color-text-hint: var(--theme-text-hint);
 
-  /* Estados semanticos */
-  --color-state-pending-bg: #3a2d11;
-  --color-state-pending-text: #facc6b;
-  --color-state-pending-dot: #f59e0b;
+    /* Estados semanticos */
+    --theme-state-pending-bg: #3a2d11;
+    --theme-state-pending-text: #facc6b;
+    --theme-state-pending-dot: #f59e0b;
+    --color-state-pending-bg: var(--theme-state-pending-bg);
+    --color-state-pending-text: var(--theme-state-pending-text);
+    --color-state-pending-dot: var(--theme-state-pending-dot);
 
-  --color-state-progress-bg: #1d2d52;
-  --color-state-progress-text: #b8cbff;
-  --color-state-progress-dot: #5b82ff;
+    --theme-state-progress-bg: #1d2d52;
+    --theme-state-progress-text: #b8cbff;
+    --theme-state-progress-dot: #5b82ff;
+    --color-state-progress-bg: var(--theme-state-progress-bg);
+    --color-state-progress-text: var(--theme-state-progress-text);
+    --color-state-progress-dot: var(--theme-state-progress-dot);
 
-  --color-state-done-bg: #15321e;
-  --color-state-done-text: #86efac;
-  --color-state-done-dot: #22c55e;
+    --theme-state-done-bg: #15321e;
+    --theme-state-done-text: #86efac;
+    --theme-state-done-dot: #22c55e;
+    --color-state-done-bg: var(--theme-state-done-bg);
+    --color-state-done-text: var(--theme-state-done-text);
+    --color-state-done-dot: var(--theme-state-done-dot);
 
-  --color-state-billed-bg: #2b1c45;
-  --color-state-billed-text: #c7b6ff;
-  --color-state-billed-dot: #9f84ff;
+    --theme-state-billed-bg: #2b1c45;
+    --theme-state-billed-text: #c7b6ff;
+    --theme-state-billed-dot: #9f84ff;
+    --color-state-billed-bg: var(--theme-state-billed-bg);
+    --color-state-billed-text: var(--theme-state-billed-text);
+    --color-state-billed-dot: var(--theme-state-billed-dot);
 
-  --color-state-closed-bg: #252b36;
-  --color-state-closed-text: #d4dae6;
-  --color-state-closed-dot: #94a3b8;
+    --theme-state-closed-bg: #252b36;
+    --theme-state-closed-text: #d4dae6;
+    --theme-state-closed-dot: #94a3b8;
+    --color-state-closed-bg: var(--theme-state-closed-bg);
+    --color-state-closed-text: var(--theme-state-closed-text);
+    --color-state-closed-dot: var(--theme-state-closed-dot);
 
-  --color-state-blocked-bg: #401b1f;
-  --color-state-blocked-text: #f8a5aa;
-  --color-state-blocked-dot: #ff4d57;
+    --theme-state-blocked-bg: #401b1f;
+    --theme-state-blocked-text: #f8a5aa;
+    --theme-state-blocked-dot: #ff4d57;
+    --color-state-blocked-bg: var(--theme-state-blocked-bg);
+    --color-state-blocked-text: var(--theme-state-blocked-text);
+    --color-state-blocked-dot: var(--theme-state-blocked-dot);
 
-  /* Prueba inicio - tokens visuales */
-  --prueba-tech-line: rgba(148, 163, 184, 0.18);
-  --prueba-tech-line-soft: rgba(148, 163, 184, 0.14);
-  --prueba-tech-node: rgba(248, 113, 113, 0.26);
-  --prueba-tech-accent: rgba(248, 113, 113, 0.25);
-  --prueba-tech-neutral: rgba(148, 163, 184, 0.18);
-  --prueba-hero-shine: rgba(203, 213, 225, 0.2);
-  --prueba-logo-shell-border: var(--color-border-heavy);
-  --prueba-logo-shell-start: rgba(34, 40, 52, 0.96);
-  --prueba-logo-shell-end: rgba(19, 23, 31, 0.9);
-  --prueba-logo-red: #FE0000;
-  --prueba-logo-blue: #5b82ff;
-  --prueba-logo-overlap: #0A0A0A;
+    /* Clientes */
+    --theme-client-repsol: #f97316;
+    --theme-client-moeve: #3b82f6;
+    --theme-client-bp: #16a34a;
+    --theme-client-galp: #5b82ff;
+    --color-client-repsol: var(--theme-client-repsol);
+    --color-client-moeve: var(--theme-client-moeve);
+    --color-client-bp: var(--theme-client-bp);
+    --color-client-galp: var(--theme-client-galp);
+
+    /* Prueba inicio - tokens visuales */
+    --prueba-tech-line: rgba(148, 163, 184, 0.18);
+    --prueba-tech-line-soft: rgba(148, 163, 184, 0.14);
+    --prueba-tech-node: rgba(248, 113, 113, 0.26);
+    --prueba-tech-accent: rgba(248, 113, 113, 0.25);
+    --prueba-tech-neutral: rgba(148, 163, 184, 0.18);
+    --prueba-hero-shine: rgba(203, 213, 225, 0.2);
+    --prueba-logo-shell-border: var(--color-border-heavy);
+    --prueba-logo-shell-start: rgba(34, 40, 52, 0.96);
+    --prueba-logo-shell-end: rgba(19, 23, 31, 0.9);
+    --prueba-logo-red: #fe0000;
+    --prueba-logo-blue: #5b82ff;
+    --prueba-logo-overlap: #0a0a0a;
 }

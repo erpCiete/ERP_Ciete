@@ -3,6 +3,7 @@ import { useI18n } from '@/i18n';
 import { Head } from '@inertiajs/react';
 import SelectProfileAvatarForm from './Partials/SelectProfileAvatarForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
+import UpdateRecoveryEmailForm from './Partials/UpdateRecoveryEmailForm';
 
 export default function Edit({ avatarCatalog = [] }) {
     const { t } = useI18n();
@@ -16,6 +17,10 @@ export default function Edit({ avatarCatalog = [] }) {
             <div className="mx-auto max-w-4xl space-y-6">
                 <div className="ciete-panel">
                     <SelectProfileAvatarForm className="max-w-4xl" avatarCatalog={avatarCatalog} />
+                </div>
+
+                <div className="ciete-panel">
+                    <UpdateRecoveryEmailForm className="max-w-xl" />
                 </div>
 
                 <div className="ciete-panel">

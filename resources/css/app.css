@@ -1,7 +1,136 @@
-@import './variables.css';
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "./variables.css" layer(base);
+@import "tailwindcss";
+
+@plugin '@tailwindcss/forms';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans:
+        Inter, "Segoe UI", Roboto, Arial, sans-serif, ui-sans-serif, system-ui,
+        sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+        "Noto Color Emoji";
+    --font-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-focus: 0 0 0 3px rgba(232, 0, 13, 0.12);
+}
+
+@theme inline {
+    --color-primary: var(--theme-primary);
+    --color-primary-strong: var(--theme-primary-strong);
+    --color-primary-hover: var(--theme-primary-hover);
+    --color-primary-light: var(--theme-primary-light);
+
+    --color-secondary: var(--theme-secondary);
+
+    --color-accent: var(--theme-accent);
+    --color-accent-light: var(--theme-accent-light);
+
+    --color-brand-black: var(--theme-brand-black);
+
+    --color-page: var(--color-bg-page);
+
+    --color-surface-2: var(--theme-surface-2);
+    --color-surface: var(--theme-surface);
+
+    --color-border: var(--theme-border);
+    --color-border-heavy: var(--theme-border-heavy);
+
+    --color-text-main: var(--theme-text-main);
+    --color-text-muted: var(--theme-text-muted);
+    --color-text-hint: var(--theme-text-hint);
+
+    --color-state-pending-bg: var(--theme-state-pending-bg);
+    --color-state-pending-text: var(--theme-state-pending-text);
+    --color-state-pending-dot: var(--theme-state-pending-dot);
+
+    --color-state-progress-bg: var(--theme-state-progress-bg);
+    --color-state-progress-text: var(--theme-state-progress-text);
+    --color-state-progress-dot: var(--theme-state-progress-dot);
+
+    --color-state-done-bg: var(--theme-state-done-bg);
+    --color-state-done-text: var(--theme-state-done-text);
+    --color-state-done-dot: var(--theme-state-done-dot);
+
+    --color-state-billed-bg: var(--theme-state-billed-bg);
+    --color-state-billed-text: var(--theme-state-billed-text);
+    --color-state-billed-dot: var(--theme-state-billed-dot);
+
+    --color-state-closed-bg: var(--theme-state-closed-bg);
+    --color-state-closed-text: var(--theme-state-closed-text);
+    --color-state-closed-dot: var(--theme-state-closed-dot);
+
+    --color-state-blocked-bg: var(--theme-state-blocked-bg);
+    --color-state-blocked-text: var(--theme-state-blocked-text);
+    --color-state-blocked-dot: var(--theme-state-blocked-dot);
+
+    --color-client-repsol: var(--theme-client-repsol);
+    --color-client-moeve: var(--theme-client-moeve);
+    --color-client-bp: var(--theme-client-bp);
+    --color-client-galp: var(--theme-client-galp);
+}
+
+/*
+  Tailwind CSS v4 changes a few preflight defaults compared to v3.
+  These compatibility styles keep the existing UI behavior and appearance
+  until every component opts into the new defaults explicitly.
+*/
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
+
+    button:not(:disabled),
+    [role="button"]:not([aria-disabled="true"]) {
+        cursor: pointer;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        color: color-mix(in oklab, var(--color-text-hint) 70%, transparent);
+        opacity: 1;
+    }
+}
+
+@utility ciete-shell {
+    @apply relative min-h-screen bg-page text-text-main;
+}
+
+@utility ciete-watermark {
+    @apply pointer-events-none absolute left-1/2 top-1/2 w-[min(72vw,800px)] -translate-x-1/2 -translate-y-1/2 opacity-[0.08];
+}
+
+@utility ciete-nav {
+    @apply relative z-10 border-b border-border bg-surface;
+}
+
+@utility ciete-footer {
+    @apply relative z-10 border-t border-border py-3 text-center text-xs text-text-muted;
+}
+
+@utility ciete-link {
+    @apply text-sm font-medium text-text-muted transition hover:text-(--ciete-red);
+}
+
+@utility ciete-btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) focus:outline-hidden focus:ring-2 focus:ring-(--ciete-red) focus:ring-offset-2;
+}
+
+@utility ciete-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-text-main transition hover:bg-surface-2 focus:outline-hidden focus:ring-2 focus:ring-border focus:ring-offset-2;
+}
+
+@utility ciete-panel {
+    @apply rounded-xl border border-border bg-surface p-6 shadow-sm;
+}
 
 @layer base {
     :root {
@@ -13,39 +142,5 @@
     html,
     body {
         @apply bg-page text-text-main font-sans;
-    }
-}
-
-@layer components {
-    .ciete-shell {
-        @apply relative min-h-screen bg-page text-text-main;
-    }
-
-    .ciete-watermark {
-        @apply pointer-events-none absolute left-1/2 top-1/2 w-[min(72vw,800px)] -translate-x-1/2 -translate-y-1/2 opacity-[0.08];
-    }
-
-    .ciete-nav {
-        @apply relative z-10 border-b border-border bg-surface;
-    }
-
-    .ciete-footer {
-        @apply relative z-10 border-t border-border py-3 text-center text-xs text-text-muted;
-    }
-
-    .ciete-link {
-        @apply text-sm font-medium text-text-muted transition hover:text-[var(--ciete-red)];
-    }
-
-    .ciete-btn-primary {
-        @apply inline-flex items-center justify-center rounded-md bg-[var(--ciete-red)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--ciete-red-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--ciete-red)] focus:ring-offset-2;
-    }
-
-    .ciete-btn-secondary {
-        @apply inline-flex items-center justify-center rounded-md border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-text-main transition hover:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-border focus:ring-offset-2;
-    }
-
-    .ciete-panel {
-        @apply rounded-xl border border-border bg-surface p-6 shadow-sm;
     }
 }

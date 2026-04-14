@@ -54,8 +54,8 @@ const INITIAL_WORKS = [
     },
     {
         id: 2,
-        cliente: 'Cepsa',
-        estacion: 'Cepsa Arcos',
+        cliente: 'Moeve',
+        estacion: 'Moeve Arcos',
         numeroAviso: 'AV-24045',
         numeroPedido: 'PED-9040',
         tipoTrabajo: 'Actualización cuadro eléctrico',
@@ -132,8 +132,8 @@ const INITIAL_WORKS = [
     },
     {
         id: 4,
-        cliente: 'Cepsa',
-        estacion: 'Cepsa Seseña',
+        cliente: 'Moeve',
+        estacion: 'Moeve Seseña',
         numeroAviso: 'AV-24022',
         numeroPedido: 'PED-8991',
         tipoTrabajo: 'Mantenimiento preventivo',
@@ -210,8 +210,8 @@ const INITIAL_WORKS = [
     },
     {
         id: 6,
-        cliente: 'Cepsa',
-        estacion: 'Cepsa Albacete Centro',
+        cliente: 'Moeve',
+        estacion: 'Moeve Albacete Centro',
         numeroAviso: 'AV-24066',
         numeroPedido: 'PED-9078',
         tipoTrabajo: 'Actualización PCI',
@@ -780,7 +780,7 @@ export default function ClosureDashboard() {
         <AuthenticatedLayout
             contentWidthClass="max-w-none"
             header={
-                <h2 className="text-xl font-semibold leading-tight text-[var(--ciete-slate)]">
+                <h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">
                     {t('closureDashboard.header')}
                 </h2>
             }
@@ -797,7 +797,7 @@ export default function ClosureDashboard() {
                         <p className="mt-1 text-sm text-text-muted">{t('closureDashboard.subtitle')}</p>
                     </div>
 
-                    <div className="grid w-full gap-2 rounded-[12px] border border-border bg-surface p-3 shadow-sm lg:w-auto lg:min-w-[30rem] lg:grid-cols-2">
+                    <div className="grid w-full gap-2 rounded-[12px] border border-border bg-surface p-3 shadow-sm lg:w-auto lg:min-w-120 lg:grid-cols-2">
                         <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
                             {t('closureDashboard.filters.context')}
                             <select
@@ -807,7 +807,7 @@ export default function ClosureDashboard() {
                             >
                                 <option value="todos">{t('closureDashboard.filters.all')}</option>
                                 <option value="repsol">Repsol</option>
-                                <option value="cepsa">Cepsa</option>
+                                <option value="moeve">Moeve</option>
                             </select>
                         </label>
 
@@ -922,7 +922,7 @@ export default function ClosureDashboard() {
                                     type="button"
                                     onClick={handleMassClose}
                                     disabled={!canMassClose}
-                                    className="col-span-2 inline-flex items-center justify-center rounded-md bg-[var(--ciete-red)] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-[var(--ciete-red-dark)] disabled:cursor-not-allowed disabled:opacity-50 lg:col-span-1"
+                                    className="col-span-2 inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50 lg:col-span-1"
                                 >
                                     {t('closureDashboard.actions.massClose')}
                                 </button>
@@ -948,7 +948,7 @@ export default function ClosureDashboard() {
                                                     checked={selectedIds.includes(work.id)}
                                                     onChange={() => handleSelectRow(work.id)}
                                                     aria-label={`${t('closureDashboard.main.selectOne')} ${work.numeroAviso}`}
-                                                    className="rounded border-border"
+                                                    className="rounded-sm border-border"
                                                 />
                                                 {work.numeroAviso}
                                             </label>
@@ -987,7 +987,7 @@ export default function ClosureDashboard() {
                                                     closureStatus === 'bloqueado'
                                                         ? 'bg-state-blocked-bg text-state-blocked-text hover:opacity-90'
                                                         : closureStatus === 'listo'
-                                                          ? 'bg-[var(--ciete-red)] text-white hover:bg-[var(--ciete-red-dark)]'
+                                                          ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
                                                           : closureStatus === 'cerrado'
                                                             ? 'bg-accent/10 text-accent hover:bg-accent/20'
                                                             : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
@@ -1019,23 +1019,23 @@ export default function ClosureDashboard() {
                                             checked={allVisibleSelected}
                                             onChange={handleSelectAllVisible}
                                             aria-label={t('closureDashboard.main.selectVisible')}
-                                            className="rounded border-border"
+                                            className="rounded-sm border-border"
                                         />
                                     </th>
                                     <th className="w-16 px-2 py-2">{t('closureDashboard.columns.client')}</th>
-                                    <th className="w-[10rem] px-2 py-2">{t('closureDashboard.columns.station')}</th>
-                                    <th className="w-[5.5rem] px-2 py-2">{t('closureDashboard.columns.noticeNumber')}</th>
-                                    <th className="w-[5.5rem] px-2 py-2">{t('closureDashboard.columns.orderNumber')}</th>
-                                    <th className="w-[9rem] px-2 py-2">{t('closureDashboard.columns.workType')}</th>
-                                    <th className="w-[8rem] px-2 py-2">{t('closureDashboard.columns.owner')}</th>
-                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.assignmentDate')}</th>
-                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.realEndDate')}</th>
-                                    <th className="w-[7rem] px-2 py-2">{t('closureDashboard.columns.orderAmount')}</th>
-                                    <th className="w-[7rem] px-2 py-2">{t('closureDashboard.columns.workAmount')}</th>
-                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.legalization')}</th>
-                                    <th className="w-[7rem] px-2 py-2">{t('closureDashboard.columns.closureStatus')}</th>
-                                    <th className="w-[5.5rem] px-2 py-2">{t('closureDashboard.columns.incidents')}</th>
-                                    <th className="w-[6.5rem] px-2 py-2">{t('closureDashboard.columns.action')}</th>
+                                    <th className="w-40 px-2 py-2">{t('closureDashboard.columns.station')}</th>
+                                    <th className="w-22 px-2 py-2">{t('closureDashboard.columns.noticeNumber')}</th>
+                                    <th className="w-22 px-2 py-2">{t('closureDashboard.columns.orderNumber')}</th>
+                                    <th className="w-36 px-2 py-2">{t('closureDashboard.columns.workType')}</th>
+                                    <th className="w-32 px-2 py-2">{t('closureDashboard.columns.owner')}</th>
+                                    <th className="w-26 px-2 py-2">{t('closureDashboard.columns.assignmentDate')}</th>
+                                    <th className="w-26 px-2 py-2">{t('closureDashboard.columns.realEndDate')}</th>
+                                    <th className="w-28 px-2 py-2">{t('closureDashboard.columns.orderAmount')}</th>
+                                    <th className="w-28 px-2 py-2">{t('closureDashboard.columns.workAmount')}</th>
+                                    <th className="w-26 px-2 py-2">{t('closureDashboard.columns.legalization')}</th>
+                                    <th className="w-28 px-2 py-2">{t('closureDashboard.columns.closureStatus')}</th>
+                                    <th className="w-22 px-2 py-2">{t('closureDashboard.columns.incidents')}</th>
+                                    <th className="w-26 px-2 py-2">{t('closureDashboard.columns.action')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -1057,15 +1057,15 @@ export default function ClosureDashboard() {
                                                         checked={selectedIds.includes(work.id)}
                                                         onChange={() => handleSelectRow(work.id)}
                                                         aria-label={`${t('closureDashboard.main.selectOne')} ${work.numeroAviso}`}
-                                                        className="rounded border-border"
+                                                        className="rounded-sm border-border"
                                                     />
                                                 </td>
-                                                <td className="px-2 py-2.5 text-[11px] font-semibold leading-tight text-text-main break-words">{work.cliente}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.estacion}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.numeroAviso}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.numeroPedido}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.tipoTrabajo}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main break-words">{work.responsable}</td>
+                                                <td className="px-2 py-2.5 text-[11px] font-semibold leading-tight text-text-main wrap-break-word">{work.cliente}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.estacion}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.numeroAviso}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.numeroPedido}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.tipoTrabajo}</td>
+                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.responsable}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDateValue(work.fechaEncargo)}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDateValue(work.fechaFinReal)}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">{formatMoneyValue(work.importePedido)}</td>
@@ -1095,7 +1095,7 @@ export default function ClosureDashboard() {
                                                                 closureStatus === 'bloqueado'
                                                                     ? 'bg-state-blocked-bg text-state-blocked-text hover:opacity-90'
                                                                     : closureStatus === 'listo'
-                                                                      ? 'bg-[var(--ciete-red)] text-white hover:bg-[var(--ciete-red-dark)]'
+                                                                      ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
                                                                       : closureStatus === 'cerrado'
                                                                         ? 'bg-accent/10 text-accent hover:bg-accent/20'
                                                                         : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
@@ -1209,7 +1209,7 @@ export default function ClosureDashboard() {
                                                 key={step}
                                                 className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${
                                                     isCurrent
-                                                        ? 'bg-[var(--ciete-red)] text-white'
+                                                        ? 'bg-(--ciete-red) text-white'
                                                         : isDone
                                                           ? 'bg-state-done-bg text-state-done-text'
                                                           : 'bg-surface text-text-hint'
@@ -1333,7 +1333,7 @@ export default function ClosureDashboard() {
                                                 setActiveWorkId(null);
                                             }}
                                             disabled={detailStatus !== 'listo'}
-                                            className="inline-flex items-center rounded-md bg-[var(--ciete-red)] px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-[var(--ciete-red-dark)] disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="inline-flex items-center rounded-md bg-(--ciete-red) px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {t('closureDashboard.actions.closeWork')}
                                         </button>

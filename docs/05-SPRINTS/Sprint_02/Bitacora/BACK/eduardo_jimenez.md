@@ -1,4 +1,4 @@
-# Bitacora BACK · Eduardo Jimenez
+# Bitacora BACK ┬À Eduardo Jimenez
 
 ## General
 ### Objetivo de la semana
@@ -22,7 +22,7 @@
 ### Decisiones tomadas
 - 
 
-### Pendiente para mañana
+### Pendiente para ma├▒ana
 - 
 
 ### Handoff
@@ -46,7 +46,7 @@
 ### Decisiones tomadas
 - 
 
-### Pendiente para mañana
+### Pendiente para ma├▒ana
 - 
 
 ### Handoff
@@ -70,7 +70,7 @@
 ### Decisiones tomadas
 - 
 
-### Pendiente para mañana
+### Pendiente para ma├▒ana
 - 
 
 ### Handoff
@@ -94,7 +94,7 @@
 ### Decisiones tomadas
 - 
 
-### Pendiente para mañana
+### Pendiente para ma├▒ana
 - 
 
 ### Handoff

@@ -21,7 +21,7 @@ export default function MobileSidebarDrawer({
                 <button
                     type="button"
                     aria-label={t('common.aria.closeNavigationPanel')}
-                    className="fixed inset-0 z-[70] bg-black/45 md:hidden"
+                    className="fixed inset-0 z-70 bg-black/45 md:hidden"
                     onClick={onClose}
                 />
             )}
@@ -33,7 +33,7 @@ export default function MobileSidebarDrawer({
                 aria-modal="true"
                 aria-label={t('common.aria.navigationMenu')}
                 tabIndex={-1}
-                className={`fixed inset-y-0 left-0 z-[80] flex w-[min(22rem,90vw)] flex-col bg-secondary text-white shadow-2xl transition-transform duration-200 ease-out md:hidden ${
+                className={`fixed inset-y-0 left-0 z-80 flex w-[min(22rem,90vw)] flex-col bg-secondary text-white shadow-2xl transition-transform duration-200 ease-out md:hidden ${
                     open ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
@@ -63,7 +63,7 @@ export default function MobileSidebarDrawer({
                                         const ItemIcon = getNavigationIcon(item.key);
                                         const baseClass = `flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                                             item.active
-                                                ? 'bg-[var(--ciete-red)] text-white hover:bg-[var(--ciete-red-dark)]'
+                                                ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
                                                 : 'text-white/80 hover:bg-white/10 hover:text-white'
                                         }`;
 

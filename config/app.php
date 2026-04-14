@@ -78,14 +78,14 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'es'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'es'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     'supported_locales' => array_values(array_unique(array_filter(array_map(
-        static fn (string $locale) => strtolower(trim($locale)),
+        static fn(string $locale) => strtolower(trim($locale)),
         explode(',', (string) env('APP_SUPPORTED_LOCALES', 'es,en')),
     )))),
 

@@ -2,6 +2,7 @@ import { Activity, BookOpen, Globe, LifeBuoy, MessageSquare } from 'lucide-react
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n';
+import { router } from '@inertiajs/react';
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -12,6 +13,8 @@ export default function SupportDock({ shouldReduceMotion = false }) {
     const cieteWebsiteUrl = import.meta.env.VITE_CIETE_WEBSITE_URL || 'https://www.ciete.es';
     const dockRef = useRef(null);
     const itemRefs = useRef([]);
+    const mouseFrameRef = useRef(0);
+    const pendingMouseXRef = useRef(null);
 
     const [hoveredItem, setHoveredItem] = useState(null);
     const [mouseX, setMouseX] = useState(null);
@@ -56,6 +59,14 @@ export default function SupportDock({ shouldReduceMotion = false }) {
         };
     }, [dockItems]);
 
+    useEffect(() => {
+        return () => {
+            if (mouseFrameRef.current) {
+                window.cancelAnimationFrame(mouseFrameRef.current);
+            }
+        };
+    }, []);
+
     const getScaleAt = (index, itemId) => {
         if (shouldReduceMotion || mouseX === null) {
             return 1;
@@ -77,9 +88,24 @@ export default function SupportDock({ shouldReduceMotion = false }) {
                 ref={dockRef}
                 onMouseMove={(event) => {
                     const rect = event.currentTarget.getBoundingClientRect();
-                    setMouseX(event.clientX - rect.left);
+                    pendingMouseXRef.current = event.clientX - rect.left;
+
+                    if (mouseFrameRef.current) {
+                        return;
+                    }
+
+                    mouseFrameRef.current = window.requestAnimationFrame(() => {
+                        mouseFrameRef.current = 0;
+                        setMouseX(pendingMouseXRef.current);
+                    });
                 }}
                 onMouseLeave={() => {
+                    if (mouseFrameRef.current) {
+                        window.cancelAnimationFrame(mouseFrameRef.current);
+                        mouseFrameRef.current = 0;
+                    }
+
+                    pendingMouseXRef.current = null;
                     setMouseX(null);
                     setHoveredItem(null);
                 }}
@@ -122,6 +148,14 @@ export default function SupportDock({ shouldReduceMotion = false }) {
                                 onClick={() => {
                                     if (item.id === 'web') {
                                         window.location.assign(cieteWebsiteUrl);
+                                    } else if (item.id === 'messages') {
+                                        router.visit(route('messages.index'));
+                                    } else if (item.id === 'manual') {
+                                        router.visit(route('help'));
+                                    } else if (item.id === 'support') {
+                                        router.visit(route('support'));
+                                    } else if (item.id === 'status') {
+                                        router.visit(route('status'));
                                     }
                                 }}
                                 animate={{
@@ -134,7 +168,7 @@ export default function SupportDock({ shouldReduceMotion = false }) {
                                     damping: 22,
                                     mass: 0.36,
                                 }}
-                                className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-2 text-text-main transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+                                className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-2 text-text-main transition-colors hover:border-primary hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                                 aria-label={item.label}
                             >
                                 <Icon size={20} strokeWidth={1.9} />

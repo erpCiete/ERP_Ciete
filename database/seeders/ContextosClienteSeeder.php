@@ -15,9 +15,9 @@ class ContextosClienteSeeder extends Seeder
         $rows = [
             [
                 'id_contexto' => 1,
-                'nombre' => 'CEPSA',
-                'codigo' => 'CEPSA',
-                'descripcion' => 'Contexto operativo CEPSA',
+                'nombre' => 'MOEVE',
+                'codigo' => 'MOEVE',
+                'descripcion' => 'Contexto operativo MOEVE',
                 'activo' => true,
             ],
             [

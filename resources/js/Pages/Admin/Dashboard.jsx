@@ -1,11 +1,17 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 
 export default function AdminDashboard({ stats = {}, users = [], activity = [] }) {
     const user = usePage().props.auth.user;
+    const maintenanceActive = usePage().props.maintenance?.active ?? false;
     const { t } = useI18n();
-    const maintenanceVisualState = 'normal';
+
+    const toggleMaintenance = () => {
+        router.post(route('admin.maintenance.toggle'), {}, {
+            preserveScroll: true,
+        });
+    };
 
     const adminModules = [
         { key: 'users', color: 'border-l-state-progress-dot', href: '#' },
@@ -51,19 +57,19 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
     };
 
     const maintenanceStateBadgeClass =
-        maintenanceVisualState === 'maintenance'
+        maintenanceActive
             ? 'bg-state-blocked-bg text-state-blocked-text'
             : 'bg-state-done-bg text-state-done-text';
 
     const maintenanceStateLabel =
-        maintenanceVisualState === 'maintenance'
+        maintenanceActive
             ? t('adminDashboard.maintenance.statusMaintenance')
             : t('adminDashboard.maintenance.statusNormal');
 
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-semibold leading-tight text-[var(--ciete-slate)]">
+                <h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">
                     {t('adminDashboard.header')}
                 </h2>
             }
@@ -164,20 +170,23 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                                 {t('adminDashboard.maintenance.actionsTitle')}
                             </p>
                             <div className="mt-2 flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    disabled
-                                    className="inline-flex items-center rounded-md bg-[var(--ciete-red)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white opacity-60"
-                                >
-                                    {t('adminDashboard.maintenance.enable')}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled
-                                    className="inline-flex items-center rounded-md border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main opacity-60"
-                                >
-                                    {t('adminDashboard.maintenance.disable')}
-                                </button>
+                                {!maintenanceActive ? (
+                                    <button
+                                        type="button"
+                                        onClick={toggleMaintenance}
+                                        className="inline-flex items-center rounded-md bg-(--ciete-red) px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition hover:opacity-90"
+                                    >
+                                        {t('adminDashboard.maintenance.enable')}
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={toggleMaintenance}
+                                        className="inline-flex items-center rounded-md border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-surface-2"
+                                    >
+                                        {t('adminDashboard.maintenance.disable')}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -216,7 +225,7 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                             <div className="divide-y divide-border">
                                 {activity.map((item, index) => (
                                     <div key={index} className="flex gap-3 px-4 py-3">
-                                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-accent/10 text-[9px] font-bold text-accent">
+                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-[9px] font-bold text-accent">
                                             {item.initials}
                                         </div>
                                         <div className="min-w-0 flex-1">

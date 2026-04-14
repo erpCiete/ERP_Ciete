@@ -39,9 +39,13 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->update([
-            'avatar_key' => $request->validated('avatar_key'),
-        ]);
+        $data = ['avatar_key' => $request->validated('avatar_key')];
+
+        if ($request->has('email_recuperacion')) {
+            $data['email_recuperacion'] = $request->validated('email_recuperacion');
+        }
+
+        $request->user()->update($data);
 
         return Redirect::route('profile.edit');
     }

@@ -12,7 +12,7 @@ export default function MobilePreferencesDrawer({ open, drawerId, drawerRef, onC
                 <button
                     type="button"
                     aria-label={t('common.aria.closePreferencesPanel')}
-                    className="fixed inset-0 z-[70] bg-black/45 md:hidden"
+                    className="fixed inset-0 z-70 bg-black/45 md:hidden"
                     onClick={onClose}
                 />
             )}
@@ -24,7 +24,7 @@ export default function MobilePreferencesDrawer({ open, drawerId, drawerRef, onC
                 aria-modal="true"
                 aria-label={t('common.aria.preferencesPanel')}
                 tabIndex={-1}
-                className={`fixed inset-y-0 right-0 z-[80] flex w-[min(18rem,82vw)] flex-col bg-surface shadow-2xl transition-transform duration-200 ease-out md:hidden ${
+                className={`fixed inset-y-0 right-0 z-80 flex w-[min(18rem,82vw)] flex-col bg-surface shadow-2xl transition-transform duration-200 ease-out md:hidden ${
                     open ? 'translate-x-0' : 'translate-x-full'
                 }`}
             >

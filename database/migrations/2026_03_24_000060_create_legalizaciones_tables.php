@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('legalizaciones', function (Blueprint $table) {
             $table->bigIncrements('id_legalizacion');
             $table->unsignedBigInteger('id_contexto');
-            $table->unsignedBigInteger('id_proyecto');
+            $table->unsignedBigInteger('id_trabajo');
             $table->unsignedBigInteger('id_usuario_responsable')->nullable();
             $table->string('tipo_legalizacion', 150);
             $table->string('numero_expediente', 120)->nullable();
@@ -31,7 +31,7 @@ return new class extends Migration
             $table->unique(['id_contexto', 'numero_expediente'], 'uq_legalizaciones_contexto_num_expediente');
             $table->index('id_contexto', 'idx_legalizaciones_contexto');
             $table->index(['id_legalizacion', 'id_contexto'], 'idx_legalizaciones_id_contexto');
-            $table->index(['id_proyecto', 'id_contexto'], 'idx_legalizaciones_proyecto_contexto');
+            $table->index(['id_trabajo', 'id_contexto'], 'idx_legalizaciones_trabajo_contexto');
             $table->index(['id_usuario_responsable', 'id_contexto'], 'idx_legalizaciones_usuario_contexto');
 
             $table->foreign('id_contexto', 'fk_legalizaciones_contexto')
@@ -40,14 +40,14 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
 
-            $table->foreign(['id_proyecto', 'id_contexto'], 'fk_legalizaciones_proyecto_contexto')
-                ->references(['id_proyecto', 'id_contexto'])
-                ->on('proyectos')
+            $table->foreign(['id_trabajo', 'id_contexto'], 'fk_legalizaciones_trabajo_contexto')
+                ->references(['id_trabajo', 'id_contexto'])
+                ->on('trabajos')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
-            $table->foreign(['id_usuario_responsable', 'id_contexto'], 'fk_legalizaciones_usuario_contexto')
-                ->references(['id_usuario', 'id_contexto'])
+            $table->foreign('id_usuario_responsable', 'fk_legalizaciones_usuario_responsable')
+                ->references('id_usuario')
                 ->on('usuarios')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();

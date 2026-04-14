@@ -47,6 +47,16 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# SQL dumps (root level)
+/*.sql
+
+# Local scripts (tooling personal, no production)
+/scripts/
+
+# Documentos originales Abaco (excels, PDFs, reuniones)
+# Son archivos fuente que NO deben subir al repositorio (pesados, binarios).
+/docs/Abaco/
+
 # Sprint documentation safety
 /docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
 !/docs/05-SPRINTS/Sprint_*/Bitacora/
@@ -54,11 +64,8 @@ Thumbs.db
 !/docs/05-SPRINTS/Sprint_*/Bitacora/FRONT/
 !/docs/05-SPRINTS/Sprint_*/Bitacora/General/
 
-# Bitacoras personales
-# Todas las bitacoras se ignoran por defecto.
-# Cada persona debe dejar activa SOLO su propia linea.
-# Si cambias de persona, comenta la linea actual y descomenta solo la tuya.
-
+# Bitacoras personales — solo Pablo sube desde versionDesplegada
+# Cada dev sube la suya desde su propia rama.
 # Backend
 #!**/Bitacora/BACK/alex_puma.md
 #!**/Bitacora/BACK/carlos_puchol.md
@@ -73,11 +80,11 @@ Thumbs.db
 #!**/Bitacora/FRONT/jhon_sebastian_becerra.md
 #!**/Bitacora/FRONT/jimmy_tasmonte.md
 
-# Coordinacion general
-# Configuracion actual: Pablo
+# Coordinacion general (Pablo — unica bitacora que sube versionDesplegada)
 !**/Bitacora/General/pablo.md
 
 # Documentacion raiz de sprint
-# En la raiz de cada sprint solo se debe subir la vision general.
+# En la raiz de cada sprint solo se debe subir la vision general y el plan del sprint.
 /docs/05-SPRINTS/Sprint_*/*.md
 !/docs/05-SPRINTS/Sprint_*/00_Sprint_*_Vision_General.md
+!/docs/05-SPRINTS/Sprint_*/SPRINT_*_PLAN.md

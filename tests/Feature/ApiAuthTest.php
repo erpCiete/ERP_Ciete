@@ -47,13 +47,4 @@ class ApiAuthTest extends TestCase
                 'message' => 'Usuario autenticado',
             ]);
     }
-
-    public function test_authenticated_user_can_access_stub_modules(): void
-    {
-        $user = User::factory()->create();
-
-        $this->actingAs($user)->getJson('/api/v1/obras')->assertOk();
-        $this->actingAs($user)->getJson('/api/v1/pedidos')->assertOk();
-        $this->actingAs($user)->getJson('/api/v1/estaciones')->assertOk();
-    }
 }

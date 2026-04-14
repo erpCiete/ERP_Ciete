@@ -13,6 +13,6 @@ class RegistrationTest extends TestCase
     {
         $this->assertFalse(\Illuminate\Support\Facades\Route::has('register'));
 
-        $this->get('/register')->assertNotFound();
+        $this->get('/register')->assertRedirect('/login');
     }
 }

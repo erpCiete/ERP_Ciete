@@ -75,7 +75,7 @@ export default function ResetPassword({ token, email }) {
                                         value={data.email}
                                         autoComplete="username"
                                         onChange={(e) => setData('email', e.target.value)}
-                                        className={`w-full rounded-lg border bg-surface px-3 py-2 text-[14px] outline-none transition-all ${
+                                        className={`w-full rounded-lg border bg-surface px-3 py-2 text-[14px] outline-hidden transition-all ${
                                             errors.email
                                                 ? 'border-primary shadow-focus'
                                                 : 'border-border hover:border-border-heavy focus:border-primary focus:shadow-focus'
@@ -102,7 +102,7 @@ export default function ResetPassword({ token, email }) {
                                         value={data.password}
                                         autoComplete="new-password"
                                         onChange={(e) => setData('password', e.target.value)}
-                                        className={`w-full rounded-lg border bg-surface px-3 py-2 text-[14px] outline-none transition-all ${
+                                        className={`w-full rounded-lg border bg-surface px-3 py-2 text-[14px] outline-hidden transition-all ${
                                             errors.password
                                                 ? 'border-primary shadow-focus'
                                                 : 'border-border hover:border-border-heavy focus:border-primary focus:shadow-focus'
@@ -129,7 +129,7 @@ export default function ResetPassword({ token, email }) {
                                         value={data.password_confirmation}
                                         autoComplete="new-password"
                                         onChange={(e) => setData('password_confirmation', e.target.value)}
-                                        className={`w-full rounded-lg border bg-surface px-3 py-2 text-[14px] outline-none transition-all ${
+                                        className={`w-full rounded-lg border bg-surface px-3 py-2 text-[14px] outline-hidden transition-all ${
                                             errors.password_confirmation
                                                 ? 'border-primary shadow-focus'
                                                 : 'border-border hover:border-border-heavy focus:border-primary focus:shadow-focus'
@@ -146,7 +146,7 @@ export default function ResetPassword({ token, email }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-strong px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary-strong px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-primary focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                                 >
                                     {t('auth.resetPassword.submit')}
                                 </button>
