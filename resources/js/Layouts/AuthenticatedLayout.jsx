@@ -98,10 +98,10 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                                 {t('nav.groups.operations')}
                             </p>
                             <div className="space-y-1 text-white/70">
-                                <Link href="#" className={navLinkClass(false)}>
+                                <Link href={route('trabajos.index')} className={navLinkClass(route().current('trabajos.*'))}>
                                     <span className="inline-flex items-center gap-2">
                                         {WorksIcon && <WorksIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.works')}</span>
+                                        <span className={navLinkLabelClass(route().current('trabajos.*'))}>{t('nav.works')}</span>
                                     </span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
