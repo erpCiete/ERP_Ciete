@@ -87,10 +87,10 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
     // ── Eliminar trabajo ──────────────────────────────────────────────────────
     const handleDelete = () => {
         if (!deleteTarget) return;
-        router.delete(route('trabajos.destroy', deleteTarget.id), {
-            preserveScroll: true,
-            onSuccess: () => setDeleteTarget(null),
-            onError:   () => setDeleteTarget(null),
+    
+        // Usamos la función del hook en lugar de 'router.delete' manual
+        eliminarTrabajo(deleteTarget.id, () => {
+            setDeleteTarget(null);
         });
     };
 
