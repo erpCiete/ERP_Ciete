@@ -6,6 +6,7 @@ import { useI18n } from '@/i18n';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import TrabajosColumnas from '@/Components/ui/TrabajosColumnas';
+import { useTrabajos } from '@/hooks/useTrabajos';
 
 // ─── Opciones de estado para el filtro ───────────────────────────────────────
 const ESTADO_OPTIONS = ['borrador', 'en_curso', 'terminado', 'cerrado', 'cancelado'];
@@ -18,6 +19,7 @@ const ESTADO_OPTIONS = ['borrador', 'en_curso', 'terminado', 'cerrado', 'cancela
 //   canCreate   → boolean — permiso trabajos.crear del usuario autenticado
 export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = [], canCreate = false }) {
     const { t } = useI18n();
+    const { irACrear, irAEditar, eliminarTrabajo } = useTrabajos();
 
     // Contexto activo del usuario
     const isMoeve  = contextoIds.includes(1);
@@ -393,11 +395,13 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                             <div className="flex justify-end gap-3">
                                                 <button
                                                     type="button"
-                                                    onClick={() => router.visit(route('trabajos.edit', trabajo.id))}
+                                                    // CAMBIO: Antes usabas router.visit, ahora usas la función del hook
+                                                    onClick={() => irAEditar(trabajo.id)} 
                                                     className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
                                                 >
                                                     {t('common.actions.edit')}
                                                 </button>
+                                                
                                                 <button
                                                     type="button"
                                                     onClick={() => setDeleteTarget(trabajo)}
