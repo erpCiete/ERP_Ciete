@@ -6,7 +6,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\SupportController;
-use App\Http\Controllers\TrabajoController;
+use App\Http\Controllers\Api\TrabajoController;
 use App\Http\Controllers\ImportacionController;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;

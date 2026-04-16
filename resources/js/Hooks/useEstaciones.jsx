@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 function extractErrors(error) {
     if (error?.response?.status === 422) {
@@ -12,6 +12,18 @@ function extractErrors(error) {
 export function useEstaciones() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [estaciones, setEstaciones] = useState([]);
+
+    const getEstaciones = useCallback(async (params = {}) => {
+        setLoading(true);
+
+        try {
+            const response = await axios.get('/api/v1/estaciones', { params });
+            return response.data;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     const clearErrors = useCallback(() => {
         setErrors({});
@@ -30,15 +42,29 @@ export function useEstaciones() {
         });
     }, []);
 
-    const getEstaciones = useCallback(async (params = {}) => {
-        setLoading(true);
+    // Cargar estaciones al montar el componente
+    useEffect(() => {
+        let isMounted = true;
 
-        try {
-            const response = await axios.get('/api/v1/estaciones', { params });
-            return response.data;
-        } finally {
-            setLoading(false);
-        }
+        const loadEstaciones = async () => {
+            try {
+                const data = await getEstaciones();
+                if (isMounted && data) {
+                    setEstaciones(data.data || data);
+                }
+            } catch (err) {
+                if (isMounted) {
+                    console.error('Error cargando estaciones:', err);
+                    setEstaciones([]);
+                }
+            }
+        };
+
+        loadEstaciones();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const getEstacion = useCallback(async (id) => {
@@ -80,7 +106,7 @@ export function useEstaciones() {
         }
     }, []);
 
-    return {
+    return { 
         getEstaciones,
         getEstacion,
         saveEstacion,
@@ -89,5 +115,6 @@ export function useEstaciones() {
         clearFieldError,
         loading,
         errors,
+        estaciones,
     };
 }

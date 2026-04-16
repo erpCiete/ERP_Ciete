@@ -17,7 +17,7 @@ const ESTADO_OPTIONS = ['borrador', 'en_curso', 'terminado', 'cerrado', 'cancela
 //   filters     → { search, estado, fecha_desde, fecha_hasta } (filtros activos en el servidor)
 //   contextoIds → [1] = MOEVE · [2] = REPSOL · [1,2] = ambos
 //   canCreate   → boolean — permiso trabajos.crear del usuario autenticado
-export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = [], canCreate = false }) {
+export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = [], canCreate = true }) {
     const { t } = useI18n();
     const { irACrear, irAEditar, eliminarTrabajo } = useTrabajos();
 
@@ -89,7 +89,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
         if (!deleteTarget) return;
     
         // Usamos la función del hook en lugar de 'router.delete' manual
-        eliminarTrabajo(deleteTarget.id, () => {
+        eliminarTrabajo(deleteTarget.id_trabajo, () => {
             setDeleteTarget(null);
         });
     };
@@ -349,7 +349,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
 
                                 {/* Filas de datos */}
                                 {status === 'ready' && rows.map((trabajo) => (
-                                    <tr key={trabajo.id} className="hover:bg-surface-2/60">
+                                    <tr key={trabajo.id_trabajo} className="hover:bg-surface-2/60">
 
                                         {/* Nº trabajo — en mono rojo igual que referencias OBR/PED */}
                                         <td className="px-5 py-4 align-top">
@@ -396,7 +396,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                                 <button
                                                     type="button"
                                                     // CAMBIO: Antes usabas router.visit, ahora usas la función del hook
-                                                    onClick={() => irAEditar(trabajo.id)} 
+                                                    onClick={() => irAEditar(trabajo.id_trabajo)}
                                                     className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
                                                 >
                                                     {t('common.actions.edit')}

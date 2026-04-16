@@ -1,5 +1,5 @@
 import InputError from '@/Components/InputError';
-import { useTrabajos } from '@/hooks/useTrabajos';
+import { useTrabajos } from '@/Hooks/useTrabajos';
 import { useEstaciones } from '@/Hooks/useEstaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
@@ -61,9 +61,9 @@ function normalizeTrabajo(trabajo) {
 export default function TrabajosForm({ trabajoId = null }) {
     const { t } = useI18n();
     const { getTrabajo, saveTrabajo, loading, errors, clearErrors, clearFieldError } = useTrabajos();
-    const { getEstaciones } = useEstaciones();
+// Renombramos los errores de estaciones a 'errorsEst' para que no choquen
+    const { estaciones: listaEstaciones, errors: errorsEst } = useEstaciones();
 
-    const [estaciones, setEstaciones] = useState([]);
     const [form, setForm] = useState(EMPTY_FORM);
     const [status, setStatus] = useState(trabajoId ? 'loading' : 'idle');
     const [submitError, setSubmitError] = useState('');
@@ -73,9 +73,6 @@ export default function TrabajosForm({ trabajoId = null }) {
     const isEditing = trabajoId !== null;
     const localErrors = useMemo(() => validateTrabajoForm(form, t), [form, t]);
 
-    useEffect(() => {
-        getEstaciones({ per_page: 500 }).then(res => setEstaciones(res?.data ?? []));
-    }, [getEstaciones]);
 
     useEffect(() => {
         if (!trabajoId) return;
@@ -94,8 +91,12 @@ export default function TrabajosForm({ trabajoId = null }) {
     };
 
     const getFieldError = (field) => {
-        if (!submitAttempted && !touched[field] && !errors[field]) return '';
-        return localErrors[field] ?? errors[field]?.[0] ?? '';
+        // Si submitAttempted es false y no hemos tocado el campo, solo mostramos si hay error del servidor
+        // Usamos el operador ?. (optional chaining) para que no explote si errors es undefined
+        if (!submitAttempted && !touched[field] && !errors?.[field]) return '';
+        
+        // Prioridad: 1. Error local (validación JS) | 2. Error del servidor (Laravel)
+        return localErrors[field] ?? errors?.[field]?.[0] ?? '';
     };
 
     const updateField = (field, value) => {
@@ -175,7 +176,7 @@ export default function TrabajosForm({ trabajoId = null }) {
                                 className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:border-(--ciete-red) focus:ring-(--ciete-red)"
                             >
                                 <option value="">Selecciona una estación</option>
-                                {estaciones.map(est => (
+                                {listaEstaciones.map(est => (
                                     <option key={est.id} value={est.id}>{est.nombre} ({est.codigo_estacion})</option>
                                 ))}
                             </select>
