@@ -13,11 +13,13 @@ import React from 'react';
  * Columnas REPSOL: Tipo documento, Tipo trabajo, Nº aviso
  */
 export default function TrabajosColumnas({ isMoeve = false, isRepsol = false, trabajo = {} }) {
-    const contratoValue = trabajo.contrato ?? trabajo.contrato_nombre ?? '—';
-    const categoriaValue = trabajo.categoria ?? trabajo.categoria_nombre ?? '—';
-    const tipoDocumentoValue = trabajo.tipoDocumento ?? trabajo.tipo_documento ?? '—';
-    const tipoTrabajoValue = trabajo.tipoTrabajo ?? trabajo.tipo_trabajo ?? '—';
-    const numeroAvisoValue = trabajo.numeroAviso ?? trabajo.numero_aviso ?? '—';
+    // Usamos Optional Chaining (?.) para intentar leer el '.nombre'.
+// Si el objeto existe, pinta el nombre. Si el backend lo ha ocultado por el contexto, pinta '—'.
+    const contratoValue = trabajo.contrato?.nombre ?? trabajo.contrato_nombre ?? '—';
+    const categoriaValue = trabajo.categoria?.nombre ?? trabajo.categoria_nombre ?? '—'; 
+    const tipoDocumentoValue = trabajo.tipo_documento?.nombre ?? trabajo.tipoDocumento?.nombre ?? '—';
+    const tipoTrabajoValue = trabajo.tipo_trabajo?.nombre ?? trabajo.tipoTrabajo?.nombre ?? '—';
+    const numeroAvisoValue = trabajo.numero_aviso ?? trabajo.numeroAviso ?? '—';
 
     return (
         <>

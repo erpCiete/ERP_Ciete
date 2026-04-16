@@ -10,7 +10,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use App\Http\Requests\StoreTrabajoRequest;
 use App\Http\Requests\UpdateTrabajoRequest;
-use App\Http\Resources\TrabajoResource;
+use App\Http\Resources\Api\TrabajoResource;
 
 class TrabajoController extends Controller
 {
