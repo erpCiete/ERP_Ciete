@@ -2,59 +2,45 @@
 
 namespace App\Http\Requests\Api;
 
+use Illuminate\Foundation\Http\FormRequest; // IMPORTANTE: Cambiar a FormRequest
 use Illuminate\Validation\Rule;
+use App\Models\EstacionServicio;
 
-class StoreTrabajoRequest extends BaseApiRequest
+class StoreTrabajoRequest extends FormRequest
 {
+    public function authorize(): bool { return true; }
+
     public function rules(): array
     {
         return [
-            'titulo' => ['required', 'string', 'max:150'],
-            'descripcion' => ['nullable', 'string'],
-            'id_estacion_servicio' => ['required', 'integer'],
-            'fecha_programada' => ['nullable', 'date'],
-            'prioridad' => ['nullable', Rule::in(['baja', 'media', 'alta'])],
-            'estado' => ['nullable', Rule::in(['pendiente', 'en_proceso', 'cerrado'])],
+            'numero_trabajo'       => ['required', 'string', 'max:50'],
+            'descripcion_trabajo'  => ['required', 'string', 'max:150'], // Sincronizado con React
+            'id_estacion_servicio' => ['required', 'exists:estaciones_servicio,id_estacion_servicio'],
+            'fecha_encargo'        => ['required', 'date'],
+            'fecha_terminado'      => ['nullable', 'date'],
+            'estado'               => ['required', Rule::in(['borrador', 'en_curso', 'terminado', 'cerrado', 'cancelado'])],
+            'observaciones'        => ['nullable', 'string'],
 
-            // Validacion condicional por contexto
-            'cod_repsol' => [
-                Rule::requiredIf(fn () => $this->isRepsolContext()),
-                'nullable',
-                'string',
-                'max:80',
-                Rule::prohibitedIf(fn () => $this->isCepsaContext()),
+            // VALIDACIÓN INTELIGENTE: Solo pide estos campos si la estación es del cliente correcto
+            'id_contrato' => [
+                Rule::requiredIf(fn () => $this->esCliente(1)), // 1 = MOEVE
+                'nullable', 'integer'
             ],
-            'cod_cepsa' => [
-                Rule::requiredIf(fn () => $this->isCepsaContext()),
-                'nullable',
-                'string',
-                'max:80',
-                Rule::prohibitedIf(fn () => $this->isRepsolContext()),
+            'id_tipo_documento' => [
+                Rule::requiredIf(fn () => $this->esCliente(2)), // 2 = REPSOL
+                'nullable', 'integer'
+            ],
+            'id_tipo_trabajo' => [
+                Rule::requiredIf(fn () => $this->esCliente(2)),
+                'nullable', 'integer'
             ],
         ];
     }
 
-    protected function prepareForValidation(): void
+    private function esCliente($idContexto): bool
     {
-        $this->merge([
-            'titulo' => is_string($this->titulo) ? trim($this->titulo) : $this->titulo,
-            'descripcion' => is_string($this->descripcion) ? trim($this->descripcion) : $this->descripcion,
-            'cod_repsol' => is_string($this->cod_repsol) ? trim($this->cod_repsol) : $this->cod_repsol,
-            'cod_cepsa' => is_string($this->cod_cepsa) ? trim($this->cod_cepsa) : $this->cod_cepsa,
-        ]);
-    }
-
-    private function isRepsolContext(): bool
-    {
-        $codigo = strtoupper((string) optional($this->user()?->contexto)->codigo);
-
-        return $codigo === 'REPSOL';
-    }
-
-    private function isCepsaContext(): bool
-    {
-        $codigo = strtoupper((string) optional($this->user()?->contexto)->codigo);
-
-        return $codigo === 'CEPSA';
+        if (!$this->id_estacion_servicio) return false;
+        $estacion = EstacionServicio::find($this->id_estacion_servicio);
+        return $estacion && $estacion->id_contexto == $idContexto;
     }
 }
