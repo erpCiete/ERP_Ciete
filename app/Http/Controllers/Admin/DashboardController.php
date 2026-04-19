@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\NoticeController;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Empresa;
@@ -39,17 +40,24 @@ class DashboardController extends Controller
             ->get()
             ->map(fn(AuditLog $log) => [
                 'initials' => mb_substr($log->usuario?->nombre ?? '?', 0, 1)
-                            . mb_substr($log->usuario?->apellidos ?? '', 0, 1),
+                    . mb_substr($log->usuario?->apellidos ?? '', 0, 1),
                 'name'     => trim(($log->usuario?->nombre ?? '') . ' ' . ($log->usuario?->apellidos ?? '')),
                 'action'   => $log->accion,
                 'target'   => $log->tabla . ($log->registro_id ? ' #' . $log->registro_id : ''),
                 'time'     => $log->created_at?->diffForHumans() ?? '',
             ]);
 
+        $userContexts = auth()->user()->contextos()
+            ->select('contextos_cliente.id_contexto', 'nombre', 'codigo')
+            ->wherePivot('activo', true)
+            ->get();
+
         return Inertia::render('Admin/Dashboard', [
-            'stats'    => $stats,
-            'users'    => $users,
-            'activity' => $activity,
+            'stats'        => $stats,
+            'users'        => $users,
+            'activity'     => $activity,
+            'userContexts' => $userContexts,
+            'homeNotices'  => NoticeController::load(),
         ]);
     }
 }

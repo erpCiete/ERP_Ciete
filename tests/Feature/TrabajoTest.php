@@ -99,9 +99,10 @@ class TrabajoTest extends TestCase
         // Prueba de Listado — verificar aislamiento de contexto
         $response = $this->get('/trabajos');
         $response->assertOk();
-        $response->assertInertia(fn (Assert $page) =>
+        $response->assertInertia(
+            fn(Assert $page) =>
             $page->component('Trabajos/Index')
-                 ->has('trabajos.data', 0) // Repsol user sees 0 works (the only one is MOEVE)
+                ->has('trabajos.data', 0) // Repsol user sees 0 works (the only one is MOEVE)
         );
     }
 

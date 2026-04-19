@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\TrabajoController;
 use App\Http\Controllers\DashboardController;
@@ -21,7 +22,9 @@ Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update
 
 Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::get('/', function () {
-        return Inertia::render('Welcome');
+        return Inertia::render('Welcome', [
+            'homeNotices' => AdminNoticeController::load(),
+        ]);
     })->name('index');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
@@ -89,6 +92,9 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::post('/admin/maintenance', [MaintenanceController::class, 'toggle'])
             ->name('admin.maintenance.toggle');
 
+        Route::post('/admin/notices', [AdminNoticeController::class, 'update'])
+            ->name('admin.notices.update');
+
         Route::post('/mensajes/broadcast', [MessageController::class, 'broadcast'])
             ->name('messages.broadcast');
 
@@ -126,16 +132,16 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::get('/trabajos', [TrabajoController::class, 'index'])->name('trabajos.index');
         Route::get('/trabajos/crear', [TrabajoController::class, 'create'])->name('trabajos.create');
         Route::get('/trabajos/{trabajo}/editar', [TrabajoController::class, 'edit'])->name('trabajos.edit');
-        
+
         // Rutas de acción (mutaciones) con permisos específicos
         Route::post('/trabajos', [TrabajoController::class, 'store'])
             ->name('trabajos.store')
             ->middleware('permission:trabajos.crear');
-            
+
         Route::put('/trabajos/{trabajo}', [TrabajoController::class, 'update'])
             ->name('trabajos.update')
             ->middleware('permission:trabajos.editar');
-            
+
         Route::delete('/trabajos/{trabajo}', [TrabajoController::class, 'destroy'])
             ->name('trabajos.destroy')
             ->middleware('permission:trabajos.eliminar');

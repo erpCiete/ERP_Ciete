@@ -1,8 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
 import { Head, Link, usePage, router } from '@inertiajs/react';
+import { useState } from 'react';
 
-export default function AdminDashboard({ stats = {}, users = [], activity = [] }) {
+export default function AdminDashboard({ stats = {}, users = [], activity = [], userContexts = [], homeNotices = {} }) {
     const user = usePage().props.auth.user;
     const maintenanceActive = usePage().props.maintenance?.active ?? false;
     const { t } = useI18n();
@@ -13,13 +14,61 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
         });
     };
 
+    const CATEGORIES = ['notices', 'updates', 'companyNews'];
+    const makeEmpty = () => ({ es: '', en: '' });
+
+    const [editingNotices, setEditingNotices] = useState(false);
+    const [noticesData, setNoticesData] = useState(() => {
+        const base = {};
+        CATEGORIES.forEach((cat) => {
+            base[cat] = (homeNotices[cat] || []).map((item) => ({ es: item.es || '', en: item.en || '' }));
+        });
+        return base;
+    });
+    const [savingNotices, setSavingNotices] = useState(false);
+
+    const updateNoticeField = (category, index, lang, value) => {
+        setNoticesData((prev) => {
+            const copy = { ...prev };
+            copy[category] = [...copy[category]];
+            copy[category][index] = { ...copy[category][index], [lang]: value };
+            return copy;
+        });
+    };
+
+    const addNoticeItem = (category) => {
+        if ((noticesData[category] || []).length >= 5) return;
+        setNoticesData((prev) => ({
+            ...prev,
+            [category]: [...(prev[category] || []), makeEmpty()],
+        }));
+    };
+
+    const removeNoticeItem = (category, index) => {
+        setNoticesData((prev) => ({
+            ...prev,
+            [category]: prev[category].filter((_, i) => i !== index),
+        }));
+    };
+
+    const saveNotices = () => {
+        setSavingNotices(true);
+        router.post(route('admin.notices.update'), noticesData, {
+            preserveScroll: true,
+            onFinish: () => {
+                setSavingNotices(false);
+                setEditingNotices(false);
+            },
+        });
+    };
+
     const adminModules = [
         { key: 'users', color: 'border-l-state-progress-dot', href: route('admin.users.index') },
         { key: 'orders', color: 'border-l-state-pending-dot', href: '#' },
         { key: 'billing', color: 'border-l-state-done-dot', href: '#' },
         { key: 'legalizations', color: 'border-l-state-blocked-dot', href: '#' },
-        { key: 'clients', color: 'border-l-accent', href: '#' },
-        { key: 'stations', color: 'border-l-border-heavy', href: '#' },
+        { key: 'clients', color: 'border-l-accent', href: route('clientes.index') },
+        { key: 'stations', color: 'border-l-border-heavy', href: route('estaciones.index') },
         { key: 'works', color: 'border-l-primary', href: route('trabajos.index') },
         { key: 'audit', color: 'border-l-text-hint', href: route('admin.audit') },
     ];
@@ -140,18 +189,123 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-2xl border border-border p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-text-muted">{t('adminDashboard.cards.user')}</p>
-                        <p className="mt-2 text-base font-semibold text-text-main">{user?.nombre_usuario ?? '-'}</p>
-                        <p className="text-sm text-text-muted">{user?.email ?? '-'}</p>
+                <section className="overflow-hidden rounded-[12px] border border-border bg-surface">
+                    <div className="flex items-center justify-between border-b border-border px-4 py-3">
+                        <h3 className="text-sm font-medium text-text-main">
+                            {t('adminDashboard.notices.title')}
+                        </h3>
+                        <div className="flex gap-2">
+                            {editingNotices ? (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingNotices(false);
+                                            const base = {};
+                                            CATEGORIES.forEach((cat) => {
+                                                base[cat] = (homeNotices[cat] || []).map((item) => ({ es: item.es || '', en: item.en || '' }));
+                                            });
+                                            setNoticesData(base);
+                                        }}
+                                        className="rounded-md border border-border bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-text-muted transition hover:bg-surface-2"
+                                    >
+                                        {t('common.actions.cancel')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={saveNotices}
+                                        disabled={savingNotices}
+                                        className="rounded-md bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white transition hover:opacity-90 disabled:opacity-50"
+                                    >
+                                        {savingNotices ? '...' : t('common.actions.save')}
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingNotices(true)}
+                                    className="rounded-md border border-border bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-text-muted transition hover:bg-surface-2"
+                                >
+                                    {t('common.actions.edit')}
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    <div className="rounded-2xl border border-border p-4">
-                        <p className="text-xs uppercase tracking-[0.16em] text-text-muted">{t('adminDashboard.cards.context')}</p>
-                        <p className="mt-2 text-base font-semibold text-text-main">{user?.contexto?.nombre ?? t('adminDashboard.cards.noContext')}</p>
-                        <p className="text-sm text-text-muted">{user?.contexto?.codigo ?? '-'}</p>
+
+                    <div className="divide-y divide-border">
+                        {CATEGORIES.map((cat) => (
+                            <div key={cat} className="px-4 py-3">
+                                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-(--ciete-red)">
+                                    {t(`adminDashboard.notices.categories.${cat}`)}
+                                </p>
+
+                                {editingNotices ? (
+                                    <div className="space-y-2">
+                                        {(noticesData[cat] || []).map((item, idx) => (
+                                            <div key={idx} className="flex gap-2">
+                                                <div className="flex flex-1 flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="w-5 shrink-0 text-[8px] font-bold uppercase text-text-hint">ES</span>
+                                                        <input
+                                                            type="text"
+                                                            value={item.es}
+                                                            onChange={(e) => updateNoticeField(cat, idx, 'es', e.target.value)}
+                                                            maxLength={300}
+                                                            className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-text-main placeholder:text-text-hint focus:border-primary focus:outline-none"
+                                                            placeholder={t('adminDashboard.notices.placeholderEs')}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="w-5 shrink-0 text-[8px] font-bold uppercase text-text-hint">EN</span>
+                                                        <input
+                                                            type="text"
+                                                            value={item.en}
+                                                            onChange={(e) => updateNoticeField(cat, idx, 'en', e.target.value)}
+                                                            maxLength={300}
+                                                            className="w-full rounded-md border border-border bg-surface-2 px-2 py-1 text-xs text-text-main placeholder:text-text-hint focus:border-primary focus:outline-none"
+                                                            placeholder={t('adminDashboard.notices.placeholderEn')}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeNoticeItem(cat, idx)}
+                                                    className="mt-1 shrink-0 text-[10px] text-text-hint transition hover:text-(--ciete-red)"
+                                                    title={t('common.actions.delete')}
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {(noticesData[cat] || []).length < 5 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => addNoticeItem(cat)}
+                                                className="text-[10px] font-bold uppercase tracking-widest text-primary transition hover:opacity-70"
+                                            >
+                                                + {t('adminDashboard.notices.addItem')}
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <ul className="space-y-1.5">
+                                        {(noticesData[cat] || []).map((item, idx) => (
+                                            <li key={idx} className="flex items-start gap-2">
+                                                <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-(--ciete-red)" />
+                                                <span className="text-xs leading-relaxed text-text-muted">
+                                                    {item.es}
+                                                </span>
+                                            </li>
+                                        ))}
+                                        {(noticesData[cat] || []).length === 0 && (
+                                            <li className="text-xs text-text-hint">{t('adminDashboard.notices.empty')}</li>
+                                        )}
+                                    </ul>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                </div>
+                </section>
 
                 <section className="rounded-[12px] border border-border bg-surface p-4 shadow-sm">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -198,20 +352,31 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
                         <h3 className="text-sm font-medium text-text-main">{t('adminDashboard.modules.title')}</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-2 p-3 md:grid-cols-4">
-                        {adminModules.map((module) => (
-                            <Link
-                                key={module.key}
-                                href={module.href}
-                                className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 transition-colors hover:bg-border ${module.color}`}
-                            >
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-text-main">
-                                    {t(`adminDashboard.modules.${module.key}`)}
-                                </span>
-                                <span className="text-xs text-text-hint" aria-hidden>
-                                    →
-                                </span>
-                            </Link>
-                        ))}
+                        {adminModules.map((module) => {
+                            const isPlaceholder = module.href === '#';
+                            return isPlaceholder ? (
+                                <div
+                                    key={module.key}
+                                    className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 opacity-40 ${module.color}`}
+                                >
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                                        {t(`adminDashboard.modules.${module.key}`)}
+                                    </span>
+                                    <span className="text-[8px] text-text-hint">{t('adminDashboard.modules.soon')}</span>
+                                </div>
+                            ) : (
+                                <Link
+                                    key={module.key}
+                                    href={module.href}
+                                    className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 transition-colors hover:bg-border ${module.color}`}
+                                >
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-main">
+                                        {t(`adminDashboard.modules.${module.key}`)}
+                                    </span>
+                                    <span className="text-xs text-text-hint" aria-hidden>→</span>
+                                </Link>
+                            );
+                        })}
                     </div>
                 </div>
 
