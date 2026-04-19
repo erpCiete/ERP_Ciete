@@ -84,6 +84,11 @@ class User extends Authenticatable
         return 'id_usuario';
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'id_usuario';
+    }
+
     public function getAuthIdentifier(): mixed
     {
         return $this->getAttribute('id_usuario');

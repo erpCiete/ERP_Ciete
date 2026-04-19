@@ -42,6 +42,7 @@ class Trabajo extends Model
         'cerrado',
         'bloqueado_cierre',
         'fecha_cierre',
+        'activo',
     ];
 
     protected function casts(): array

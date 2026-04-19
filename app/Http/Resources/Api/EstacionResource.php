@@ -9,7 +9,8 @@ class EstacionResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $empresa = $this->whenLoaded('empresa');
+        // Usar relationLoaded para evitar el objeto MissingValue
+        $empresa = $this->relationLoaded('empresa') ? $this->empresa : null;
 
         return [
             'id' => $this->id_estacion_servicio,

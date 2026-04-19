@@ -6,6 +6,12 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\TrabajoController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ImportacionController;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
 use App\Models\MensajeInterno;
@@ -16,11 +22,11 @@ Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update
 
 Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::get('/', function () {
-        return Inertia::render('Welcome');
+        return Inertia::render('Welcome', [
+            'homeNotices' => AdminNoticeController::load(),
+        ]);
     })->name('index');
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -81,15 +87,27 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::post('/soporte', [SupportController::class, 'send'])->name('support.send');
 
     Route::middleware('role:admin')->group(function () {
-        Route::get('/admin', function () {
-            return Inertia::render('Admin/Dashboard');
-        })->name('admin.dashboard');
+        Route::get('/admin', AdminDashboardController::class)->name('admin.dashboard');
 
         Route::post('/admin/maintenance', [MaintenanceController::class, 'toggle'])
             ->name('admin.maintenance.toggle');
 
+        Route::post('/admin/notices', [AdminNoticeController::class, 'update'])
+            ->name('admin.notices.update');
+
         Route::post('/mensajes/broadcast', [MessageController::class, 'broadcast'])
             ->name('messages.broadcast');
+
+        // ── Admin CRUD Usuarios ──
+        Route::get('/admin/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
+        Route::get('/admin/usuarios/crear', [AdminUserController::class, 'create'])->name('admin.users.create');
+        Route::post('/admin/usuarios', [AdminUserController::class, 'store'])->name('admin.users.store');
+        Route::get('/admin/usuarios/{user}/editar', [AdminUserController::class, 'edit'])->name('admin.users.edit');
+        Route::put('/admin/usuarios/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
+        Route::post('/admin/usuarios/{user}/toggle', [AdminUserController::class, 'toggle'])->name('admin.users.toggle');
+
+        // ── Admin Audit Log ──
+        Route::get('/admin/auditoria', [AdminUserController::class, 'audit'])->name('admin.audit');
     });
 
     Route::middleware('role:cierre')->group(function () {
@@ -107,6 +125,36 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             ])->toResponse(request())->setStatusCode($status);
         })->name('preview.error');
     }
+
+    //Modulo de Trabajos (Obras) - SPRINT 03
+    Route::middleware('permission:trabajos.ver')->group(function () {
+        // Rutas de visualización y formularios
+        Route::get('/trabajos', [TrabajoController::class, 'index'])->name('trabajos.index');
+        Route::get('/trabajos/crear', [TrabajoController::class, 'create'])->name('trabajos.create');
+        Route::get('/trabajos/{trabajo}/editar', [TrabajoController::class, 'edit'])->name('trabajos.edit');
+
+        // Rutas de acción (mutaciones) con permisos específicos
+        Route::post('/trabajos', [TrabajoController::class, 'store'])
+            ->name('trabajos.store')
+            ->middleware('permission:trabajos.crear');
+
+        Route::put('/trabajos/{trabajo}', [TrabajoController::class, 'update'])
+            ->name('trabajos.update')
+            ->middleware('permission:trabajos.editar');
+
+        Route::delete('/trabajos/{trabajo}', [TrabajoController::class, 'destroy'])
+            ->name('trabajos.destroy')
+            ->middleware('permission:trabajos.eliminar');
+    });
+
+    //Modulo de Importaciones - SPRINT 03
+    Route::middleware('permission:importaciones.gestionar')->group(function () {
+        Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
+        Route::get('/importaciones/subir', [ImportacionController::class, 'create'])->name('importaciones.create');
+        Route::post('/importaciones/procesar', [ImportacionController::class, 'store'])->name('importaciones.store');
+        Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');
+        Route::post('/importaciones/confirmar/{id}', [ImportacionController::class, 'confirm'])->name('importaciones.confirm');
+    });
 });
 
 require __DIR__ . '/auth.php';
