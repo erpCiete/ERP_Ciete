@@ -6,13 +6,15 @@
 
 ## 2026-04-13
 ### Objetivo del dia
-- 
+- Inicio del módulo de Trabajos y preparación de la arquitectura de componentes.
 
 ### Tareas realizadas
-- 
+- Maquetación de la estructura base de los componentes Index y Form del módulo de Trabajos
+- Definición de los estados iniciales del formulario
 
 ### Archivos tocados
-- 
+- resources/js/Pages/Trabajos/Index.jsx
+- resources/js/Pages/Trabajos/Form.jsx
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
@@ -20,10 +22,10 @@
 |  |  |  |  |  |
 
 ### Decisiones tomadas
-- 
+- Reutilizar componentes de UI existentes de Estaciones para mantener coherencia visual.
 
 ### Pendiente para mañana
-- 
+- Implementar el Hook personalizado para la lógica de negocio.
 
 ### Handoff
 - 
@@ -78,13 +80,14 @@
 
 ## 2026-04-16
 ### Objetivo del dia
-- 
+- Soporte en el módulo de Importaciones
 
 ### Tareas realizadas
-- 
+- Creación del componente Importaciones/Upload.jsx con lógica de 3 fases (Upload, Preview, Confirm).
+- Implementación de la validación de archivos: restricción a formatos Excel/CSV y límite de tamaño de 10MB.
 
 ### Archivos tocados
-- 
+- resources/js/Pages/Importaciones/Upload.jsx
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
@@ -95,20 +98,20 @@
 - 
 
 ### Pendiente para mañana
-- 
+- Pruebas finales de integración y revisión del Dashboard.
 
 ### Handoff
 - 
 
 ## 2026-04-17
 ### Objetivo del dia
-- 
+- Testeo de Importacion y Escritura de bitácora.
 
 ### Tareas realizadas
-- 
+- Sincronización de rama local con develop y resolución manual de conflictos tras merge
 
 ### Archivos tocados
-- 
+- docs/05-SPRINTS/Sprint_03/Bitacora/FRONT/daniel_bascope.md
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
@@ -119,7 +122,7 @@
 - 
 
 ### Pendiente para mañana
-- 1
+- Pruebas de Upload.jsx con el controlador Importaciones
 
 ### Handoff
 - 
