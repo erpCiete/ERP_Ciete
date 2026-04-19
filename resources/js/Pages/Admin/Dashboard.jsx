@@ -14,13 +14,14 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [] }
     };
 
     const adminModules = [
-        { key: 'users', color: 'border-l-state-progress-dot', href: '#' },
+        { key: 'users', color: 'border-l-state-progress-dot', href: route('admin.users.index') },
         { key: 'orders', color: 'border-l-state-pending-dot', href: '#' },
         { key: 'billing', color: 'border-l-state-done-dot', href: '#' },
         { key: 'legalizations', color: 'border-l-state-blocked-dot', href: '#' },
         { key: 'clients', color: 'border-l-accent', href: '#' },
         { key: 'stations', color: 'border-l-border-heavy', href: '#' },
-        { key: 'works', color: 'border-l-primary', href: '#' },
+        { key: 'works', color: 'border-l-primary', href: route('trabajos.index') },
+        { key: 'audit', color: 'border-l-text-hint', href: route('admin.audit') },
     ];
 
     const translateActivityAction = (action) => {
