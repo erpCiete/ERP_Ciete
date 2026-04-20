@@ -147,6 +147,31 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');
         Route::post('/importaciones/confirmar/{id}', [ImportacionController::class, 'confirm'])->name('importaciones.confirm');
     });
+    // Sprint 04 · Pedidos
+    Route::middleware('permission:pedidos.ver')->group(function () {
+        Route::get('/pedidos', [PedidoController::class, 'index'])->name('pedidos.index');
+        Route::get('/pedidos/crear', [PedidoController::class, 'create'])->name('pedidos.create');
+        Route::get('/pedidos/{pedido}/editar', [PedidoController::class, 'edit'])->name('pedidos.edit');
+        Route::post('/pedidos', [PedidoController::class, 'store'])
+            ->name('pedidos.store')->middleware('permission:pedidos.gestionar');
+        Route::put('/pedidos/{pedido}', [PedidoController::class, 'update'])
+            ->name('pedidos.update')->middleware('permission:pedidos.gestionar');
+        Route::delete('/pedidos/{pedido}', [PedidoController::class, 'destroy'])
+            ->name('pedidos.destroy')->middleware('permission:pedidos.gestionar');
+    });
+
+    // Sprint 04 · Facturas
+    Route::middleware('permission:facturas.ver')->group(function () {
+        Route::get('/facturas', [FacturaController::class, 'index'])->name('facturas.index');
+        Route::get('/facturas/crear', [FacturaController::class, 'create'])->name('facturas.create');
+        Route::get('/facturas/{factura}/editar', [FacturaController::class, 'edit'])->name('facturas.edit');
+        Route::post('/facturas', [FacturaController::class, 'store'])
+            ->name('facturas.store')->middleware('permission:facturas.gestionar');
+        Route::put('/facturas/{factura}', [FacturaController::class, 'update'])
+            ->name('facturas.update')->middleware('permission:facturas.gestionar');
+        Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])
+            ->name('facturas.destroy')->middleware('permission:facturas.gestionar');
+    });
 });
 
 require __DIR__ . '/auth.php';
