@@ -17,6 +17,7 @@ use App\Models\EstacionServicio;
 use App\Models\MensajeInterno;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Models\Trabajo;
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
@@ -26,7 +27,16 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             'homeNotices' => AdminNoticeController::load(),
         ]);
     })->name('index');
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard', function () {
+        $todasLasObras = Trabajo::all();
+
+        return Inertia::render('Dashboard', [
+            'obras'          => $todasLasObras->take(5), // Solo las últimas 5 para la tabla
+            'totalObrasCount' => $todasLasObras->count(), // El número total para el contador
+            'pedidos'        => [],
+            'legalizaciones' => [],
+        ]);
+    })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
