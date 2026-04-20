@@ -18,6 +18,7 @@ const es = {
             delete: 'Eliminar',
             logOut: 'Cerrar sesión',
             deleteAccount: 'Eliminar cuenta',
+            viewAll: 'Ver todas',
         },
         validation: {
             required: 'Este campo es obligatorio.',

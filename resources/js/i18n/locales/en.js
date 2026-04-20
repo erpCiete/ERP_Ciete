@@ -18,6 +18,7 @@ const en = {
             delete: 'Delete',
             logOut: 'Log out',
             deleteAccount: 'Delete account',
+            viewAll: 'View all',
         },
         validation: {
             required: 'This field is required.',
