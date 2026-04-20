@@ -158,12 +158,12 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     });
 
     //Modulo de Importaciones - SPRINT 03
-    Route::middleware('permission:importaciones.gestionar')->group(function () {
-        Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
-        Route::get('/importaciones/subir', [ImportacionController::class, 'create'])->name('importaciones.create');
-        Route::post('/importaciones/procesar', [ImportacionController::class, 'store'])->name('importaciones.store');
-        Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');
-        Route::post('/importaciones/confirmar/{id}', [ImportacionController::class, 'confirm'])->name('importaciones.confirm');
+    Route::middleware('permission:importaciones.ejecutar')->group(function () {
+    Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
+    Route::get('/importaciones/subir', [ImportacionController::class, 'create'])->name('importaciones.create');
+    Route::post('/importaciones/procesar', [ImportacionController::class, 'store'])->name('importaciones.store');
+    Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');
+    Route::post('/importaciones/confirmar/{id}', [ImportacionController::class, 'confirm'])->name('importaciones.confirm');
     });
     // Sprint 04 · Pedidos
     Route::middleware('permission:pedidos.ver')->group(function () {
