@@ -43,8 +43,21 @@ Route::prefix('v1')->middleware('web')->group(function () {
         Route::apiResource('trabajos', TrabajoApiController::class)
             ->middleware('permission:trabajos.ver');
 
-        // API de Pedidos - SPRINT ACTUAL
-        Route::apiResource('pedidos', PedidoController::class)
-            ->middleware('permission:pedidos.ver'); // <--- Recurso API añadido
+        /**
+         * API de Pedidos - SPRINT ACTUAL
+         * Se está aplicando el middleware permission:pedidos.ver a todo el apiResource. 
+         * Esto significa que un usuario que solo tenga permiso para ver podrá también ejecutar POST (crear) o DELETE (eliminar).
+        **/
+//      Route::apiResource('pedidos', PedidoController::class)
+//         ->middleware('permission:pedidos.ver'); // <--- Recurso API añadido
+
+        // Corrección: separar los permisos
+        Route::get('pedidos', [PedidoController::class, 'index'])->middleware('permission:pedidos.ver');
+        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->middleware('permission:pedidos.ver');
+        Route::middleware('permission:pedidos.gestionar')->group(function () {
+            Route::post('pedidos', [PedidoController::class, 'store']);
+            Route::match(['put', 'patch'], 'pedidos/{pedido}', [PedidoController::class, 'update']);
+            Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy']);
+        });
     });
 });
