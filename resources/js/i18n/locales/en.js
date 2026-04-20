@@ -5,7 +5,7 @@ const en = {
         panel: 'Panel',
         preferences: 'Preferences',
         footer: {
-            projectVersion: 'Ciete ERP v1.2.0',
+            projectVersion: 'Ciete ERP v1.3.0',
         },
         actions: {
             save: 'Save',
@@ -137,7 +137,7 @@ const en = {
             headTitle: 'Home - Ciete ERP',
             hero: {
                 badgeErp: 'Ciete ERP',
-                badgeVersion: 'Sprint 01 Version',
+                badgeVersion: 'Sprint 03 Version',
                 title: 'Internal operations portal',
                 subtitle: 'Navigation and context hub for the team.',
                 description:
@@ -223,8 +223,21 @@ const en = {
         },
         cards: {
             user: 'User',
-            context: 'Context',
+            context: 'Accessible contexts',
             noContext: 'No context',
+            primary: 'Primary',
+        },
+        notices: {
+            title: 'Home screen messages',
+            categories: {
+                notices: 'Internal notices',
+                updates: 'System updates',
+                companyNews: 'Company news',
+            },
+            addItem: 'Add message',
+            empty: 'No messages configured.',
+            placeholderEs: 'Text in Spanish…',
+            placeholderEn: 'Text in English…',
         },
         modules: {
             title: 'System modules',
@@ -235,6 +248,8 @@ const en = {
             clients: 'Clients',
             stations: 'Stations',
             works: 'Works',
+            audit: 'Audit',
+            soon: 'Coming soon',
         },
         activity: {
             title: 'Recent activity',

@@ -6,7 +6,11 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatusController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\TrabajoController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportacionController;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
@@ -19,7 +23,9 @@ Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update
 
 Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::get('/', function () {
-        return Inertia::render('Welcome');
+        return Inertia::render('Welcome', [
+            'homeNotices' => AdminNoticeController::load(),
+        ]);
     })->name('index');
     Route::get('/dashboard', function () {
         $todasLasObras = Trabajo::all();
@@ -91,15 +97,27 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::post('/soporte', [SupportController::class, 'send'])->name('support.send');
 
     Route::middleware('role:admin')->group(function () {
-        Route::get('/admin', function () {
-            return Inertia::render('Admin/Dashboard');
-        })->name('admin.dashboard');
+        Route::get('/admin', AdminDashboardController::class)->name('admin.dashboard');
 
         Route::post('/admin/maintenance', [MaintenanceController::class, 'toggle'])
             ->name('admin.maintenance.toggle');
 
+        Route::post('/admin/notices', [AdminNoticeController::class, 'update'])
+            ->name('admin.notices.update');
+
         Route::post('/mensajes/broadcast', [MessageController::class, 'broadcast'])
             ->name('messages.broadcast');
+
+        // ── Admin CRUD Usuarios ──
+        Route::get('/admin/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
+        Route::get('/admin/usuarios/crear', [AdminUserController::class, 'create'])->name('admin.users.create');
+        Route::post('/admin/usuarios', [AdminUserController::class, 'store'])->name('admin.users.store');
+        Route::get('/admin/usuarios/{user}/editar', [AdminUserController::class, 'edit'])->name('admin.users.edit');
+        Route::put('/admin/usuarios/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
+        Route::post('/admin/usuarios/{user}/toggle', [AdminUserController::class, 'toggle'])->name('admin.users.toggle');
+
+        // ── Admin Audit Log ──
+        Route::get('/admin/auditoria', [AdminUserController::class, 'audit'])->name('admin.audit');
     });
 
     Route::middleware('role:cierre')->group(function () {
@@ -124,16 +142,16 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::get('/trabajos', [TrabajoController::class, 'index'])->name('trabajos.index');
         Route::get('/trabajos/crear', [TrabajoController::class, 'create'])->name('trabajos.create');
         Route::get('/trabajos/{trabajo}/editar', [TrabajoController::class, 'edit'])->name('trabajos.edit');
-        
+
         // Rutas de acción (mutaciones) con permisos específicos
         Route::post('/trabajos', [TrabajoController::class, 'store'])
             ->name('trabajos.store')
             ->middleware('permission:trabajos.crear');
-            
+
         Route::put('/trabajos/{trabajo}', [TrabajoController::class, 'update'])
             ->name('trabajos.update')
             ->middleware('permission:trabajos.editar');
-            
+
         Route::delete('/trabajos/{trabajo}', [TrabajoController::class, 'destroy'])
             ->name('trabajos.destroy')
             ->middleware('permission:trabajos.eliminar');

@@ -99,28 +99,17 @@ function getSectionMotion(delay, shouldReduceMotion) {
     };
 }
 
-export default function Welcome() {
+export default function Welcome({ homeNotices = {} }) {
     const shouldReduceMotion = useReducedMotion();
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const showDeferredSections = useDeferredLandingSections();
 
-    const internalNotices = [
-        t('welcome.home.notices.item1'),
-        t('welcome.home.notices.item2'),
-        t('welcome.home.notices.item3'),
-    ];
+    const lang = locale === 'en' ? 'en' : 'es';
+    const pick = (items) => (items || []).map((item) => item[lang] || item.es || '');
 
-    const systemUpdates = [
-        t('welcome.home.updates.item1'),
-        t('welcome.home.updates.item2'),
-        t('welcome.home.updates.item3'),
-    ];
-
-    const companyNews = [
-        t('welcome.home.companyNews.item1'),
-        t('welcome.home.companyNews.item2'),
-        t('welcome.home.companyNews.item3'),
-    ];
+    const internalNotices = pick(homeNotices.notices);
+    const systemUpdates = pick(homeNotices.updates);
+    const companyNews = pick(homeNotices.companyNews);
 
     return (
         <AuthenticatedLayout header={t('welcome.brand')}>

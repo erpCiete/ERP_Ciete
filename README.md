@@ -2,81 +2,120 @@
   <img src="public/favicon.svg" alt="ERP Ciete Logo" width="108">
 </p>
 
-<h1 align="center">ERP Ciete - Plataforma de gestion para ingenieria v1.2.0</h1>
+<h1 align="center">ERP Ciete — Plataforma de gestión para ingeniería</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 12">
-  <img src="https://img.shields.io/badge/PHP-8.4-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.4">
-  <img src="https://img.shields.io/badge/Inertia.js-2-9553E9?style=for-the-badge" alt="Inertia.js 2">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=111827" alt="React 18">
-  <img src="https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 3">
-  <img src="https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 6">
+  <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+">
+  <img src="https://img.shields.io/badge/Inertia.js-2/3-9553E9?style=for-the-badge" alt="Inertia.js">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827" alt="React 19">
+  <img src="https://img.shields.io/badge/TailwindCSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8">
 </p>
 
-ERP Ciete es una plataforma web orientada a la gestion operativa de empresas de ingenieria.  
-El objetivo del producto es centralizar procesos internos, mejorar trazabilidad y reducir friccion entre operacion tecnica y administracion.
+ERP interno para gestión operativa de empresas de ingeniería. Centraliza control de trabajos, clientes, estaciones, importaciones y administración de usuarios bajo un sistema de roles, permisos y contextos (MOEVE / REPSOL).
 
-Este repositorio contiene el estado funcional del MVP (Sprint 1), listo para evolucionar por modulos.
+Desarrollado por ABACO para Ciete Ingenieros.
 
-## Resumen ejecutivo
+## Estado del proyecto
 
-- Producto: ERP web interno para gestion empresarial.
-- Sector objetivo: ingenieria, proyectos tecnicos y servicios profesionales.
-- Enfoque: control de acceso por roles/permisos, experiencia de uso moderna y base tecnica escalable.
-- Estado actual: Sprint 1 completado con autenticacion, paneles operativos y base de permisos.
+| Dato          | Valor                                                  |
+| ------------- | ------------------------------------------------------ |
+| Versión       | v1.3.0                                                 |
+| Sprint actual | Sprint 03 cerrado — Sprint 04 en preparación           |
+| Tests         | 65 pass (2 fail preexistentes en `TrabajoRequestTest`) |
+| Build         | Vite 8 — OK                                            |
 
-## Capacidades entregadas (MVP Sprint 1)
+## Stack técnico
 
-- Autenticacion de usuarios:
-    - Inicio y cierre de sesion.
-    - Recuperacion y restablecimiento de password.
-- Control de acceso:
-    - Middleware por rol (`role:admin`, `role:cierre`).
-    - Middleware por permiso (`permission:trabajos.ver`).
-- Espacios de trabajo:
-    - Dashboard general de usuario autenticado.
-    - Dashboard administrativo (`/admin`) para perfil administrador.
-    - Panel de cierre (`/cierre`) para control de trabajos cerrados.
-- Perfil de usuario:
-    - Edicion de perfil.
-    - Cambio de password.
-    - Seleccion de avatar corporativo.
-- Experiencia de usuario:
-    - Interfaz bilingue (ES/EN).
-    - Navegacion responsive para desktop y mobile.
+| Capa          | Tecnología      | Versión (composer/package.json) |
+| ------------- | --------------- | ------------------------------- |
+| Backend       | Laravel         | `^12.0` (runtime 12.54.1)       |
+| PHP           | PHP             | `^8.2` (runtime 8.4.12)         |
+| Adapter SSR   | Inertia Laravel | `^2.0`                          |
+| Frontend SPA  | Inertia React   | `^3.0.3`                        |
+| UI framework  | React           | `^19.2.5`                       |
+| CSS           | Tailwind CSS    | `^4.2.2`                        |
+| Bundler       | Vite            | `^8.0.8`                        |
+| Auth          | Laravel Sanctum | sesiones cookie                 |
+| BD local      | SQLite          | —                               |
+| BD producción | MySQL           | —                               |
 
-## Arquitectura y tecnologia
+## Módulos funcionales
 
-- Backend: Laravel 12 (PHP 8.4+)
-- Frontend: Inertia.js 2 + React 18
-- UI: Tailwind CSS 3 + Vite 6
-- Datos: SQLite en local (soporte para MySQL en entorno productivo)
-- Modelo de usuarios: tabla `usuarios` con relacion a roles y permisos
+### Operativos (usuario autenticado)
 
-## Valor para negocio
+- **Trabajos** — CRUD completo con aislamiento por contexto. Permisos: `trabajos.ver`, `trabajos.crear`, `trabajos.editar`, `trabajos.eliminar`.
+- **Clientes** — CRUD web + API REST (`/api/v1/clientes`).
+- **Estaciones de servicio** — CRUD web + API REST (`/api/v1/estaciones`). Modelos diferenciados por contexto (MOEVE/REPSOL + extensiones).
+- **Importaciones** — Carga de datos desde Excel con `ExcelParserService`.
+- **Dashboard usuario** — Panel post-login con resumen operativo.
 
-- Centralizacion de procesos en una sola plataforma.
-- Reduccion de tareas manuales y dependencias de hojas dispersas.
-- Base preparada para escalar por areas: proyectos, clientes, facturacion, reportes y operacion.
-- Menor riesgo operativo gracias a permisos por funcionalidad.
+### Administración (`/admin`, rol `admin`)
 
-## Seguridad y gobierno de acceso
+- **Dashboard admin** — Estadísticas generales, listado de usuarios, actividad reciente (auditoría).
+- **Gestión de usuarios** — Crear, editar, activar/desactivar usuarios. Asignación de roles y contextos.
+- **Auditoría** — Registro de actividad por usuario (`AuditLog`).
+- **Modo mantenimiento** — Toggle desde panel admin.
+- **Avisos del sistema** — Editor bilingüe (ES/EN) de avisos, actualizaciones y noticias. Se muestran en la pantalla de inicio según el idioma del usuario. Persistencia en `storage/app/notices.json`.
 
-- Sesiones autenticadas y gestion de credenciales bajo estandares Laravel.
-- Passwords almacenados con hash seguro.
-- Rutas protegidas por middleware de autenticacion, rol y permiso.
-- Separacion clara entre experiencia de usuario estandar y administrativa.
+### Transversales
+
+- **Autenticación** — Login, logout, recuperación y cambio de contraseña.
+- **Roles y permisos** — `admin`, `usuario`, `cierre`, `gestor_moeve`, `gestor_repsol`. Middleware `role:` y `permission:`.
+- **Contextos** — MOEVE (id=1) y REPSOL (id=2). Aislamiento de datos por contexto del usuario.
+- **i18n** — Interfaz bilingüe ES/EN con hook `useI18n`. Archivos en `resources/js/i18n/locales/`.
+- **Perfil** — Edición de datos, cambio de password, selección de avatar corporativo.
+- **Pantalla de inicio** — Welcome institucional con avisos dinámicos por idioma.
+
+## Estructura del proyecto
+
+```
+app/
+  Http/
+    Controllers/
+      Admin/              # DashboardController, UserController, NoticeController, MaintenanceController
+      Api/                # TrabajoController, ClienteController, EstacionController...
+    Middleware/            # HandleInertiaRequests, EnsureMaintenanceMode, CheckRole, CheckPermission
+    Requests/             # Validaciones (Store/Update para cada recurso)
+    Resources/            # API Resources (Trabajo, Contrato, Estacion, TipoTrabajo...)
+  Models/                 # Eloquent: User, Trabajo, Contrato, Empresa, EstacionServicio, AuditLog...
+  Services/               # ExcelParserService
+  Traits/                 # Reutilizables
+resources/js/
+  Pages/                  # Inertia pages (Welcome, Dashboard, Admin/*, Trabajos/*, Clientes/*, Estaciones/*)
+  Components/ui/          # BadgeTrabajo, TrabajosColumnas...
+  Hooks/                  # useTrabajos, useEstaciones, useI18n, useTheme...
+  Layouts/                # AuthenticatedLayout
+  i18n/locales/           # es.js, en.js
+routes/
+  web.php                 # Rutas web (Inertia) + admin
+  api.php                 # API REST v1
+  auth.php                # Rutas de autenticación
+database/
+  migrations/             # Esquema de BD
+  seeders/                # DatosBaseSeeder (roles, permisos, contextos, usuarios iniciales)
+  factories/              # TrabajoFactory
+docs/
+  01_ORGANIZACION/        # Normas de equipo y flujo Git
+  02_CLIENTE/             # Requisitos y contexto de negocio
+  03_API_ERP/             # Contratos API y mapeos
+  04_DISENO_UI/           # Guías de diseño
+  05-SPRINTS/             # Entregables y bitácoras por sprint
+tests/
+  Feature/                # TrabajoTest, Auth, Seeder, ErrorPages, Maintenance, RoleAccess...
+```
 
 ## Puesta en marcha local
 
 ### Requisitos
 
-- PHP 8.4 o superior
+- PHP 8.2 o superior
 - Composer 2
 - Node.js 18 o superior
 - npm 10 o superior
 
-### Instalacion
+### Instalación
 
 ```bash
 git clone https://github.com/erpCiete/ERP_Ciete.git
@@ -85,62 +124,69 @@ composer install
 npm install
 cp .env.example .env
 php artisan key:generate
-
 ```
 
-comandos utiles:
+Con SQLite (por defecto en local):
 
 ```bash
-php artisan config:clear
-php artisan cache:clear
-php artisan migrate:fresh --seed
-php artisan optimize:clear
-
+php artisan migrate --seed
 ```
 
-Si usas SQLite en local:
-
-```bash
-touch database/database.sqlite
-php artisan migrate
-```
-
-## Ejecucion en desarrollo
+### Ejecución
 
 ```bash
 composer run dev
 ```
 
-Alternativa en terminales separadas:
+O en terminales separadas:
 
 ```bash
 php artisan serve
 npm run dev
 ```
 
-## Calidad tecnica
+### Comandos útiles
 
 ```bash
-php artisan test
-./vendor/bin/pint
+php artisan test                    # Tests (65 pass)
+php artisan migrate:fresh --seed    # Resetear BD con datos base
+php artisan optimize:clear          # Limpiar cachés
+./vendor/bin/pint                   # Formateo de código PHP
+npm run build                       # Build de producción
 ```
 
-## Estructura de alto nivel
+## Seeders
 
-- `app/` logica de negocio y controladores
-- `routes/` rutas web y autenticacion
-- `resources/js/` interfaz React (Inertia)
-- `database/` migraciones y seeders
-- `docs/` memoria tecnica y entregables por sprint
+`DatosBaseSeeder` carga:
 
-## Roadmap recomendado (post Sprint 1)
+- Roles: admin, usuario, cierre, gestor_moeve, gestor_repsol
+- Permisos por módulo (trabajos, clientes, estaciones, importaciones, admin)
+- Contextos: MOEVE, REPSOL
+- Usuarios iniciales con asignación de rol y contexto
 
-- Consolidacion de modulos de negocio (proyectos, clientes, documentos y reportes).
-- Auditoria de actividad y trazabilidad por usuario.
-- Integracion con procesos de aprobacion y flujos internos.
-- Hardening de despliegue productivo y observabilidad.
+## Flujo Git
 
-## Contacto tecnico
+| Rama                    | Propósito                                                        |
+| ----------------------- | ---------------------------------------------------------------- |
+| `main`                  | Producción estable. Solo recibe merges de `develop` mediante PR. |
+| `develop`               | Integración. Recibe features cerradas.                           |
+| `versionDesplegada`     | Snapshot del último despliegue real.                             |
+| `feature/*`, `chore/*`  | Ramas de trabajo. Se abren desde `develop`.                      |
+| `back-dev`, `front-dev` | Ramas de integración por equipo (back/front).                    |
 
-ERP Ciete es desarrollado por ABACO para Ciete Ingenieros.  
-Para continuidad funcional, revisar la documentacion en `docs/` y la memoria por sprint.
+## Documentación técnica
+
+La documentación vive en `docs/` y se organiza por sprint:
+
+- `docs/01_ORGANIZACION/` — Normas, flujo Git, convenciones
+- `docs/02_CLIENTE/` — Requisitos de negocio
+- `docs/03_API_ERP/` — Contratos API (Trabajos, importaciones)
+- `docs/04_DISENO_UI/` — Guías de interfaz y tokens de diseño
+- `docs/05-SPRINTS/` — Entregables y bitácoras por sprint
+
+Cada sprint tiene su carpeta con bitácoras por persona en `Bitacora/General/`, `Bitacora/BACK/` o `Bitacora/FRONT/`.
+
+## Contacto
+
+Desarrollado por ABACO para Ciete Ingenieros.  
+Para continuidad: revisar `docs/` y las bitácoras del sprint correspondiente.

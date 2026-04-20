@@ -5,7 +5,7 @@ const es = {
         panel: 'Panel',
         preferences: 'Preferencias',
         footer: {
-            projectVersion: 'ERP Ciete v1.2.0',
+            projectVersion: 'ERP Ciete v1.3.0',
         },
         actions: {
             save: 'Guardar',
@@ -137,7 +137,7 @@ const es = {
             headTitle: 'Inicio - ERP Ciete',
             hero: {
                 badgeErp: 'ERP Ciete',
-                badgeVersion: 'Versión Sprint 01',
+                badgeVersion: 'Versión Sprint 03',
                 title: 'Portal interno de operaciones',
                 subtitle: 'Centro de navegación y contexto para el equipo.',
                 description:
@@ -223,8 +223,21 @@ const es = {
         },
         cards: {
             user: 'Usuario',
-            context: 'Contexto',
+            context: 'Contextos accesibles',
             noContext: 'Sin contexto',
+            primary: 'Principal',
+        },
+        notices: {
+            title: 'Mensajes de la pantalla de inicio',
+            categories: {
+                notices: 'Avisos internos',
+                updates: 'Actualizaciones del sistema',
+                companyNews: 'Novedades de la empresa',
+            },
+            addItem: 'Añadir mensaje',
+            empty: 'Sin mensajes configurados.',
+            placeholderEs: 'Texto en español…',
+            placeholderEn: 'Texto en inglés…',
         },
         modules: {
             title: 'Módulos del sistema',
@@ -235,6 +248,8 @@ const es = {
             clients: 'Clientes',
             stations: 'Estaciones',
             works: 'Obras',
+            audit: 'Auditoría',
+            soon: 'Próximamente',
         },
         activity: {
             title: 'Actividad reciente',
@@ -993,7 +1008,7 @@ const es = {
         submit: 'Enviar solicitud',
         footer: 'Ciete Ingenieros S.A. — Soporte técnico interno',
     },
-        trabajos: {
+    trabajos: {
         title: 'Trabajos',
         create: 'Nuevo trabajo',
         edit: 'Editar trabajo',
