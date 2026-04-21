@@ -46,27 +46,43 @@ Aviso para QA/Frontend: No es necesario ejecutar un nuevo migrate:fresh --seed c
 
 ## 2026-04-21
 ### Objetivo del dia
-- 
+Desarrollar el CRUD backend para el módulo de Facturas, implementando lógica de validación condicional según la empresa (doble factura para REPSOL y validación por número CCP para MOEVE). 
 
 ### Tareas realizadas
-- 
+Creación de FacturaResource para estandarizar la salida JSON y exponer la relación con la tabla pivote de pedidos (factura_pedidos).
+
+Implementación de StoreFacturaRequest y UpdateFacturaRequest con reglas dinámicas basadas en el id_contexto del usuario (Compound unique id_trabajo + orden_factura para REPSOL; unique numero_factura_ccp para MOEVE).
+
+Desarrollo de FacturaController implementando el listado con filtros y las operaciones CRUD, asegurando la sincronización de pedidos dentro de transacciones de base de datos (DB::transaction). 
 
 ### Archivos tocados
-- 
+app/Http/Controllers/Api/FacturaController.php
+
+app/Http/Requests/Api/StoreFacturaRequest.php
+
+app/Http/Requests/Api/UpdateFacturaRequest.php
+
+app/Http/Resources/Api/FacturaResource.php 
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 10:30 | Determinar la forma más segura de aplicar la lógica de validación por empresa sin ensuciar el request. | Bajo | Se decidió inyectar el id_contexto directamente desde el usuario autenticado (Auth::user()?->id_contexto) dentro del método rules() de los FormRequests. | Cerrado |
 
 ### Decisiones tomadas
-- 
+Se utilizó el contexto del usuario en sesión (id_contexto) como fuente de la verdad para aplicar la lógica de validación de MOEVE o REPSOL, evitando depender de parámetros enviados desde el cliente que podrían ser manipulados.
+
+Se añadió un borrado en cascada manual (detach()) en el método destroy del controlador como medida de seguridad para limpiar la tabla pivote de pedidos en caso de que la migración no tuviera la restricción onDelete('cascade'). 
 
 ### Pendiente para mañana
-- 
+Iniciar las tareas que estaban bloqueadas por este CRUD: Tarea F04-02, Tarea B04-04 y Tarea D04-01 (presumiblemente el frontend de facturas y su integración). 
 
 ### Handoff
-- 
+El API REST de Facturas está completamente operativo y validado.
+
+El frontend ya puede enviar un array pedidos (con id_pedido e importe_aplicado) durante el POST/PUT para que se sincronicen automáticamente en la tabla pivote.
+
+La API devolverá los errores 422 Unprocessable Entity correctamente formateados si se intenta duplicar una factura según la lógica del cliente activo. 
 
 ## 2026-04-22
 ### Objetivo del dia
