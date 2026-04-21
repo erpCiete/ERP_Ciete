@@ -6,7 +6,7 @@ use App\Models\Pedido;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
-class UpdatePedidoRequest extends BaseApiRequest
+class StorePedidoRequest extends BaseApiRequest
 {
     /**
      * Prepara los datos para validación, casteando booleanos
@@ -14,40 +14,42 @@ class UpdatePedidoRequest extends BaseApiRequest
      */
     protected function prepareForValidation(): void
     {
-        $normalized = [];
+        $this->merge([
+            'estado' => $this->input('estado', 'pendiente'),
+            'importe_pedido' => $this->input('importe_pedido', 0),
+            'importe_solicitado' => $this->input('importe_solicitado', 0),
+            'importe_facturado' => $this->input('importe_facturado', 0),
+            'unidades_pedido' => $this->input('unidades_pedido', 0),
+            'unidades_solicitadas' => $this->input('unidades_solicitadas', 0),
+            'pedido_completo' => filter_var($this->input('pedido_completo', false), FILTER_VALIDATE_BOOLEAN),
+            'tiene_mas_de_1_item' => filter_var($this->input('tiene_mas_de_1_item', false), FILTER_VALIDATE_BOOLEAN),
+            'facturado_completo' => filter_var($this->input('facturado_completo', false), FILTER_VALIDATE_BOOLEAN),
+        ]);
 
-        // Casteo estricto de booleanos solo si vienen en el request (para soportar PATCH)
-        $booleans = ['pedido_completo', 'tiene_mas_de_1_item', 'facturado_completo'];
-        foreach ($booleans as $field) {
-            if ($this->has($field)) {
-                $normalized[$field] = filter_var($this->input($field), FILTER_VALIDATE_BOOLEAN);
-            }
-        }
-
-        // Limpieza de cadenas
         if ($this->has('observaciones')) {
-            $normalized['observaciones'] = $this->normalizeNullableString($this->input('observaciones'));
+            $this->merge([
+                'observaciones' => $this->normalizeNullableString($this->input('observaciones'))
+            ]);
         }
 
-        // Limpieza y estructuración de los items anidados
+        // Limpieza y estructuración de los items anidados (Esquema Real de abaco_ciete)
         if ($this->has('items') && is_array($this->input('items'))) {
-            $normalized['items'] = collect($this->input('items'))->map(function ($item, $index) {
-                $cantidad = $item['cantidad'] ?? 0;
-                $precioUnitario = $item['precio_unitario'] ?? 0;
+            $items = collect($this->input('items'))->map(function ($item) {
+                $cantidad = isset($item['cantidad']) ? (float) $item['cantidad'] : 1;
+                $precioUnitario = isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : 0;
                 
                 return [
-                    'orden' => $item['orden'] ?? ($index + 1),
-                    'concepto_libre' => $this->normalizeNullableString($item['concepto_libre'] ?? null),
+                    'id_tarifario_linea' => $item['id_tarifario_linea'] ?? null,
+                    'codigo_servicio' => $this->normalizeNullableString($item['codigo_servicio'] ?? null),
+                    'numero_tarifa' => $this->normalizeNullableString($item['numero_tarifa'] ?? null),
+                    'descripcion_servicio' => $this->normalizeNullableString($item['descripcion_servicio'] ?? null),
                     'cantidad' => $cantidad,
                     'precio_unitario' => $precioUnitario,
-                    'iva_porcentaje' => $item['iva_porcentaje'] ?? 21,
                     'total_linea' => $item['total_linea'] ?? ($cantidad * $precioUnitario),
                 ];
             })->values()->all();
-        }
 
-        if (!empty($normalized)) {
-            $this->merge($normalized);
+            $this->merge(['items' => $items]);
         }
     }
 
@@ -117,14 +119,5 @@ class UpdatePedidoRequest extends BaseApiRequest
 
             
         ];
-    }
-
-    /**
-     * Helper para limpiar cadenas vacías
-     */
-    protected function normalizeNullableString(?string $value): ?string
-    {
-        $value = trim((string) $value);
-        return $value === '' ? null : $value;
     }
 }

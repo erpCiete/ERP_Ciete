@@ -77,43 +77,37 @@ class UpdatePedidoRequest extends BaseApiRequest
     {
         $normalized = [];
 
-        $simpleNullableFields = [
-            'numero_pedido',
-            'numero_aviso',
-            'fecha_solicitud_pedido',
-            'fecha_recepcion_pedido',
-            'fecha_solicitud_factura',
-            'descripcion_seleccionable',
-            'descripcion_libre',
-            'observaciones',
-        ];
-
-        foreach ($simpleNullableFields as $field) {
+        // Casteo estricto de booleanos solo si vienen en el request (para soportar PATCH)
+        $booleans = ['pedido_completo', 'tiene_mas_de_1_item', 'facturado_completo'];
+        foreach ($booleans as $field) {
             if ($this->has($field)) {
-                $normalized[$field] = $this->normalizeNullableString($this->input($field));
+                $normalized[$field] = filter_var($this->input($field), FILTER_VALIDATE_BOOLEAN);
             }
         }
 
-        if ($this->has('items')) {
-            $normalized['items'] = collect($this->input('items', []))
-                ->map(function ($item, $index) {
-                    return [
-                        'id_tarifario_servicio' => $item['id_tarifario_servicio'] ?? null,
-                        'id_servicio' => $item['id_servicio'] ?? null,
-                        'orden' => $item['orden'] ?? ($index + 1),
-                        'concepto_seleccionable' => $this->normalizeNullableString($item['concepto_seleccionable'] ?? null),
-                        'concepto_libre' => $this->normalizeNullableString($item['concepto_libre'] ?? null),
-                        'cantidad' => $item['cantidad'] ?? null,
-                        'precio_unitario' => $item['precio_unitario'] ?? null,
-                        'iva_porcentaje' => $item['iva_porcentaje'] ?? 21,
-                        'total_linea' => $item['total_linea'] ?? null,
-                    ];
-                })
-                ->values()
-                ->all();
+        if ($this->has('observaciones')) {
+            $normalized['observaciones'] = $this->normalizeNullableString($this->input('observaciones'));
         }
 
-        if ($normalized !== []) {
+        // Limpieza y estructuración de los items anidados (Esquema Real de abaco_ciete)
+        if ($this->has('items') && is_array($this->input('items'))) {
+            $normalized['items'] = collect($this->input('items'))->map(function ($item) {
+                $cantidad = isset($item['cantidad']) ? (float) $item['cantidad'] : 1;
+                $precioUnitario = isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : 0;
+                
+                return [
+                    'id_tarifario_linea' => $item['id_tarifario_linea'] ?? null,
+                    'codigo_servicio' => $this->normalizeNullableString($item['codigo_servicio'] ?? null),
+                    'numero_tarifa' => $this->normalizeNullableString($item['numero_tarifa'] ?? null),
+                    'descripcion_servicio' => $this->normalizeNullableString($item['descripcion_servicio'] ?? null),
+                    'cantidad' => $cantidad,
+                    'precio_unitario' => $precioUnitario,
+                    'total_linea' => $item['total_linea'] ?? ($cantidad * $precioUnitario),
+                ];
+            })->values()->all();
+        }
+
+        if (!empty($normalized)) {
             $this->merge($normalized);
         }
     }
