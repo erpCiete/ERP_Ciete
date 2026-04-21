@@ -147,6 +147,21 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             ->middleware('permission:trabajos.eliminar');
     });
 
+    // Modulo de Pedidos
+    Route::middleware('permission:pedidos.ver')->group(function () {
+        Route::get('/pedidos', function () {
+            return Inertia::render('Pedidos/Index');
+        })->name('pedidos.index');
+        
+        Route::get('/pedidos/crear', function () {
+            return Inertia::render('Pedidos/Create');
+        })->name('pedidos.create');
+        
+        Route::get('/pedidos/{pedido}/editar', function ($pedido) {
+            return Inertia::render('Pedidos/Edit', ['id' => $pedido]);
+        })->name('pedidos.edit');
+    });
+
     //Modulo de Importaciones - SPRINT 03
     Route::middleware('permission:importaciones.gestionar')->group(function () {
         Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
