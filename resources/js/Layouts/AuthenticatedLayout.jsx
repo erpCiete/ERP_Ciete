@@ -104,10 +104,10 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                                         <span className={navLinkLabelClass(route().current('trabajos.*'))}>{t('nav.works')}</span>
                                     </span>
                                 </Link>
-                                <Link href="#" className={navLinkClass(false)}>
+                                <Link href={route('pedidos.index')} className={navLinkClass(route().current('pedidos.*'))}>
                                     <span className="inline-flex items-center gap-2">
                                         {OrdersIcon && <OrdersIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.orders')}</span>
+                                        <span className={navLinkLabelClass(route().current('pedidos.*'))}>{t('nav.orders')}</span>
                                     </span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
