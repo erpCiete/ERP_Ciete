@@ -73,7 +73,7 @@ class PedidoController extends Controller
                 $this->syncItems($pedido, $request->input('items'));
             }
 
-            return $this->createdResponse(new PedidoResource($pedido->load('items')));
+            return (new PedidoResource($pedido->load('items')))->response()->setStatusCode(201);
         });
     }
 
