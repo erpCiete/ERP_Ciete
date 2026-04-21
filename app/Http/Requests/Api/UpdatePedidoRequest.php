@@ -15,48 +15,17 @@ class UpdatePedidoRequest extends BaseApiRequest
         $pedidoId = $pedido instanceof Pedido ? $pedido->id_pedido : $pedido;
 
         return [
-            'id_presupuesto' => [
-                'nullable',
-                'integer',
-                Rule::exists('presupuestos', 'id_presupuesto')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
-            ],
-            'id_proyecto' => [
+            'id_trabajo' => [
                 'sometimes',
                 'required',
                 'integer',
-                Rule::exists('proyectos', 'id_proyecto')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
-            ],
-            'id_empresa_cliente' => [
-                'sometimes',
-                'required',
-                'integer',
-                Rule::exists('empresas', 'id_empresa')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
-            ],
-            'id_contacto_empresa_cliente' => [
-                'nullable',
-                'integer',
-                Rule::exists('contactos_empresas', 'id_contacto_empresa')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
-            ],
-            'id_estacion_servicio' => [
-                'nullable',
-                'integer',
-                Rule::exists('estaciones_servicio', 'id_estacion_servicio')
+                Rule::exists('trabajos', 'id_trabajo')
                     ->where(fn ($query) => $query->where('id_contexto', $contextId)),
             ],
             'id_tarifario' => [
                 'nullable',
                 'integer',
                 Rule::exists('tarifarios', 'id_tarifario')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
-            ],
-            'id_usuario_responsable' => [
-                'nullable',
-                'integer',
-                Rule::exists('usuarios', 'id_usuario')
                     ->where(fn ($query) => $query->where('id_contexto', $contextId)),
             ],
             'numero_pedido' => [
@@ -68,40 +37,39 @@ class UpdatePedidoRequest extends BaseApiRequest
                     ->ignore($pedidoId, 'id_pedido')
                     ->where(fn ($query) => $query->where('id_contexto', $contextId)),
             ],
-            'numero_aviso' => ['nullable', 'string', 'max:100'],
-            'fecha_solicitud_pedido' => ['nullable', 'date'],
-            'fecha_recepcion_pedido' => ['nullable', 'date'],
-            'fecha_solicitud_factura' => ['nullable', 'date'],
+            'fecha_solicitud' => ['nullable', 'date'],
+            'fecha_recepcion' => ['nullable', 'date'],
+            'importe_pedido' => ['nullable', 'numeric', 'min:0'],
+            'importe_solicitado' => ['nullable', 'numeric', 'min:0'],
+            'importe_facturado' => ['nullable', 'numeric', 'min:0'],
+            'unidades_pedido' => ['nullable', 'numeric', 'min:0'],
+            'unidades_solicitadas' => ['nullable', 'numeric', 'min:0'],
             'estado' => [
                 'sometimes',
                 Rule::in(['pendiente', 'solicitado', 'recibido', 'en_ejecucion', 'cerrado', 'anulado']),
             ],
-            'descripcion_seleccionable' => ['nullable', 'string', 'max:255'],
-            'descripcion_libre' => ['nullable', 'string'],
-            'subtotal' => ['nullable', 'numeric', 'min:0'],
-            'iva' => ['nullable', 'numeric', 'min:0'],
-            'total' => ['nullable', 'numeric', 'min:0'],
+            'pedido_completo' => ['nullable', 'boolean'],
+            'tiene_mas_de_1_item' => ['nullable', 'boolean'],
+            'facturado_completo' => ['nullable', 'boolean'],
             'observaciones' => ['nullable', 'string'],
 
             'items' => ['sometimes', 'array'],
-            'items.*.id_tarifario_servicio' => [
+            'items.*.id_tarifario_linea' => [
                 'nullable',
                 'integer',
-                Rule::exists('tarifario_servicios', 'id_tarifario_servicio')
+                Rule::exists('tarifario_lineas', 'id_tarifario_linea')
                     ->where(fn ($query) => $query->where('id_contexto', $contextId)),
             ],
-            'items.*.id_servicio' => [
-                'nullable',
-                'integer',
-                Rule::exists('servicios', 'id_servicio'),
-            ],
-            'items.*.orden' => ['nullable', 'integer', 'min:1'],
-            'items.*.concepto_seleccionable' => ['nullable', 'string', 'max:255'],
-            'items.*.concepto_libre' => ['nullable', 'string'],
-            'items.*.cantidad' => ['required_with:items', 'numeric', 'gt:0'],
+            
+            // Validaciones para Líneas de Pedido (Items) - Esquema Real
+            'items' => ['nullable', 'array'],
+            'items.*.id_tarifario_linea' => ['nullable', 'integer'],
+            'items.*.codigo_servicio' => ['nullable', 'string', 'max:30'],
+            'items.*.numero_tarifa' => ['nullable', 'string', 'max:30'],
+            'items.*.descripcion_servicio' => ['nullable', 'string', 'max:255'],
+            'items.*.cantidad' => ['required_with:items', 'numeric', 'min:0'],
             'items.*.precio_unitario' => ['required_with:items', 'numeric', 'min:0'],
-            'items.*.iva_porcentaje' => ['required_with:items', 'numeric', 'min:0'],
-            'items.*.total_linea' => ['required_with:items', 'numeric', 'min:0'],
+            'items.*.total_linea' => ['required_with:items', 'numeric'],
         ];
     }
 
