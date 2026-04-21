@@ -17,6 +17,10 @@ class FacturaController extends Controller
 {
     use ApiResponse;
 
+    /**
+     * Listado de Facturas.
+     * Aislamiento estricto por id_contexto inyectado en la base de la query.
+     */
     public function index(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
@@ -26,6 +30,7 @@ class FacturaController extends Controller
         $empresaId = $request->integer('id_empresa_cliente');
 
         $facturas = Factura::query()
+            ->where('id_contexto', Auth::user()->id_contexto) // <-- BLOQUEO MULTI-TENANT CRÍTICO
             ->with(['trabajo', 'pedidos'])
             ->when($trabajoId > 0, function ($query) use ($trabajoId): void {
                 $query->where('id_trabajo', $trabajoId);
@@ -38,82 +43,86 @@ class FacturaController extends Controller
             })
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($nested) use ($search): void {
-                    $nested
-                        ->where('numero_factura', 'like', "%{$search}%")
-                        ->orWhere('numero_factura_ccp', 'like', "%{$search}%")
-                        ->orWhere('observaciones', 'like', "%{$search}%");
+                    $nested->where('numero_factura', 'like', "%{$search}%")
+                           ->orWhere('numero_factura_ccp', 'like', "%{$search}%") // Soporte Búsqueda MOEVE
+                           ->orWhere('observaciones', 'like', "%{$search}%");
                 });
             })
             ->orderByDesc('created_at')
-            ->orderByDesc('id_factura')
-            ->paginate($perPage)
-            ->withQueryString();
+            ->paginate($perPage);
 
-        return $this->paginatedResponse(
-            $facturas,
-            FacturaResource::collection($facturas->getCollection())->resolve(),
-            'Listado de facturas obtenido'
-        );
+        return $this->successResponse(FacturaResource::collection($facturas));
     }
 
+    /**
+     * Creación de una nueva Factura.
+     */
     public function store(StoreFacturaRequest $request): JsonResponse
     {
-        $payload = $request->validated();
-
-        $factura = DB::transaction(function () use ($payload): Factura {
+        return DB::transaction(function () use ($request) {
             $factura = new Factura();
-            $this->fillFactura($factura, $payload);
-            $factura->id_contexto = Auth::user()?->id_contexto;
+            
+            // Asignación inmutable del contexto
+            $factura->id_contexto = Auth::user()->id_contexto;
+            
+            $this->fillFactura($factura, $request->validated());
             $factura->save();
 
-            if (array_key_exists('pedidos', $payload)) {
-                $this->syncPedidos($factura, $payload['pedidos'] ?? []);
+            if ($request->has('pedidos')) {
+                $this->syncPedidos($factura, $request->input('pedidos'));
             }
 
-            return $factura->load(['trabajo', 'pedidos']);
+            return (new FacturaResource($factura->load(['trabajo', 'pedidos'])))
+                    ->response()
+                    ->setStatusCode(201);
         });
-
-        return $this->successResponse(
-            (new FacturaResource($factura))->resolve(),
-            'Factura creada correctamente',
-            201
-        );
     }
 
+    /**
+     * Visualización detallada de una Factura.
+     */
     public function show(Factura $factura): JsonResponse
     {
-        $factura->load(['trabajo', 'pedidos']);
+        if ($factura->id_contexto !== Auth::user()->id_contexto) {
+            return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 403);
+        }
 
-        return $this->successResponse(
-            (new FacturaResource($factura))->resolve(),
-            'Detalle de factura obtenido'
-        );
+        $factura->load(['trabajo', 'pedidos']);
+        return $this->successResponse(new FacturaResource($factura));
     }
 
+    /**
+     * Actualización de Factura.
+     */
     public function update(UpdateFacturaRequest $request, Factura $factura): JsonResponse
     {
-        $payload = $request->validated();
+        if ($factura->id_contexto !== Auth::user()->id_contexto) {
+            return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 403);
+        }
 
-        DB::transaction(function () use ($factura, $payload): void {
-            $this->fillFactura($factura, $payload);
+        return DB::transaction(function () use ($request, $factura) {
+            $this->fillFactura($factura, $request->validated());
             $factura->save();
 
-            if (array_key_exists('pedidos', $payload)) {
-                $this->syncPedidos($factura, $payload['pedidos'] ?? []);
+            if ($request->has('pedidos')) {
+                $this->syncPedidos($factura, $request->input('pedidos'));
             }
-        });
 
-        return $this->successResponse(
-            (new FacturaResource($factura->fresh()->load(['trabajo', 'pedidos'])))->resolve(),
-            'Factura actualizada correctamente'
-        );
+            return $this->successResponse(new FacturaResource($factura->load(['trabajo', 'pedidos'])));
+        });
     }
 
+    /**
+     * Eliminación de Factura.
+     */
     public function destroy(Factura $factura): JsonResponse
     {
-        // El pivot table debería tener onDelete('cascade') en la migración,
-        // pero por seguridad si no lo tiene, podemos hacer detach() aquí.
+        if ($factura->id_contexto !== Auth::user()->id_contexto) {
+            return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 403);
+        }
+
         DB::transaction(function () use ($factura): void {
+            // Limpieza de relaciones en tabla pivote (factura_pedidos)
             $factura->pedidos()->detach();
             $factura->delete();
         });
@@ -121,13 +130,30 @@ class FacturaController extends Controller
         return $this->successResponse(null, 'Factura eliminada correctamente');
     }
 
+    /**
+     * Mapeo de columnas validadas al modelo.
+     */
     private function fillFactura(Factura $factura, array $data): void
     {
         $fields = [
-            'id_trabajo', 'id_empresa_cliente', 'numero_factura', 'numero_factura_ccp',
-            'serie', 'orden_factura', 'fecha_solicitud', 'fecha_emision', 'fecha_vencimiento',
-            'importe', 'base_imponible', 'iva', 'retencion', 'total', 'estado', 
-            'autofactura', 'sociedad', 'observaciones'
+            'id_trabajo', 
+            'id_empresa_cliente', 
+            'numero_factura', 
+            'numero_factura_ccp',
+            'serie', 
+            'orden_factura', 
+            'fecha_solicitud', 
+            'fecha_emision', 
+            'fecha_vencimiento',
+            'importe', 
+            'base_imponible', 
+            'iva', 
+            'retencion', 
+            'total', 
+            'estado', 
+            'autofactura', 
+            'sociedad', 
+            'observaciones'
         ];
 
         foreach ($fields as $field) {
@@ -137,17 +163,22 @@ class FacturaController extends Controller
         }
     }
 
+    /**
+     * Sincronización de la tabla pivote factura_pedidos.
+     */
     private function syncPedidos(Factura $factura, array $pedidosData): void
     {
         $syncData = [];
+        
         foreach ($pedidosData as $pedido) {
             $syncData[$pedido['id_pedido']] = [
                 'importe_aplicado' => $pedido['importe_aplicado'] ?? null,
-                'created_at' => now(),
-                'updated_at' => now(),
             ];
         }
-        
+
+        // El método sync inserta, actualiza y elimina automáticamente los registros huérfanos.
+        // Si la relación ->pedidos() en el modelo Factura tiene ->withTimestamps(), Laravel 
+        // inyecta el created_at y updated_at automáticamente.
         $factura->pedidos()->sync($syncData);
     }
 }
