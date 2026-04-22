@@ -3,7 +3,9 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\EstacionController;
+use App\Http\Controllers\Api\FacturaController;
 use App\Http\Controllers\Api\TrabajoController as TrabajoApiController;
+use App\Http\Controllers\Api\PedidoController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->middleware('web')->group(function () {
@@ -38,8 +40,26 @@ Route::prefix('v1')->middleware('web')->group(function () {
     });
 
     Route::middleware('auth')->group(function () {
-        // API de Trabajos (Obras) - Acceso controlado por permiso de ver
+        // API de Trabajos (Obras)
         Route::apiResource('trabajos', TrabajoApiController::class)
             ->middleware('permission:trabajos.ver');
+
+        // API de Pedidos
+        Route::get('pedidos', [PedidoController::class, 'index'])->middleware('permission:pedidos.ver');
+        Route::get('pedidos/{pedido}', [PedidoController::class, 'show'])->middleware('permission:pedidos.ver');
+        Route::middleware('permission:pedidos.gestionar')->group(function () {
+            Route::post('pedidos', [PedidoController::class, 'store']);
+            Route::match(['put', 'patch'], 'pedidos/{pedido}', [PedidoController::class, 'update']);
+            Route::delete('pedidos/{pedido}', [PedidoController::class, 'destroy']);
+        });
+
+        // API de Facturas — B04-02
+        Route::get('facturas', [FacturaController::class, 'index'])->middleware('permission:facturas.ver');
+        Route::get('facturas/{factura}', [FacturaController::class, 'show'])->middleware('permission:facturas.ver');
+        Route::middleware('permission:facturas.gestionar')->group(function () {
+            Route::post('facturas', [FacturaController::class, 'store']);
+            Route::match(['put', 'patch'], 'facturas/{factura}', [FacturaController::class, 'update']);
+            Route::delete('facturas/{factura}', [FacturaController::class, 'destroy']);
+        });
     });
 });
