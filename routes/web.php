@@ -9,28 +9,50 @@ use App\Http\Controllers\SupportController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Api\TrabajoController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportacionController;
+use App\Http\Controllers\DashboardController;
+
+// Controllers Sprint 03
+use App\Http\Controllers\Api\TrabajoController;
+
+// Controllers Sprint 04 — añadir use cuando el back entregue el controller
+// Si el controller no existe aún, comentar la línea y usar el closure de fallback
+use App\Http\Controllers\Api\PedidoController;
+// use App\Http\Controllers\FacturaController; // <-- descomentar cuando back lo entregue
+
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
-use App\Models\MensajeInterno;
+use App\Models\Trabajo;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 Route::middleware(['auth', 'maintenance'])->group(function () {
+
     Route::get('/', function () {
         return Inertia::render('Welcome', [
             'homeNotices' => AdminNoticeController::load(),
         ]);
     })->name('index');
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('/dashboard', function () {
+        $todasLasObras = Trabajo::all();
+        return Inertia::render('Dashboard', [
+            'obras'            => $todasLasObras->take(5),
+            'totalObrasCount'  => $todasLasObras->count(),
+            'pedidos' => [
+                            ['ref' => 'PED-001', 'obra' => 'Obra de prueba', 'estado' => 'solicitado'],
+                            ['ref' => 'PED-002', 'obra' => 'Otra obra',       'estado' => 'recibido'],
+                        ],
+            'legalizaciones'   => [],
+        ]);
+    })->name('dashboard');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
+    // ── Clientes ─────────────────────────────────────────────────────────────
     Route::middleware('permission:empresas_contactos.gestionar')->group(function () {
         Route::get('/clientes', function () {
             return Inertia::render('Clientes/Index');
@@ -47,6 +69,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         })->name('clientes.edit');
     });
 
+    // ── Estaciones ────────────────────────────────────────────────────────────
     Route::middleware('permission:estaciones.ver,estaciones.gestionar')->group(function () {
         Route::get('/estaciones', function () {
             return Inertia::render('Estaciones/Index');
@@ -65,6 +88,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         })->name('estaciones.edit');
     });
 
+    // ── Páginas generales ─────────────────────────────────────────────────────
     Route::get('/ayuda', function () {
         return Inertia::render('Help');
     })->name('help');
@@ -74,42 +98,36 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::get('/mensajes', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/mensajes', [MessageController::class, 'store'])->name('messages.store');
     Route::get('/mensajes/{mensaje}', [MessageController::class, 'show'])
-        ->where('mensaje', '[0-9]+')
-        ->name('messages.show');
+        ->where('mensaje', '[0-9]+')->name('messages.show');
     Route::post('/mensajes/{mensaje}/leer', [MessageController::class, 'markRead'])
-        ->where('mensaje', '[0-9]+')
-        ->name('messages.read');
+        ->where('mensaje', '[0-9]+')->name('messages.read');
     Route::post('/mensajes/{mensaje}/archivar', [MessageController::class, 'archive'])
-        ->where('mensaje', '[0-9]+')
-        ->name('messages.archive');
+        ->where('mensaje', '[0-9]+')->name('messages.archive');
 
     Route::get('/soporte', [SupportController::class, 'index'])->name('support');
     Route::post('/soporte', [SupportController::class, 'send'])->name('support.send');
 
+    // ── Admin ─────────────────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin', AdminDashboardController::class)->name('admin.dashboard');
 
         Route::post('/admin/maintenance', [MaintenanceController::class, 'toggle'])
             ->name('admin.maintenance.toggle');
-
         Route::post('/admin/notices', [AdminNoticeController::class, 'update'])
             ->name('admin.notices.update');
-
         Route::post('/mensajes/broadcast', [MessageController::class, 'broadcast'])
             ->name('messages.broadcast');
 
-        // ── Admin CRUD Usuarios ──
         Route::get('/admin/usuarios', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/admin/usuarios/crear', [AdminUserController::class, 'create'])->name('admin.users.create');
         Route::post('/admin/usuarios', [AdminUserController::class, 'store'])->name('admin.users.store');
         Route::get('/admin/usuarios/{user}/editar', [AdminUserController::class, 'edit'])->name('admin.users.edit');
         Route::put('/admin/usuarios/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
         Route::post('/admin/usuarios/{user}/toggle', [AdminUserController::class, 'toggle'])->name('admin.users.toggle');
-
-        // ── Admin Audit Log ──
         Route::get('/admin/auditoria', [AdminUserController::class, 'audit'])->name('admin.audit');
     });
 
+    // ── Cierre ────────────────────────────────────────────────────────────────
     Route::middleware('role:cierre')->group(function () {
         Route::get('/cierre', function () {
             return Inertia::render('Cierre/Dashboard');
@@ -119,49 +137,102 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     if (app()->environment(['local', 'testing'])) {
         Route::get('/_preview/error/{status}', function (int $status) {
             abort_unless(in_array($status, [401, 403, 404, 419, 500, 503], true), 404);
-
-            return Inertia::render('Error', [
-                'status' => $status,
-            ])->toResponse(request())->setStatusCode($status);
+            return Inertia::render('Error', ['status' => $status])
+                ->toResponse(request())->setStatusCode($status);
         })->name('preview.error');
     }
 
-    //Modulo de Trabajos (Obras) - SPRINT 03
+    // ── Sprint 03 · Trabajos (Obras) ──────────────────────────────────────────
     Route::middleware('permission:trabajos.ver')->group(function () {
-        // Rutas de visualización y formularios
         Route::get('/trabajos', [TrabajoController::class, 'index'])->name('trabajos.index');
         Route::get('/trabajos/crear', [TrabajoController::class, 'create'])->name('trabajos.create');
         Route::get('/trabajos/{trabajo}/editar', [TrabajoController::class, 'edit'])->name('trabajos.edit');
-
-        // Rutas de acción (mutaciones) con permisos específicos
         Route::post('/trabajos', [TrabajoController::class, 'store'])
-            ->name('trabajos.store')
-            ->middleware('permission:trabajos.crear');
-
+            ->name('trabajos.store')->middleware('permission:trabajos.crear');
         Route::put('/trabajos/{trabajo}', [TrabajoController::class, 'update'])
-            ->name('trabajos.update')
-            ->middleware('permission:trabajos.editar');
-
+            ->name('trabajos.update')->middleware('permission:trabajos.editar');
         Route::delete('/trabajos/{trabajo}', [TrabajoController::class, 'destroy'])
-            ->name('trabajos.destroy')
-            ->middleware('permission:trabajos.eliminar');
+            ->name('trabajos.destroy')->middleware('permission:trabajos.eliminar');
     });
 
-    // Modulo de Pedidos
+    // ── Sprint 04 · Pedidos ───────────────────────────────────────────────────
     Route::middleware('permission:pedidos.ver')->group(function () {
-        Route::get('/pedidos', function () {
-            return Inertia::render('Pedidos/Index');
+        
+        Route::get('/pedidos', function (\Illuminate\Http\Request $request) {
+            // Pasamos una estructura vacía exacta a la que espera tu Index.jsx
+            // Cuando el back haga el "PedidoWebController", pondrá aquí sus consultas reales.
+            return Inertia::render('Pedidos/Index', [
+                'pedidos' => [
+                    'data'  => [],
+                    'links' => []
+                ],
+                'filters' => [
+                    'search' => $request->search ?? ''
+                ]
+            ]);
         })->name('pedidos.index');
+
+        Route::get('/pedidos/crear', function () {
+            return Inertia::render('Pedidos/Form');
+        })->name('pedidos.create');
+
+        Route::get('/pedidos/{pedido}/editar', function ($id) {
+            return Inertia::render('Pedidos/Form', ['pedidoId' => $id]);
+        })->name('pedidos.edit');
+
+        // Las rutas de acción (store, update, destroy) las dejamos bloqueadas
+        // temporalmente para que Ziggy no dé error de "Route not defined".
+        Route::post('/pedidos', function () { abort(501, 'No implementado en WEB'); })
+            ->name('pedidos.store')->middleware('permission:pedidos.gestionar');
+            
+        Route::put('/pedidos/{pedido}', function () { abort(501, 'No implementado en WEB'); })
+            ->name('pedidos.update')->middleware('permission:pedidos.gestionar');
+            
+        Route::delete('/pedidos/{pedido}', function () { abort(501, 'No implementado en WEB'); })
+            ->name('pedidos.destroy')->middleware('permission:pedidos.gestionar');
     });
 
-    Route::middleware('permission:pedidos.gestionar')->group(function () {
-        Route::get('/pedidos/crear', function () {
-            return Inertia::render('Pedidos/Create');
-        })->name('pedidos.create');
-        
-        Route::get('/pedidos/{pedido}/editar', function ($pedido) {
-            return Inertia::render('Pedidos/Edit', ['id' => $pedido]);
-        })->name('pedidos.edit');
+    // ── Sprint 04 · Facturas ──────────────────────────────────────────────────
+    // NOTA: FacturaController no tiene use declarado aún.
+    // Cuando back lo entregue: descomentar 'use App\Http\Controllers\FacturaController;' arriba
+    // y reemplazar los closures por [FacturaController::class, 'index'] etc.
+    Route::middleware('permission:facturas.ver')->group(function () {
+        Route::get('/facturas', function () {
+            return Inertia::render('Facturas/Index', [
+                'facturas'    => ['data' => [], 'meta' => ['pagination' => ['total' => 0, 'current_page' => 1, 'last_page' => 1]]],
+                'filters'     => [],
+                'contextoIds' => [],
+                'canCreate'   => true,
+            ]);
+        })->name('facturas.index');
+
+        Route::get('/facturas/crear', function () {
+            return Inertia::render('Facturas/Form', [
+                'factura'     => null,
+                'contextoIds' => [],
+                'trabajos'    => [],
+            ]);
+        })->name('facturas.create');
+
+        Route::get('/facturas/{id}/editar', function ($id) {
+            return Inertia::render('Facturas/Form', [
+                'factura'     => null,
+                'contextoIds' => [],
+                'trabajos'    => [],
+            ]);
+        })->name('facturas.edit');
+
+        Route::post('/facturas', function () {
+            abort(501, 'FacturaController no implementado aún');
+        })->name('facturas.store')->middleware('permission:facturas.gestionar');
+
+        Route::put('/facturas/{factura}', function () {
+            abort(501, 'FacturaController no implementado aún');
+        })->name('facturas.update')->middleware('permission:facturas.gestionar');
+
+        Route::delete('/facturas/{factura}', function () {
+            abort(501, 'FacturaController no implementado aún');
+        })->name('facturas.destroy')->middleware('permission:facturas.gestionar');
     });
 
     // Modulo de Facturas
@@ -197,8 +268,6 @@ Route::fallback(function () {
     if (! auth()->check()) {
         return redirect()->route('login');
     }
-
-    return Inertia::render('Error', [
-        'status' => 404,
-    ])->toResponse(request())->setStatusCode(404);
+    return Inertia::render('Error', ['status' => 404])
+        ->toResponse(request())->setStatusCode(404);
 });
