@@ -520,6 +520,7 @@ class DatosBaseSeeder extends Seeder
             'updated_at'
         ]);
 
+        // @TODO: Unificar Pedidos demo con pedidos mas abajo para evitar duplicidades y confusiones en datos de ejemplo. Por ahora se mantienen separados para ilustrar distintos escenarios.
         // ── Pedidos (demo — 1 por trabajo) ──
         DB::table('pedidos')->upsert([
             ['id_pedido' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_tarifario' => 1, 'numero_pedido' => 'PED-M-001', 'fecha_solicitud' => '2026-02-05', 'fecha_recepcion' => '2026-02-10', 'importe_pedido' => 950.00, 'importe_solicitado' => 950.00, 'importe_facturado' => 950.00, 'unidades_pedido' => 10.000, 'unidades_solicitadas' => 10.000, 'estado' => 'facturado', 'pedido_completo' => true, 'tiene_mas_de_1_item' => false, 'facturado_completo' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
@@ -536,21 +537,7 @@ class DatosBaseSeeder extends Seeder
             ['id_pedido_item' => 4, 'id_contexto' => 2, 'id_pedido' => 4, 'id_tarifario_linea' => 5, 'codigo_servicio' => 'T002', 'numero_tarifa' => null, 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 40.00, 'cantidad' => 10.000, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
         ], ['id_pedido_item'], ['descripcion_servicio', 'total_linea', 'updated_at']);
 
-        // ── Facturas (demo — 1 por trabajo) ──
-        DB::table('facturas')->upsert([
-            ['id_factura' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_empresa_cliente' => 1, 'numero_factura' => 'F-2026-001', 'numero_factura_ccp' => null, 'serie' => 'M', 'orden_factura' => 1, 'fecha_solicitud' => '2026-02-15', 'fecha_emision' => '2026-02-20', 'fecha_vencimiento' => '2026-04-20', 'importe' => 950.00, 'base_imponible' => 950.00, 'iva' => 199.50, 'retencion' => null, 'total' => 1149.50, 'estado' => 'emitida', 'autofactura' => false, 'sociedad' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_empresa_cliente' => 1, 'numero_factura' => 'F-2026-002', 'numero_factura_ccp' => null, 'serie' => 'M', 'orden_factura' => 1, 'fecha_solicitud' => '2026-03-15', 'fecha_emision' => null, 'fecha_vencimiento' => null, 'importe' => 380.00, 'base_imponible' => 380.00, 'iva' => 79.80, 'retencion' => null, 'total' => 459.80, 'estado' => 'pendiente', 'autofactura' => false, 'sociedad' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_empresa_cliente' => 2, 'numero_factura' => 'F-2026-003', 'numero_factura_ccp' => null, 'serie' => 'R', 'orden_factura' => 1, 'fecha_solicitud' => '2026-02-01', 'fecha_emision' => '2026-02-10', 'fecha_vencimiento' => '2026-04-10', 'importe' => 980.00, 'base_imponible' => 980.00, 'iva' => 205.80, 'retencion' => null, 'total' => 1185.80, 'estado' => 'cobrada', 'autofactura' => false, 'sociedad' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_empresa_cliente' => 2, 'numero_factura' => 'F-2026-004', 'numero_factura_ccp' => null, 'serie' => 'R', 'orden_factura' => 1, 'fecha_solicitud' => '2026-03-10', 'fecha_emision' => null, 'fecha_vencimiento' => null, 'importe' => 400.00, 'base_imponible' => 400.00, 'iva' => 84.00, 'retencion' => null, 'total' => 484.00, 'estado' => 'pendiente', 'autofactura' => false, 'sociedad' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_factura'], ['numero_factura', 'estado', 'updated_at']);
-
-        // ── Factura ↔ Pedido (pivot) ──
-        DB::table('factura_pedidos')->upsert([
-            ['id_factura_pedido' => 1, 'id_factura' => 1, 'id_pedido' => 1, 'importe_aplicado' => 950.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura_pedido' => 2, 'id_factura' => 2, 'id_pedido' => 2, 'importe_aplicado' => 380.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura_pedido' => 3, 'id_factura' => 3, 'id_pedido' => 3, 'importe_aplicado' => 980.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura_pedido' => 4, 'id_factura' => 4, 'id_pedido' => 4, 'importe_aplicado' => 400.00, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_factura_pedido'], ['importe_aplicado', 'updated_at']);
+        // Demo de Facturas eliminado (Unificado al final del seeder para evitar conflictos de claves foraneas con cobros y presupuestos)
 
         // ── Cobros (demo — solo para facturas emitidas/cobradas) ──
         DB::table('cobros')->upsert([
@@ -646,47 +633,116 @@ class DatosBaseSeeder extends Seeder
             ['id_pedido_item' => 4, 'id_contexto' => 2, 'id_pedido' => 4, 'id_tarifario_linea' => 5, 'codigo_servicio' => 'T002', 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 40.00, 'cantidad' => 10.000, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
         ], ['id_pedido_item'], ['codigo_servicio', 'descripcion_servicio', 'precio_unitario', 'cantidad', 'total_linea', 'updated_at']);
 
-        // ── Facturas ──
+
+        // ── Facturas (Unificado Sprint 04) ──
         DB::table('facturas')->upsert([
             [
-                'id_factura' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_empresa_cliente' => 1,
-                'numero_factura' => 'F-2026-001', 'numero_factura_ccp' => NULL, 'serie' => 'M', 'orden_factura' => 1,
-                'fecha_solicitud' => '2026-02-15', 'fecha_emision' => '2026-02-20', 'fecha_vencimiento' => '2026-04-20',
-                'importe' => 950.00, 'base_imponible' => 950.00, 'iva' => 199.50, 'total' => 1149.50,
-                'estado' => 'emitida', 'autofactura' => 0, 'sociedad' => NULL,
-                'created_at' => $now, 'updated_at' => $now
+                'id_factura'         => 1,
+                'id_contexto'        => 1,
+                'id_trabajo'         => 1,
+                'id_empresa_cliente' => 1,
+                'numero_factura'     => 'F-2026-001',
+                'numero_factura_ccp' => 'CCP-001-2026',
+                'serie'              => 'M',
+                'orden_factura'      => 1,
+                'fecha_solicitud'    => '2026-02-15',
+                'fecha_emision'      => '2026-04-10',
+                'fecha_vencimiento'  => '2026-06-10',
+                'importe'            => 950.00,
+                'base_imponible'     => 950.00,
+                'iva'                => 199.50,
+                'retencion'          => null,
+                'total'              => 1149.50,
+                'estado'             => 'emitida',
+                'autofactura'        => false,
+                'sociedad'           => 'MOEVE S.A.',
+                'observaciones'      => null,
+                'created_at'         => $now,
+                'updated_at'         => $now,
             ],
             [
-                'id_factura' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_empresa_cliente' => 1,
-                'numero_factura' => 'F-2026-002', 'numero_factura_ccp' => NULL, 'serie' => 'M', 'orden_factura' => 1,
-                'fecha_solicitud' => '2026-03-15', 'fecha_emision' => NULL, 'fecha_vencimiento' => NULL,
-                'importe' => 380.00, 'base_imponible' => 380.00, 'iva' => 79.80, 'total' => 459.80,
-                'estado' => 'pendiente', 'autofactura' => 0, 'sociedad' => NULL,
-                'created_at' => $now, 'updated_at' => $now
+                'id_factura'         => 2,
+                'id_contexto'        => 1,
+                'id_trabajo'         => 2,
+                'id_empresa_cliente' => 1,
+                'numero_factura'     => 'F-2026-002',
+                'numero_factura_ccp' => null,
+                'serie'              => 'M',
+                'orden_factura'      => 1,
+                'fecha_solicitud'    => '2026-03-15',
+                'fecha_emision'      => null,
+                'fecha_vencimiento'  => null,
+                'importe'            => 380.00,
+                'base_imponible'     => 380.00,
+                'iva'                => 79.80,
+                'retencion'          => null,
+                'total'              => 459.80,
+                'estado'             => 'pendiente',
+                'autofactura'        => false,
+                'sociedad'           => null,
+                'observaciones'      => null,
+                'created_at'         => $now,
+                'updated_at'         => $now,
             ],
             [
-                'id_factura' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_empresa_cliente' => 2,
-                'numero_factura' => 'F-2026-003', 'numero_factura_ccp' => NULL, 'serie' => 'R', 'orden_factura' => 1,
-                'fecha_solicitud' => '2026-02-01', 'fecha_emision' => '2026-02-10', 'fecha_vencimiento' => '2026-04-10',
-                'importe' => 980.00, 'base_imponible' => 980.00, 'iva' => 205.80, 'total' => 1185.80,
-                'estado' => 'cobrada', 'autofactura' => 0, 'sociedad' => NULL,
-                'created_at' => $now, 'updated_at' => $now
+                'id_factura'         => 3,
+                'id_contexto'        => 2,
+                'id_trabajo'         => 3,
+                'id_empresa_cliente' => 2,
+                'numero_factura'     => 'F-2026-003',
+                'numero_factura_ccp' => null,
+                'serie'              => 'R',
+                'orden_factura'      => 1,
+                'fecha_solicitud'    => '2026-02-01',
+                'fecha_emision'      => '2026-04-12',
+                'fecha_vencimiento'  => '2026-06-12',
+                'importe'            => 980.00,
+                'base_imponible'     => 980.00,
+                'iva'                => 205.80,
+                'retencion'          => null,
+                'total'              => 1185.80,
+                'estado'             => 'cobrada',
+                'autofactura'        => true,
+                'sociedad'           => null,
+                'observaciones'      => null,
+                'created_at'         => $now,
+                'updated_at'         => $now,
             ],
             [
-                'id_factura' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_empresa_cliente' => 2,
-                'numero_factura' => 'F-2026-004', 'numero_factura_ccp' => NULL, 'serie' => 'R', 'orden_factura' => 1,
-                'fecha_solicitud' => '2026-03-10', 'fecha_emision' => NULL, 'fecha_vencimiento' => NULL,
-                'importe' => 400.00, 'base_imponible' => 400.00, 'iva' => 84.00, 'total' => 484.00,
-                'estado' => 'pendiente', 'autofactura' => 0, 'sociedad' => NULL,
-                'created_at' => $now, 'updated_at' => $now
+                'id_factura'         => 4,
+                'id_contexto'        => 2,
+                'id_trabajo'         => 4,
+                'id_empresa_cliente' => 2,
+                'numero_factura'     => 'F-2026-004',
+                'numero_factura_ccp' => null,
+                'serie'              => 'R',
+                'orden_factura'      => 1,
+                'fecha_solicitud'    => '2026-03-10',
+                'fecha_emision'      => null,
+                'fecha_vencimiento'  => null,
+                'importe'            => 400.00,
+                'base_imponible'     => 400.00,
+                'iva'                => 84.00,
+                'retencion'          => null,
+                'total'              => 484.00,
+                'estado'             => 'pendiente',
+                'autofactura'        => false,
+                'sociedad'           => null,
+                'observaciones'      => null,
+                'created_at'         => $now,
+                'updated_at'         => $now,
             ],
-        ], ['id_factura'], ['estado', 'importe', 'base_imponible', 'iva', 'total', 'updated_at']);
+        ], ['id_factura'], [
+            'numero_factura', 'numero_factura_ccp', 'serie', 'orden_factura', 
+            'fecha_emision', 'fecha_vencimiento', 'estado', 
+            'autofactura', 'sociedad', 'updated_at'
+        ]);
 
-        // ── Vinculación Factura-Pedido (factura_pedidos) ──
+        // ── Vinculación Factura-Pedido (pivot factura_pedidos unificado) ──
         DB::table('factura_pedidos')->upsert([
-            ['id_factura_pedido' => 1, 'id_factura' => 1, 'id_pedido' => 1, 'importe_aplicado' => 950.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_factura_pedido' => 1, 'id_factura' => 1, 'id_pedido' => 1, 'importe_aplicado' => 1149.50, 'created_at' => $now, 'updated_at' => $now],
             ['id_factura_pedido' => 2, 'id_factura' => 2, 'id_pedido' => 2, 'importe_aplicado' => 380.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_factura_pedido' => 3, 'id_factura' => 3, 'id_pedido' => 3, 'importe_aplicado' => 980.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_factura_pedido' => 3, 'id_factura' => 3, 'id_pedido' => 3, 'importe_aplicado' => 1185.80, 'created_at' => $now, 'updated_at' => $now],
             ['id_factura_pedido' => 4, 'id_factura' => 4, 'id_pedido' => 4, 'importe_aplicado' => 400.00, 'created_at' => $now, 'updated_at' => $now],
         ], ['id_factura_pedido'], ['importe_aplicado', 'updated_at']);
     }

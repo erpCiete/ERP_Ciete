@@ -152,7 +152,9 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::get('/pedidos', function () {
             return Inertia::render('Pedidos/Index');
         })->name('pedidos.index');
-        
+    });
+
+    Route::middleware('permission:pedidos.gestionar')->group(function () {
         Route::get('/pedidos/crear', function () {
             return Inertia::render('Pedidos/Create');
         })->name('pedidos.create');
@@ -160,6 +162,23 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::get('/pedidos/{pedido}/editar', function ($pedido) {
             return Inertia::render('Pedidos/Edit', ['id' => $pedido]);
         })->name('pedidos.edit');
+    });
+
+    // Modulo de Facturas
+    Route::middleware('permission:facturas.ver')->group(function () {
+        Route::get('/facturas', function () {
+            return Inertia::render('Facturas/Index');
+        })->name('facturas.index');
+    });
+
+    Route::middleware('permission:facturas.gestionar')->group(function () {
+        Route::get('/facturas/crear', function () {
+            return Inertia::render('Facturas/Form');
+        })->name('facturas.create');
+
+        Route::get('/facturas/{factura}/editar', function ($factura) {
+            return Inertia::render('Facturas/Form', ['id' => $factura]);
+        })->name('facturas.edit');
     });
 
     //Modulo de Importaciones - SPRINT 03
