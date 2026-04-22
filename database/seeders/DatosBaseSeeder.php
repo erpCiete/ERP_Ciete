@@ -537,102 +537,7 @@ class DatosBaseSeeder extends Seeder
             ['id_pedido_item' => 4, 'id_contexto' => 2, 'id_pedido' => 4, 'id_tarifario_linea' => 5, 'codigo_servicio' => 'T002', 'numero_tarifa' => null, 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 40.00, 'cantidad' => 10.000, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
         ], ['id_pedido_item'], ['descripcion_servicio', 'total_linea', 'updated_at']);
 
-        // Demo de Facturas eliminado (Unificado al final del seeder para evitar conflictos de claves foraneas con cobros y presupuestos)
-
-        // ── Cobros (demo — solo para facturas emitidas/cobradas) ──
-        DB::table('cobros')->upsert([
-            ['id_cobro' => 1, 'id_contexto' => 1, 'id_factura' => 1, 'id_usuario_registro' => null, 'fecha_cobro' => '2026-03-15', 'importe' => 1149.50, 'metodo_cobro' => 'transferencia', 'referencia' => 'TRF-MOEVE-2026-001', 'estado' => 'pendiente', 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_cobro' => 2, 'id_contexto' => 2, 'id_factura' => 3, 'id_usuario_registro' => null, 'fecha_cobro' => '2026-03-20', 'importe' => 1185.80, 'metodo_cobro' => 'transferencia', 'referencia' => 'TRF-REPSOL-2026-001', 'estado' => 'recibido', 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_cobro'], ['importe', 'estado', 'updated_at']);
-
-        // ── Presupuestos (demo — 1 por trabajo) ──
-        DB::table('presupuestos')->upsert([
-            ['id_presupuesto' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_empresa_cliente' => 1, 'id_contacto_empresa_cliente' => 2, 'id_estacion_servicio' => 1, 'id_tarifario' => 1, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-M-001', 'nombre_presupuesto' => 'Presupuesto NPV Moeve Sevilla', 'estado' => 'aprobado', 'fecha_emision' => '2026-02-03', 'fecha_validez' => '2026-05-03', 'base_imponible' => 1140.00, 'iva' => 239.40, 'retencion' => 0, 'total' => 1379.40, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_presupuesto' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_empresa_cliente' => 1, 'id_contacto_empresa_cliente' => 3, 'id_estacion_servicio' => 1, 'id_tarifario' => 1, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-M-002', 'nombre_presupuesto' => 'Presupuesto Reforma Moeve Sevilla', 'estado' => 'borrador', 'fecha_emision' => '2026-03-11', 'fecha_validez' => '2026-06-11', 'base_imponible' => 844.00, 'iva' => 177.24, 'retencion' => 0, 'total' => 1021.24, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_presupuesto' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_empresa_cliente' => 2, 'id_contacto_empresa_cliente' => 4, 'id_estacion_servicio' => 2, 'id_tarifario' => 2, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-R-001', 'nombre_presupuesto' => 'Presupuesto Diseno NPV Repsol Madrid', 'estado' => 'enviado', 'fecha_emision' => '2026-01-18', 'fecha_validez' => '2026-04-18', 'base_imponible' => 1180.00, 'iva' => 247.80, 'retencion' => 0, 'total' => 1427.80, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_presupuesto' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_empresa_cliente' => 2, 'id_contacto_empresa_cliente' => 5, 'id_estacion_servicio' => 2, 'id_tarifario' => 2, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-R-002', 'nombre_presupuesto' => 'Presupuesto Mto Repsol Madrid', 'estado' => 'borrador', 'fecha_emision' => '2026-03-03', 'fecha_validez' => '2026-06-03', 'base_imponible' => 835.00, 'iva' => 175.35, 'retencion' => 0, 'total' => 1010.35, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_presupuesto'], ['nombre_presupuesto', 'estado', 'updated_at']);
-
-        // ── Presupuesto lineas (demo — 2 por presupuesto) ──
-        DB::table('presupuesto_lineas')->upsert([
-            ['id_linea_presupuesto' => 1, 'id_contexto' => 1, 'id_presupuesto' => 1, 'id_tarifario_linea' => 1, 'orden' => 1, 'concepto_seleccionable' => 'Inspeccion tecnica inicial', 'concepto_libre' => null, 'cantidad' => 10.000, 'precio_unitario' => 95.00, 'iva_porcentaje' => 21.00, 'total_linea' => 950.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 2, 'id_contexto' => 1, 'id_presupuesto' => 1, 'id_tarifario_linea' => 2, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 5.000, 'precio_unitario' => 38.00, 'iva_porcentaje' => 21.00, 'total_linea' => 190.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 3, 'id_contexto' => 1, 'id_presupuesto' => 2, 'id_tarifario_linea' => 3, 'orden' => 1, 'concepto_seleccionable' => 'Adecuacion de instalaciones', 'concepto_libre' => null, 'cantidad' => 20.000, 'precio_unitario' => 27.00, 'iva_porcentaje' => 21.00, 'total_linea' => 540.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 4, 'id_contexto' => 1, 'id_presupuesto' => 2, 'id_tarifario_linea' => 2, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 8.000, 'precio_unitario' => 38.00, 'iva_porcentaje' => 21.00, 'total_linea' => 304.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 5, 'id_contexto' => 2, 'id_presupuesto' => 3, 'id_tarifario_linea' => 4, 'orden' => 1, 'concepto_seleccionable' => 'Inspeccion tecnica inicial', 'concepto_libre' => null, 'cantidad' => 10.000, 'precio_unitario' => 98.00, 'iva_porcentaje' => 21.00, 'total_linea' => 980.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 6, 'id_contexto' => 2, 'id_presupuesto' => 3, 'id_tarifario_linea' => 5, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 5.000, 'precio_unitario' => 40.00, 'iva_porcentaje' => 21.00, 'total_linea' => 200.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 7, 'id_contexto' => 2, 'id_presupuesto' => 4, 'id_tarifario_linea' => 6, 'orden' => 1, 'concepto_seleccionable' => 'Adecuacion de instalaciones', 'concepto_libre' => null, 'cantidad' => 15.000, 'precio_unitario' => 29.00, 'iva_porcentaje' => 21.00, 'total_linea' => 435.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_linea_presupuesto' => 8, 'id_contexto' => 2, 'id_presupuesto' => 4, 'id_tarifario_linea' => 5, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 10.000, 'precio_unitario' => 40.00, 'iva_porcentaje' => 21.00, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_linea_presupuesto'], ['concepto_seleccionable', 'total_linea', 'updated_at']);
-
-        // ── Legalizaciones (demo — 1 por trabajo) ──
-        DB::table('legalizaciones')->upsert([
-            ['id_legalizacion' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de apertura', 'numero_expediente' => 'EXP-M-001', 'organismo' => 'Ayuntamiento de Sevilla', 'estado' => 'en_tramite', 'descripcion_seleccionable' => 'Tramitacion licencia apertura estacion', 'descripcion_libre' => null, 'fecha_inicio' => '2026-02-10', 'fecha_limite' => '2026-06-10', 'fecha_resolucion' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_legalizacion' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de obras', 'numero_expediente' => 'EXP-M-002', 'organismo' => 'Ayuntamiento de Sevilla', 'estado' => 'pendiente', 'descripcion_seleccionable' => 'Licencia obra menor marquesina', 'descripcion_libre' => null, 'fecha_inicio' => null, 'fecha_limite' => '2026-07-01', 'fecha_resolucion' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_legalizacion' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de apertura', 'numero_expediente' => 'EXP-R-001', 'organismo' => 'Ayuntamiento de Madrid', 'estado' => 'resuelta', 'descripcion_seleccionable' => 'Tramitacion licencia apertura estacion', 'descripcion_libre' => null, 'fecha_inicio' => '2026-01-20', 'fecha_limite' => '2026-05-20', 'fecha_resolucion' => '2026-03-18', 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_legalizacion' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de actividad', 'numero_expediente' => 'EXP-R-002', 'organismo' => 'Com. Autonoma de Madrid', 'estado' => 'pendiente', 'descripcion_seleccionable' => 'Tramitacion licencia actividad', 'descripcion_libre' => null, 'fecha_inicio' => null, 'fecha_limite' => '2026-08-01', 'fecha_resolucion' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_legalizacion'], ['tipo_legalizacion', 'estado', 'updated_at']);
-
-        // ── Legalizaciones ↔ Contactos (pivot) ──
-        DB::table('legalizaciones_contactos')->upsert([
-            ['id_legalizacion_contacto' => 1, 'id_contexto' => 1, 'id_legalizacion' => 1, 'id_contacto_empresa' => 2, 'rol_en_legalizacion' => 'Responsable tecnico', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_legalizacion_contacto' => 2, 'id_contexto' => 1, 'id_legalizacion' => 2, 'id_contacto_empresa' => 3, 'rol_en_legalizacion' => 'Coordinadora obras', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_legalizacion_contacto' => 3, 'id_contexto' => 2, 'id_legalizacion' => 3, 'id_contacto_empresa' => 4, 'rol_en_legalizacion' => 'Responsable tecnico', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-            ['id_legalizacion_contacto' => 4, 'id_contexto' => 2, 'id_legalizacion' => 4, 'id_contacto_empresa' => 5, 'rol_en_legalizacion' => 'Gestora tramites', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_legalizacion_contacto'], ['rol_en_legalizacion', 'principal', 'updated_at']);
-
-        // ── Comentarios legalizaciones (demo) ──
-        DB::table('comentarios_legalizaciones')->upsert([
-            ['id_comentario_legalizacion' => 1, 'id_contexto' => 1, 'id_legalizacion' => 1, 'id_usuario' => null, 'fecha_comentario' => '2026-02-12 09:30:00', 'comentario' => 'Documentacion presentada en el Ayuntamiento de Sevilla.', 'created_at' => $now, 'updated_at' => $now],
-            ['id_comentario_legalizacion' => 2, 'id_contexto' => 1, 'id_legalizacion' => 2, 'id_usuario' => null, 'fecha_comentario' => '2026-03-12 11:00:00', 'comentario' => 'Pendiente de informe tecnico municipal para aprobacion.', 'created_at' => $now, 'updated_at' => $now],
-            ['id_comentario_legalizacion' => 3, 'id_contexto' => 2, 'id_legalizacion' => 3, 'id_usuario' => null, 'fecha_comentario' => '2026-03-18 16:45:00', 'comentario' => 'Expediente resuelto favorablemente. Licencia concedida.', 'created_at' => $now, 'updated_at' => $now],
-            ['id_comentario_legalizacion' => 4, 'id_contexto' => 2, 'id_legalizacion' => 4, 'id_usuario' => null, 'fecha_comentario' => '2026-03-05 10:15:00', 'comentario' => 'Inicio de tramitacion de licencia de actividad ante la Comunidad.', 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_comentario_legalizacion'], ['comentario', 'updated_at']);
-    
-        // ── Pedidos (Actualizado a esquema final) ──
-        DB::table('pedidos')->upsert([
-            [
-                'id_pedido' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_tarifario' => 1,
-                'numero_pedido' => 'PED-M-001', 'fecha_solicitud' => '2026-02-05', 'fecha_recepcion' => '2026-02-10',
-                'importe_pedido' => 1149.50, 'importe_solicitado' => 1149.50, 'importe_facturado' => 1149.50,
-                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 1.000,
-                'estado' => 'cerrado', 'pedido_completo' => 1, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 1,
-                'created_at' => $now, 'updated_at' => $now
-            ],
-            [
-                'id_pedido' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_tarifario' => 1,
-                'numero_pedido' => 'PED-M-002', 'fecha_solicitud' => '2026-03-12', 'fecha_recepcion' => null,
-                'importe_pedido' => 459.80, 'importe_solicitado' => 459.80, 'importe_facturado' => 0.00,
-                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 1.000,
-                'estado' => 'pendiente', 'pedido_completo' => 1, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 0,
-                'created_at' => $now, 'updated_at' => $now
-            ],
-            [
-                'id_pedido' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_tarifario' => 2,
-                'numero_pedido' => 'PED-R-001', 'fecha_solicitud' => '2026-01-20', 'fecha_recepcion' => '2026-01-25',
-                'importe_pedido' => 1185.80, 'importe_solicitado' => 1185.80, 'importe_facturado' => 1185.80,
-                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 1.000,
-                'estado' => 'cerrado', 'pedido_completo' => 1, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 1,
-                'created_at' => $now, 'updated_at' => $now
-            ],
-            [
-                'id_pedido' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_tarifario' => 2,
-                'numero_pedido' => 'PED-R-002', 'fecha_solicitud' => '2026-03-05', 'fecha_recepcion' => null,
-                'importe_pedido' => 484.00, 'importe_solicitado' => 0.00, 'importe_facturado' => 0.00,
-                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 0.000,
-                'estado' => 'pendiente', 'pedido_completo' => 0, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 0,
-                'created_at' => $now, 'updated_at' => $now
-            ],
-        ], ['id_pedido'], ['id_trabajo', 'id_tarifario', 'estado', 'importe_pedido', 'importe_solicitado', 'importe_facturado', 'unidades_pedido', 'unidades_solicitadas', 'pedido_completo', 'tiene_mas_de_1_item', 'facturado_completo', 'updated_at']);
-
-        // ── Líneas de Pedido (pedido_items adaptado al esquema real) ──
-        DB::table('pedido_items')->upsert([
-            ['id_pedido_item' => 1, 'id_contexto' => 1, 'id_pedido' => 1, 'id_tarifario_linea' => 1, 'codigo_servicio' => 'T001', 'descripcion_servicio' => 'Inspeccion tecnica inicial', 'precio_unitario' => 95.00, 'cantidad' => 10.000, 'total_linea' => 950.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_pedido_item' => 2, 'id_contexto' => 1, 'id_pedido' => 2, 'id_tarifario_linea' => 2, 'codigo_servicio' => 'T002', 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 38.00, 'cantidad' => 10.000, 'total_linea' => 380.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_pedido_item' => 3, 'id_contexto' => 2, 'id_pedido' => 3, 'id_tarifario_linea' => 4, 'codigo_servicio' => 'T001', 'descripcion_servicio' => 'Inspeccion tecnica inicial', 'precio_unitario' => 98.00, 'cantidad' => 10.000, 'total_linea' => 980.00, 'created_at' => $now, 'updated_at' => $now],
-            ['id_pedido_item' => 4, 'id_contexto' => 2, 'id_pedido' => 4, 'id_tarifario_linea' => 5, 'codigo_servicio' => 'T002', 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 40.00, 'cantidad' => 10.000, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
-        ], ['id_pedido_item'], ['codigo_servicio', 'descripcion_servicio', 'precio_unitario', 'cantidad', 'total_linea', 'updated_at']);
-
+        // Demo de Facturas Unificado para evitar conflictos de claves foraneas con cobros y presupuestos
 
         // ── Facturas (Unificado Sprint 04) ──
         DB::table('facturas')->upsert([
@@ -737,6 +642,103 @@ class DatosBaseSeeder extends Seeder
             'fecha_emision', 'fecha_vencimiento', 'estado', 
             'autofactura', 'sociedad', 'updated_at'
         ]);
+
+        // ── Cobros (demo — solo para facturas emitidas/cobradas) ──
+        DB::table('cobros')->upsert([
+            ['id_cobro' => 1, 'id_contexto' => 1, 'id_factura' => 1, 'id_usuario_registro' => null, 'fecha_cobro' => '2026-03-15', 'importe' => 1149.50, 'metodo_cobro' => 'transferencia', 'referencia' => 'TRF-MOEVE-2026-001', 'estado' => 'pendiente', 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_cobro' => 2, 'id_contexto' => 2, 'id_factura' => 3, 'id_usuario_registro' => null, 'fecha_cobro' => '2026-03-20', 'importe' => 1185.80, 'metodo_cobro' => 'transferencia', 'referencia' => 'TRF-REPSOL-2026-001', 'estado' => 'recibido', 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_cobro'], ['importe', 'estado', 'updated_at']);
+
+        // ── Presupuestos (demo — 1 por trabajo) ──
+        DB::table('presupuestos')->upsert([
+            ['id_presupuesto' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_empresa_cliente' => 1, 'id_contacto_empresa_cliente' => 2, 'id_estacion_servicio' => 1, 'id_tarifario' => 1, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-M-001', 'nombre_presupuesto' => 'Presupuesto NPV Moeve Sevilla', 'estado' => 'aprobado', 'fecha_emision' => '2026-02-03', 'fecha_validez' => '2026-05-03', 'base_imponible' => 1140.00, 'iva' => 239.40, 'retencion' => 0, 'total' => 1379.40, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_presupuesto' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_empresa_cliente' => 1, 'id_contacto_empresa_cliente' => 3, 'id_estacion_servicio' => 1, 'id_tarifario' => 1, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-M-002', 'nombre_presupuesto' => 'Presupuesto Reforma Moeve Sevilla', 'estado' => 'borrador', 'fecha_emision' => '2026-03-11', 'fecha_validez' => '2026-06-11', 'base_imponible' => 844.00, 'iva' => 177.24, 'retencion' => 0, 'total' => 1021.24, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_presupuesto' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_empresa_cliente' => 2, 'id_contacto_empresa_cliente' => 4, 'id_estacion_servicio' => 2, 'id_tarifario' => 2, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-R-001', 'nombre_presupuesto' => 'Presupuesto Diseno NPV Repsol Madrid', 'estado' => 'enviado', 'fecha_emision' => '2026-01-18', 'fecha_validez' => '2026-04-18', 'base_imponible' => 1180.00, 'iva' => 247.80, 'retencion' => 0, 'total' => 1427.80, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_presupuesto' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_empresa_cliente' => 2, 'id_contacto_empresa_cliente' => 5, 'id_estacion_servicio' => 2, 'id_tarifario' => 2, 'id_usuario_responsable' => null, 'id_usuario_cierre' => null, 'codigo_presupuesto' => 'PRES-R-002', 'nombre_presupuesto' => 'Presupuesto Mto Repsol Madrid', 'estado' => 'borrador', 'fecha_emision' => '2026-03-03', 'fecha_validez' => '2026-06-03', 'base_imponible' => 835.00, 'iva' => 175.35, 'retencion' => 0, 'total' => 1010.35, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_presupuesto'], ['nombre_presupuesto', 'estado', 'updated_at']);
+
+        // ── Presupuesto lineas (demo — 2 por presupuesto) ──
+        DB::table('presupuesto_lineas')->upsert([
+            ['id_linea_presupuesto' => 1, 'id_contexto' => 1, 'id_presupuesto' => 1, 'id_tarifario_linea' => 1, 'orden' => 1, 'concepto_seleccionable' => 'Inspeccion tecnica inicial', 'concepto_libre' => null, 'cantidad' => 10.000, 'precio_unitario' => 95.00, 'iva_porcentaje' => 21.00, 'total_linea' => 950.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 2, 'id_contexto' => 1, 'id_presupuesto' => 1, 'id_tarifario_linea' => 2, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 5.000, 'precio_unitario' => 38.00, 'iva_porcentaje' => 21.00, 'total_linea' => 190.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 3, 'id_contexto' => 1, 'id_presupuesto' => 2, 'id_tarifario_linea' => 3, 'orden' => 1, 'concepto_seleccionable' => 'Adecuacion de instalaciones', 'concepto_libre' => null, 'cantidad' => 20.000, 'precio_unitario' => 27.00, 'iva_porcentaje' => 21.00, 'total_linea' => 540.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 4, 'id_contexto' => 1, 'id_presupuesto' => 2, 'id_tarifario_linea' => 2, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 8.000, 'precio_unitario' => 38.00, 'iva_porcentaje' => 21.00, 'total_linea' => 304.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 5, 'id_contexto' => 2, 'id_presupuesto' => 3, 'id_tarifario_linea' => 4, 'orden' => 1, 'concepto_seleccionable' => 'Inspeccion tecnica inicial', 'concepto_libre' => null, 'cantidad' => 10.000, 'precio_unitario' => 98.00, 'iva_porcentaje' => 21.00, 'total_linea' => 980.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 6, 'id_contexto' => 2, 'id_presupuesto' => 3, 'id_tarifario_linea' => 5, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 5.000, 'precio_unitario' => 40.00, 'iva_porcentaje' => 21.00, 'total_linea' => 200.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 7, 'id_contexto' => 2, 'id_presupuesto' => 4, 'id_tarifario_linea' => 6, 'orden' => 1, 'concepto_seleccionable' => 'Adecuacion de instalaciones', 'concepto_libre' => null, 'cantidad' => 15.000, 'precio_unitario' => 29.00, 'iva_porcentaje' => 21.00, 'total_linea' => 435.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_linea_presupuesto' => 8, 'id_contexto' => 2, 'id_presupuesto' => 4, 'id_tarifario_linea' => 5, 'orden' => 2, 'concepto_seleccionable' => 'Mantenimiento preventivo', 'concepto_libre' => null, 'cantidad' => 10.000, 'precio_unitario' => 40.00, 'iva_porcentaje' => 21.00, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_linea_presupuesto'], ['concepto_seleccionable', 'total_linea', 'updated_at']);
+
+        // ── Legalizaciones (demo — 1 por trabajo) ──
+        DB::table('legalizaciones')->upsert([
+            ['id_legalizacion' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de apertura', 'numero_expediente' => 'EXP-M-001', 'organismo' => 'Ayuntamiento de Sevilla', 'estado' => 'en_tramite', 'descripcion_seleccionable' => 'Tramitacion licencia apertura estacion', 'descripcion_libre' => null, 'fecha_inicio' => '2026-02-10', 'fecha_limite' => '2026-06-10', 'fecha_resolucion' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_legalizacion' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de obras', 'numero_expediente' => 'EXP-M-002', 'organismo' => 'Ayuntamiento de Sevilla', 'estado' => 'pendiente', 'descripcion_seleccionable' => 'Licencia obra menor marquesina', 'descripcion_libre' => null, 'fecha_inicio' => null, 'fecha_limite' => '2026-07-01', 'fecha_resolucion' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_legalizacion' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de apertura', 'numero_expediente' => 'EXP-R-001', 'organismo' => 'Ayuntamiento de Madrid', 'estado' => 'resuelta', 'descripcion_seleccionable' => 'Tramitacion licencia apertura estacion', 'descripcion_libre' => null, 'fecha_inicio' => '2026-01-20', 'fecha_limite' => '2026-05-20', 'fecha_resolucion' => '2026-03-18', 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_legalizacion' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_usuario_responsable' => null, 'tipo_legalizacion' => 'Licencia de actividad', 'numero_expediente' => 'EXP-R-002', 'organismo' => 'Com. Autonoma de Madrid', 'estado' => 'pendiente', 'descripcion_seleccionable' => 'Tramitacion licencia actividad', 'descripcion_libre' => null, 'fecha_inicio' => null, 'fecha_limite' => '2026-08-01', 'fecha_resolucion' => null, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_legalizacion'], ['tipo_legalizacion', 'estado', 'updated_at']);
+
+        // ── Legalizaciones ↔ Contactos (pivot) ──
+        DB::table('legalizaciones_contactos')->upsert([
+            ['id_legalizacion_contacto' => 1, 'id_contexto' => 1, 'id_legalizacion' => 1, 'id_contacto_empresa' => 2, 'rol_en_legalizacion' => 'Responsable tecnico', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_legalizacion_contacto' => 2, 'id_contexto' => 1, 'id_legalizacion' => 2, 'id_contacto_empresa' => 3, 'rol_en_legalizacion' => 'Coordinadora obras', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_legalizacion_contacto' => 3, 'id_contexto' => 2, 'id_legalizacion' => 3, 'id_contacto_empresa' => 4, 'rol_en_legalizacion' => 'Responsable tecnico', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+            ['id_legalizacion_contacto' => 4, 'id_contexto' => 2, 'id_legalizacion' => 4, 'id_contacto_empresa' => 5, 'rol_en_legalizacion' => 'Gestora tramites', 'principal' => true, 'observaciones' => null, 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_legalizacion_contacto'], ['rol_en_legalizacion', 'principal', 'updated_at']);
+
+        // ── Comentarios legalizaciones (demo) ──
+        DB::table('comentarios_legalizaciones')->upsert([
+            ['id_comentario_legalizacion' => 1, 'id_contexto' => 1, 'id_legalizacion' => 1, 'id_usuario' => null, 'fecha_comentario' => '2026-02-12 09:30:00', 'comentario' => 'Documentacion presentada en el Ayuntamiento de Sevilla.', 'created_at' => $now, 'updated_at' => $now],
+            ['id_comentario_legalizacion' => 2, 'id_contexto' => 1, 'id_legalizacion' => 2, 'id_usuario' => null, 'fecha_comentario' => '2026-03-12 11:00:00', 'comentario' => 'Pendiente de informe tecnico municipal para aprobacion.', 'created_at' => $now, 'updated_at' => $now],
+            ['id_comentario_legalizacion' => 3, 'id_contexto' => 2, 'id_legalizacion' => 3, 'id_usuario' => null, 'fecha_comentario' => '2026-03-18 16:45:00', 'comentario' => 'Expediente resuelto favorablemente. Licencia concedida.', 'created_at' => $now, 'updated_at' => $now],
+            ['id_comentario_legalizacion' => 4, 'id_contexto' => 2, 'id_legalizacion' => 4, 'id_usuario' => null, 'fecha_comentario' => '2026-03-05 10:15:00', 'comentario' => 'Inicio de tramitacion de licencia de actividad ante la Comunidad.', 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_comentario_legalizacion'], ['comentario', 'updated_at']);
+    
+        // ── Pedidos (Actualizado a esquema final) ──
+        DB::table('pedidos')->upsert([
+            [
+                'id_pedido' => 1, 'id_contexto' => 1, 'id_trabajo' => 1, 'id_tarifario' => 1,
+                'numero_pedido' => 'PED-M-001', 'fecha_solicitud' => '2026-02-05', 'fecha_recepcion' => '2026-02-10',
+                'importe_pedido' => 1149.50, 'importe_solicitado' => 1149.50, 'importe_facturado' => 1149.50,
+                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 1.000,
+                'estado' => 'cerrado', 'pedido_completo' => 1, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 1,
+                'created_at' => $now, 'updated_at' => $now
+            ],
+            [
+                'id_pedido' => 2, 'id_contexto' => 1, 'id_trabajo' => 2, 'id_tarifario' => 1,
+                'numero_pedido' => 'PED-M-002', 'fecha_solicitud' => '2026-03-12', 'fecha_recepcion' => null,
+                'importe_pedido' => 459.80, 'importe_solicitado' => 459.80, 'importe_facturado' => 0.00,
+                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 1.000,
+                'estado' => 'pendiente', 'pedido_completo' => 1, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 0,
+                'created_at' => $now, 'updated_at' => $now
+            ],
+            [
+                'id_pedido' => 3, 'id_contexto' => 2, 'id_trabajo' => 3, 'id_tarifario' => 2,
+                'numero_pedido' => 'PED-R-001', 'fecha_solicitud' => '2026-01-20', 'fecha_recepcion' => '2026-01-25',
+                'importe_pedido' => 1185.80, 'importe_solicitado' => 1185.80, 'importe_facturado' => 1185.80,
+                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 1.000,
+                'estado' => 'cerrado', 'pedido_completo' => 1, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 1,
+                'created_at' => $now, 'updated_at' => $now
+            ],
+            [
+                'id_pedido' => 4, 'id_contexto' => 2, 'id_trabajo' => 4, 'id_tarifario' => 2,
+                'numero_pedido' => 'PED-R-002', 'fecha_solicitud' => '2026-03-05', 'fecha_recepcion' => null,
+                'importe_pedido' => 484.00, 'importe_solicitado' => 0.00, 'importe_facturado' => 0.00,
+                'unidades_pedido' => 1.000, 'unidades_solicitadas' => 0.000,
+                'estado' => 'pendiente', 'pedido_completo' => 0, 'tiene_mas_de_1_item' => 0, 'facturado_completo' => 0,
+                'created_at' => $now, 'updated_at' => $now
+            ],
+        ], ['id_pedido'], ['id_trabajo', 'id_tarifario', 'estado', 'importe_pedido', 'importe_solicitado', 'importe_facturado', 'unidades_pedido', 'unidades_solicitadas', 'pedido_completo', 'tiene_mas_de_1_item', 'facturado_completo', 'updated_at']);
+
+        // ── Líneas de Pedido (pedido_items adaptado al esquema real) ──
+        DB::table('pedido_items')->upsert([
+            ['id_pedido_item' => 1, 'id_contexto' => 1, 'id_pedido' => 1, 'id_tarifario_linea' => 1, 'codigo_servicio' => 'T001', 'descripcion_servicio' => 'Inspeccion tecnica inicial', 'precio_unitario' => 95.00, 'cantidad' => 10.000, 'total_linea' => 950.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_pedido_item' => 2, 'id_contexto' => 1, 'id_pedido' => 2, 'id_tarifario_linea' => 2, 'codigo_servicio' => 'T002', 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 38.00, 'cantidad' => 10.000, 'total_linea' => 380.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_pedido_item' => 3, 'id_contexto' => 2, 'id_pedido' => 3, 'id_tarifario_linea' => 4, 'codigo_servicio' => 'T001', 'descripcion_servicio' => 'Inspeccion tecnica inicial', 'precio_unitario' => 98.00, 'cantidad' => 10.000, 'total_linea' => 980.00, 'created_at' => $now, 'updated_at' => $now],
+            ['id_pedido_item' => 4, 'id_contexto' => 2, 'id_pedido' => 4, 'id_tarifario_linea' => 5, 'codigo_servicio' => 'T002', 'descripcion_servicio' => 'Mantenimiento preventivo', 'precio_unitario' => 40.00, 'cantidad' => 10.000, 'total_linea' => 400.00, 'created_at' => $now, 'updated_at' => $now],
+        ], ['id_pedido_item'], ['codigo_servicio', 'descripcion_servicio', 'precio_unitario', 'cantidad', 'total_linea', 'updated_at']);
+
+
+        
 
         // ── Vinculación Factura-Pedido (pivot factura_pedidos unificado) ──
         DB::table('factura_pedidos')->upsert([
