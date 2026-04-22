@@ -41,7 +41,10 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         return Inertia::render('Dashboard', [
             'obras'            => $todasLasObras->take(5),
             'totalObrasCount'  => $todasLasObras->count(),
-            'pedidos'          => [],
+            'pedidos' => [
+                            ['ref' => 'PED-001', 'obra' => 'Obra de prueba', 'estado' => 'solicitado'],
+                            ['ref' => 'PED-002', 'obra' => 'Otra obra',       'estado' => 'recibido'],
+                        ],
             'legalizaciones'   => [],
         ]);
     })->name('dashboard');
@@ -199,7 +202,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                 'facturas'    => ['data' => [], 'meta' => ['pagination' => ['total' => 0, 'current_page' => 1, 'last_page' => 1]]],
                 'filters'     => [],
                 'contextoIds' => [],
-                'canCreate'   => false,
+                'canCreate'   => true,
             ]);
         })->name('facturas.index');
 

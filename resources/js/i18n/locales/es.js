@@ -120,6 +120,7 @@ const es = {
         stations: 'Estaciones',
         works: 'Obras',
         orders: 'Pedidos',
+        invoices: 'Facturas',
         legalizations: 'Legalizaciones',
         reports: 'Informes',
     },

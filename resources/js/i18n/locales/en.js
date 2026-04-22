@@ -120,6 +120,7 @@ const en = {
         stations: 'Service Stations',
         works: 'Works',
         orders: 'Orders',
+        invoices: 'Invoices',
         legalizations: 'Legalizations',
         reports: 'Reports',
     },
