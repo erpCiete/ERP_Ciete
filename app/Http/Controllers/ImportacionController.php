@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreImportacionRequest;
+use App\Http\Requests\Api\StoreImportacionRequest;
 use App\Models\Importacion;
 use App\Models\ImportacionFila;
 use App\Models\Trabajo;
@@ -14,6 +14,7 @@ use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage; 
 
 class ImportacionController extends Controller
 {
@@ -55,21 +56,24 @@ class ImportacionController extends Controller
             DB::beginTransaction();
 
             $file = $request->file('archivo');
-            $path = $file->store('imports', 'local');
-            $fullPath = storage_path('app/' . $path);
+            // 1. Guardar con Storage de forma explícita
+            $path = $file->store('importaciones/temp', 'local');
+            $fullPath = Storage::disk('local')->path($path);
 
-            // Extraer arrays con ExcelParserService
+            // 2. Extraer arrays con ExcelParserService
             $parsedData = $this->parser->parseFile($fullPath);
 
             if (empty($parsedData)) {
+                // Si el archivo está vacío, borramos el temporal para no ensuciar el disco
+                Storage::disk('local')->delete($path);
                 return back()->withErrors(['archivo' => 'El archivo Excel está vacío o no tiene el formato correcto.']);
             }
 
-            // Crear cabecera de la importación con las nuevas columnas
+            // 3. Crear cabecera de la importación usando el 'tipo' validado en el Request
             $importacion = Importacion::create([
                 'id_contexto'         => $request->user()->id_contexto,
                 'id_usuario'          => $request->user()->id_usuario ?? $request->user()->id,
-                'tipo'                => 'trabajos',
+                'tipo'                => $request->input('tipo', 'trabajos'), // Dinámico y validado
                 'archivo_original'    => $file->getClientOriginalName(),
                 'total_filas'         => count($parsedData),
                 'filas_importadas'    => 0,
@@ -80,21 +84,29 @@ class ImportacionController extends Controller
                 'started_at'          => now(),
             ]);
 
-            // Guardar filas en Staging (importacion_filas)
+            // 4. Preparar filas en Staging (importacion_filas)
             $filasToInsert = [];
+            $now = now();
             foreach ($parsedData as $index => $row) {
                 $filasToInsert[] = [
                     'id_importacion' => $importacion->id_importacion ?? $importacion->id,
-                    'numero_fila'    => $index + 2, // +2 asumiendo que la fila 1 es la cabecera en el Excel
+                    'numero_fila'    => $index + 2, // +2 asumiendo cabecera en fila 1
                     'datos_json'     => json_encode($row),
                     'estado'         => 'pendiente',
-                    'created_at'     => now(),
-                    'updated_at'     => now(),
+                    'created_at'     => $now,
+                    'updated_at'     => $now,
                 ];
             }
-            ImportacionFila::insert($filasToInsert);
+            
+            // 5. Insertar en "Chunks" (Trozos) para evitar saturar la base de datos si suben miles de filas
+            foreach (array_chunk($filasToInsert, 500) as $chunk) {
+                ImportacionFila::insert($chunk);
+            }
 
             DB::commit();
+
+            // 6. Como ya tenemos las filas en la BD, ya no necesitamos el archivo Excel. Lo borramos.
+            Storage::disk('local')->delete($path);
 
             return redirect()->route('importaciones.preview', $importacion->id_importacion ?? $importacion->id)
                 ->with('success', 'Archivo analizado correctamente.');
@@ -128,7 +140,10 @@ class ImportacionController extends Controller
             }
 
             // Regla 2: Duplicidad
-            $existeTrabajo = Trabajo::where('numero_trabajo', $datos['numero_trabajo'])->exists();
+            $existeTrabajo = Trabajo::where('numero_trabajo', $datos['numero_trabajo'])
+                ->where('id_contexto', $importacion->id_contexto) // Blindado por contexto
+                ->exists();
+                
             if ($existeTrabajo) {
                 $errores[] = "El Nº Trabajo '{$datos['numero_trabajo']}' ya existe.";
             }
@@ -173,7 +188,9 @@ class ImportacionController extends Controller
                 $datos = is_string($fila->datos_json) ? json_decode($fila->datos_json, true) : $fila->datos_json;
 
                 $estacion = EstacionServicio::where('codigo_estacion', $datos['codigo_estacion'])->first();
-                $existeTrabajo = Trabajo::where('numero_trabajo', $datos['numero_trabajo'])->exists();
+                $existeTrabajo = Trabajo::where('numero_trabajo', $datos['numero_trabajo'])
+                    ->where('id_contexto', $importacion->id_contexto)
+                    ->exists();
 
                 if ($existeTrabajo) {
                     $fila->update([
@@ -198,7 +215,7 @@ class ImportacionController extends Controller
                         'descripcion_trabajo'  => $datos['descripcion_trabajo'],
                         'fecha_encargo'        => $datos['fecha_encargo'],
                         'observaciones'        => $datos['observaciones'],
-                        'estado'               => 'pendiente',
+                        'estado'               => 'borrador', // Mejor iniciar en borrador por seguridad
                         'cerrado'              => false,
                         'id_tipo_trabajo'      => 1, // Fallback genérico
                         'id_tipo_documento'    => $importacion->id_contexto === 2 ? 1 : null,

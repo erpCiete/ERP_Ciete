@@ -7,49 +7,64 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PedidoResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
-        $items = $this->relationLoaded('items')
-            ? $this->items->sortBy('orden')->values()->map(function ($item) {
+        // Mapeo seguro de las líneas de pedido (solo si se incluyeron en la consulta con eager loading)
+        $items = $this->whenLoaded('items', function () {
+            return $this->items->sortBy('orden')->values()->map(function ($item) {
                 return [
-                    'id' => $item->id_linea_pedido ?? $item->id ?? null,
-                    'id_tarifario_servicio' => $item->id_tarifario_servicio ?? null,
-                    'id_servicio' => $item->id_servicio ?? null,
-                    'orden' => $item->orden ?? null,
-                    'concepto_seleccionable' => $item->concepto_seleccionable ?? null,
-                    'concepto_libre' => $item->concepto_libre ?? null,
-                    'cantidad' => isset($item->cantidad) ? (float) $item->cantidad : null,
-                    'precio_unitario' => isset($item->precio_unitario) ? (float) $item->precio_unitario : null,
-                    'iva_porcentaje' => isset($item->iva_porcentaje) ? (float) $item->iva_porcentaje : null,
-                    'total_linea' => isset($item->total_linea) ? (float) $item->total_linea : null,
+                    'id_pedido_item' => $item->id_pedido_item ?? $item->id ?? null,
+                    'orden' => $item->orden,
+                    'concepto_libre' => $item->concepto_libre,
+                    'cantidad' => isset($item->cantidad) ? (float) $item->cantidad : 0.0,
+                    'precio_unitario' => isset($item->precio_unitario) ? (float) $item->precio_unitario : 0.0,
+                    'iva_porcentaje' => isset($item->iva_porcentaje) ? (float) $item->iva_porcentaje : 21.0,
+                    'total_linea' => isset($item->total_linea) ? (float) $item->total_linea : 0.0,
                 ];
-            })->all()
-            : null;
+            });
+        });
 
         return [
-            'id' => $this->id_pedido,
-            'id_presupuesto' => $this->id_presupuesto,
-            'id_proyecto' => $this->id_proyecto,
-            'id_empresa_cliente' => $this->id_empresa_cliente,
-            'id_contacto_empresa_cliente' => $this->id_contacto_empresa_cliente,
-            'id_estacion_servicio' => $this->id_estacion_servicio,
+            // Identificadores y Relaciones
+            'id_pedido' => $this->id_pedido,
+            'id_contexto' => $this->id_contexto,
+            'id_trabajo' => $this->id_trabajo,
             'id_tarifario' => $this->id_tarifario,
-            'id_usuario_responsable' => $this->id_usuario_responsable,
+            
+            // Datos Base
             'numero_pedido' => $this->numero_pedido,
-            'numero_aviso' => $this->numero_aviso,
-            'fecha_solicitud_pedido' => optional($this->fecha_solicitud_pedido)->format('Y-m-d') ?: $this->fecha_solicitud_pedido,
-            'fecha_recepcion_pedido' => optional($this->fecha_recepcion_pedido)->format('Y-m-d') ?: $this->fecha_recepcion_pedido,
-            'fecha_solicitud_factura' => optional($this->fecha_solicitud_factura)->format('Y-m-d') ?: $this->fecha_solicitud_factura,
+            
+            // Formateo seguro de fechas (Y-m-d) previniendo errores si llegan null
+            'fecha_solicitud' => optional($this->fecha_solicitud)->format('Y-m-d') ?: $this->fecha_solicitud,
+            'fecha_recepcion' => optional($this->fecha_recepcion)->format('Y-m-d') ?: $this->fecha_recepcion,
+            
+            // Control Económico (Casteado a float estricto para React)
+            'importe_pedido' => isset($this->importe_pedido) ? (float) $this->importe_pedido : 0.0,
+            'importe_solicitado' => isset($this->importe_solicitado) ? (float) $this->importe_solicitado : 0.0,
+            'importe_facturado' => isset($this->importe_facturado) ? (float) $this->importe_facturado : 0.0,
+            
+            // Control de Unidades (Casteado a float estricto para React)
+            'unidades_pedido' => isset($this->unidades_pedido) ? (float) $this->unidades_pedido : 0.0,
+            'unidades_solicitadas' => isset($this->unidades_solicitadas) ? (float) $this->unidades_solicitadas : 0.0,
+            
+            // Estados y Flags Operativos
             'estado' => $this->estado,
-            'descripcion_seleccionable' => $this->descripcion_seleccionable,
-            'descripcion_libre' => $this->descripcion_libre,
-            'subtotal' => isset($this->subtotal) ? (float) $this->subtotal : null,
-            'iva' => isset($this->iva) ? (float) $this->iva : null,
-            'total' => isset($this->total) ? (float) $this->total : null,
+            'pedido_completo' => (bool) $this->pedido_completo,
+            'tiene_mas_de_1_item' => (bool) $this->tiene_mas_de_1_item,
+            'facturado_completo' => (bool) $this->facturado_completo,
+            
+            // Extras y Timestamps
             'observaciones' => $this->observaciones,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            
+            // Relaciones anidadas
             'items' => $items,
-            'created_at' => optional($this->created_at)?->toIso8601String(),
-            'updated_at' => optional($this->updated_at)?->toIso8601String(),
         ];
     }
 }

@@ -235,8 +235,25 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         })->name('facturas.destroy')->middleware('permission:facturas.gestionar');
     });
 
-    // ── Sprint 03 · Importaciones ─────────────────────────────────────────────
-    Route::middleware('permission:importaciones.ejecutar')->group(function () {
+    // Modulo de Facturas
+    Route::middleware('permission:facturas.ver')->group(function () {
+        Route::get('/facturas', function () {
+            return Inertia::render('Facturas/Index');
+        })->name('facturas.index');
+    });
+
+    Route::middleware('permission:facturas.gestionar')->group(function () {
+        Route::get('/facturas/crear', function () {
+            return Inertia::render('Facturas/Form');
+        })->name('facturas.create');
+
+        Route::get('/facturas/{factura}/editar', function ($factura) {
+            return Inertia::render('Facturas/Form', ['id' => $factura]);
+        })->name('facturas.edit');
+    });
+
+    //Modulo de Importaciones - SPRINT 03
+    Route::middleware('permission:importaciones.gestionar')->group(function () {
         Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
         Route::get('/importaciones/subir', [ImportacionController::class, 'create'])->name('importaciones.create');
         Route::post('/importaciones/procesar', [ImportacionController::class, 'store'])->name('importaciones.store');
