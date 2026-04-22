@@ -306,15 +306,6 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                     <tr>
                                         <td colSpan={totalCols} className="px-5 py-12 text-center text-text-muted">
                                             <p className="mb-3">{t('pedidos.empty') ?? 'No hay pedidos registrados.'}</p>
-                                            {canCreate && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => irACrear()}
-                                                    className="inline-flex items-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white hover:bg-(--ciete-red-dark)"
-                                                >
-                                                    + {t('pedidos.create')}
-                                                </button>
-                                            )}
                                         </td>
                                     </tr>
                                 )}

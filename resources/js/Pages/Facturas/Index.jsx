@@ -275,15 +275,6 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                                     <tr>
                                         <td colSpan={totalCols} className="px-5 py-12 text-center text-text-muted">
                                             <p className="mb-3">{t('facturas.empty')}</p>
-                                            {canCreate && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => router.visit(route('facturas.create'))}
-                                                    className="inline-flex items-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white hover:bg-(--ciete-red-dark)"
-                                                >
-                                                    + {t('facturas.create')}
-                                                </button>
-                                            )}
                                         </td>
                                     </tr>
                                 )}
