@@ -86,28 +86,48 @@ La API devolverá los errores 422 Unprocessable Entity correctamente formateados
 
 ## 2026-04-22
 ### Objetivo del dia
-- 
+Implementar el controlador de importación para el procesamiento de archivos Excel (columnas A-E) utilizando la librería PhpSpreadsheet, asegurando un manejo eficiente de la memoria y un flujo de trabajo seguro (Subida -> Preview -> Confirmación). 
 
 ### Tareas realizadas
-- 
+Instalación e integración de la dependencia phpoffice/phpspreadsheet.
+
+Desarrollo del controlador ImportacionController.php con los endpoints store (subida temporal), preview (lectura de datos para revisión) y confirm (procesamiento final).
+
+Adaptación del controlador para trabajar con el ExcelParserService existente, aprovechando el sistema de lectura por trozos (Chunks) para optimizar el consumo de RAM.
+
+Implementación de validaciones para archivos .xlsx, .xls y .csv y manejo de excepciones para evitar errores fatales en archivos mal formateados. 
 
 ### Archivos tocados
-- 
+app/Http/Controllers/Api/ImportacionController.php (Creado/Modificado)
+
+composer.json (No tocado , modificarse vía composer require) 
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 09:15 | Necesidad de procesar archivos potencialmente grandes sin exceder el límite de memoria de PHP. | Medio | Se integró el ChunkReadFilter del servicio para procesar el archivo en bloques de 200 filas. | Cerrado |
+|10:45|Riesgo de colisión en archivos temporales si varios usuarios importan a la vez.|Bajo|Se implementó el uso de uniqid() para generar nombres de archivo únicos en la carpeta temporal.|Cerrado|
 
 ### Decisiones tomadas
-- 
+Almacenamiento Temporal: Los archivos se guardan en importaciones/temp hasta que el usuario confirma la importación, momento en el cual se eliminan para mantener el servidor limpio.
+
+Preview Limitado: El endpoint de previsualización devuelve solo las primeras 5 filas parseadas para garantizar una respuesta rápida en el frontend.
+
+Inyección de Dependencias: Se configuró el controlador para recibir el ExcelParserService vía constructor, facilitando futuros testeos unitarios.
 
 ### Pendiente para mañana
-- 
+Desarrollar la lógica de negocio final para la inserción masiva en la base de datos (Modelos de Trabajo/Pedidos) tras la confirmación (Tarea F04-03).
+
+Realizar pruebas de carga con archivos de más de 5,000 registros para validar la estabilidad del filtro de lectura.
+
+Handoff 
 
 ### Handoff
-- 
+El flujo de importación base está operativo.
 
+La API ya expone los endpoints necesarios para que el frontend pueda mostrar la tabla de previsualización.
+
+Importante: Se requiere que el entorno tenga instalada la extensión php-zip y php-xml para el correcto funcionamiento de PhpSpreadsheet.
 ## 2026-04-23
 ### Objetivo del dia
 - 
