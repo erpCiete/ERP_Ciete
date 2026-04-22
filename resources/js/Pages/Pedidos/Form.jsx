@@ -4,7 +4,7 @@ import ItemsTable, { EMPTY_ITEM } from '@/Components/ui/ItemsTable';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
 import { Head, router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 
 // ─── Estado inicial del formulario ────────────────────────────────────────────
@@ -14,12 +14,10 @@ const EMPTY_FORM = {
     fecha_solicitud:      new Date().toISOString().split('T')[0],
     fecha_recepcion:      '',
     estado:               'borrador',
-    // Campos REPSOL
     importe_solicitado:   '',
     unidades_solicitadas: '',
 };
 
-// ─── Normalizar pedido existente para rellenar el form ────────────────────────
 function normalizePedido(pedido) {
     if (!pedido) return EMPTY_FORM;
     return {
@@ -33,7 +31,6 @@ function normalizePedido(pedido) {
     };
 }
 
-// ─── Normalizar items del pedido ──────────────────────────────────────────────
 function normalizeItems(items) {
     if (!items || items.length === 0) return [{ ...EMPTY_ITEM }];
     return items.map(item => ({
@@ -45,23 +42,18 @@ function normalizeItems(items) {
     }));
 }
 
-// ─── Validaciones en cliente ──────────────────────────────────────────────────
 function validarForm(form, items, isRepsol, t) {
     const errs = {};
 
     if (!form.numero_pedido?.trim())
         errs.numero_pedido = t('common.validation.required');
-
     if (!form.id_trabajo)
         errs.id_trabajo = t('common.validation.required');
-
     if (!form.fecha_solicitud)
         errs.fecha_solicitud = t('common.validation.required');
-
     if (!form.estado)
         errs.estado = t('common.validation.required');
 
-    // REPSOL: campos adicionales obligatorios
     if (isRepsol) {
         if (form.importe_solicitado === '' || form.importe_solicitado === null)
             errs.importe_solicitado = t('common.validation.required');
@@ -69,7 +61,6 @@ function validarForm(form, items, isRepsol, t) {
             errs.unidades_solicitadas = t('common.validation.required');
     }
 
-    // Items: al menos 1 línea con datos válidos
     if (items.length === 0) {
         errs.items = 'Añade al menos una línea al pedido.';
     } else {
@@ -85,13 +76,13 @@ function validarForm(form, items, isRepsol, t) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-// Props desde PedidoController@create / @edit via Inertia:
+// Props desde el controller via Inertia:
 //   pedido      → null (crear) | objeto PedidoResource (editar)
-//   trabajos    → array de trabajos disponibles para el select
-//   contextoIds → [1] MOEVE · [2] REPSOL · [1,2] ambos
+//   trabajos    → array del controller (puede llegar vacío si el web controller no lo pasa)
+//   contextoIds → [1] MOEVE · [2] REPSOL
 export default function PedidosForm({
     pedido      = null,
-    trabajos    = [],
+    trabajos    = [],   // puede llegar [] si el controller web no existe aún
     contextoIds = [],
 }) {
     const { t } = useI18n();
@@ -108,15 +99,33 @@ export default function PedidosForm({
     const [submitAttempted, setSubmitAttempted] = useState(false);
     const [submitError,     setSubmitError]     = useState('');
 
+    // ── Lista de trabajos: usa el prop si viene, si no carga desde la API ────
+    // Esto soluciona que el controller web no pase el catálogo de trabajos
+    const [listaTrab,       setListaTrab]       = useState(trabajos);
+    const [cargandoTrab,    setCargandoTrab]    = useState(false);
+
+    useEffect(() => {
+        // Solo cargar desde API si el prop llegó vacío
+        if (listaTrab.length > 0) return;
+
+        setCargandoTrab(true);
+        axios.get('/api/v1/trabajos', { params: { per_page: 200 } })
+            .then(res => {
+                // La API devuelve { data: { data: [...] } } o { data: [...] }
+                const data = res.data?.data ?? res.data ?? [];
+                setListaTrab(Array.isArray(data) ? data : []);
+            })
+            .catch(() => setListaTrab([]))
+            .finally(() => setCargandoTrab(false));
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     const localErrors = useMemo(
         () => validarForm(form, items, isRepsol, t),
         [form, items, isRepsol, t]
     );
 
-    const pageTitle = isEditing ? t('pedidos.edit') : t('pedidos.create');
-
-    // Total general calculado desde las líneas
-    const totalPedido = items.reduce((sum, item) => sum + (Number(item.total_linea) || 0), 0);
+    const pageTitle    = isEditing ? t('pedidos.edit') : t('pedidos.create');
+    const totalPedido  = items.reduce((sum, item) => sum + (Number(item.total_linea) || 0), 0);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     const updateField = (field, value) => {
@@ -143,7 +152,6 @@ export default function PedidosForm({
         setSubmitAttempted(true);
         setSubmitError('');
 
-        // Marcar todos los campos como tocados para mostrar todos los errores
         const allTouched = Object.keys(EMPTY_FORM).reduce((a, k) => ({ ...a, [k]: true }), {});
         setTouched(allTouched);
 
@@ -155,7 +163,6 @@ export default function PedidosForm({
         }
 
         setLoading(true);
-
         try {
             const payload = {
                 ...form,
@@ -165,6 +172,7 @@ export default function PedidosForm({
                     descripcion_servicio: item.descripcion_servicio,
                     cantidad:             Number(item.cantidad),
                     precio_unitario:      Number(item.precio_unitario),
+                    total_linea:          Number(item.total_linea),
                 })),
             };
 
@@ -196,7 +204,7 @@ export default function PedidosForm({
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <AuthenticatedLayout
-            header={<h2 className="text-xl font-semibold text-(--ciete-slate)">{pageTitle}</h2>}
+            header={<h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">{pageTitle}</h2>}
         >
             <Head title={pageTitle} />
 
@@ -223,7 +231,7 @@ export default function PedidosForm({
                         </legend>
                         <div className="grid gap-5 md:grid-cols-2">
 
-                            {/* Trabajo */}
+                            {/* Trabajo — se carga desde API si el prop llega vacío */}
                             <div className="md:col-span-2">
                                 <label htmlFor="id_trabajo" className="mb-1.5 block text-sm font-medium text-text-main">
                                     {t('pedidos.fields.trabajo')} <span className="text-red-500">*</span>
@@ -232,15 +240,29 @@ export default function PedidosForm({
                                     id="id_trabajo"
                                     value={form.id_trabajo}
                                     onChange={e => updateField('id_trabajo', e.target.value)}
+                                    disabled={cargandoTrab}
                                     className={inputClass('id_trabajo')}
                                 >
-                                    <option value="">Selecciona un trabajo...</option>
-                                    {trabajos.map(tr => (
-                                        <option key={tr.id_trabajo} value={tr.id_trabajo}>
-                                            {String(tr.numero_trabajo).padStart(4, '0')} — {tr.descripcion_trabajo}
-                                        </option>
-                                    ))}
+                                    <option value="">
+                                        {cargandoTrab ? 'Cargando trabajos...' : 'Selecciona un trabajo...'}
+                                    </option>
+                                    {listaTrab.map(tr => {
+                                        // El recurso puede venir con id_trabajo o con id según el Resource
+                                        const id  = tr.id_trabajo ?? tr.id;
+                                        const num = String(tr.numero_trabajo ?? '').padStart(4, '0');
+                                        const desc = tr.descripcion_trabajo ?? tr.descripcion ?? '';
+                                        return (
+                                            <option key={id} value={id}>
+                                                {num}{desc ? ` — ${desc}` : ''}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
+                                {listaTrab.length === 0 && !cargandoTrab && (
+                                    <p className="mt-1 text-xs text-amber-600">
+                                        No hay trabajos disponibles. Crea un trabajo primero.
+                                    </p>
+                                )}
                                 <InputError message={getError('id_trabajo')} className="mt-1.5" />
                             </div>
 
@@ -320,8 +342,6 @@ export default function PedidosForm({
                                 <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700">R</span>
                             </legend>
                             <div className="grid gap-5 md:grid-cols-2">
-
-                                {/* Importe solicitado */}
                                 <div>
                                     <label htmlFor="importe_solicitado" className="mb-1.5 block text-sm font-medium text-text-main">
                                         {t('pedidos.fields.importeSolicitado')} <span className="text-red-500">*</span>
@@ -329,9 +349,7 @@ export default function PedidosForm({
                                     <div className="relative">
                                         <input
                                             id="importe_solicitado"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
+                                            type="number" min="0" step="0.01"
                                             value={form.importe_solicitado}
                                             onChange={e => updateField('importe_solicitado', e.target.value)}
                                             className={`${inputClass('importe_solicitado')} pr-7`}
@@ -341,17 +359,13 @@ export default function PedidosForm({
                                     </div>
                                     <InputError message={getError('importe_solicitado')} className="mt-1.5" />
                                 </div>
-
-                                {/* Unidades solicitadas */}
                                 <div>
                                     <label htmlFor="unidades_solicitadas" className="mb-1.5 block text-sm font-medium text-text-main">
                                         {t('pedidos.fields.unidadesSolicitadas')} <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         id="unidades_solicitadas"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
+                                        type="number" min="0" step="0.01"
                                         value={form.unidades_solicitadas}
                                         onChange={e => updateField('unidades_solicitadas', e.target.value)}
                                         className={inputClass('unidades_solicitadas')}
@@ -368,15 +382,12 @@ export default function PedidosForm({
                         <legend className="text-sm font-semibold text-text-main px-1">
                             {t('pedidos.items.title')}
                         </legend>
-
                         <ItemsTable
                             items={items}
                             onChange={setItems}
                             errors={serverErrors}
                             disabled={false}
                         />
-
-                        {/* Error general de items (validación cliente) */}
                         {submitAttempted && localErrors.items && (
                             <p className="text-xs font-medium text-red-600">{localErrors.items}</p>
                         )}
