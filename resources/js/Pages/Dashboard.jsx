@@ -116,9 +116,12 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
 
                     {/* COLUMNA DERECHA: PEDIDOS */}
                     <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                        <div className="border-b border-border px-4 py-3 bg-surface-2">
-                            <h3 className="text-sm font-medium text-text-main">{t('dashboard.tables.myOrders')}</h3>
-                        </div>
+                    <div className="border-b border-border px-4 py-3 flex justify-between items-center bg-surface-2">
+                        <h3 className="text-sm font-medium text-text-main">{t('dashboard.tables.myOrders')}</h3>
+                        <Link href={route('pedidos.index')} className="text-xs font-semibold text-(--ciete-red) hover:underline">
+                            {t('common.actions.viewAll')}
+                        </Link>
+                    </div>
                         {pedidos.length === 0 ? (
                             <div className="px-4 py-8 text-center text-sm text-text-hint">{t('dashboard.tables.noOrders')}</div>
                         ) : (

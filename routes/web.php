@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\PedidoController;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
 use App\Models\Trabajo;
+use App\Models\Pedido; // <--- ESTA ES LA QUE FALTA PARA EL DASHBOARD
+use App\Models\Factura;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -43,10 +45,22 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
 
     Route::get('/dashboard', function () {
         $todasLasObras = Trabajo::all();
+        $ultimosPedidos = \App\Models\Pedido::with('trabajo')
+        ->latest()
+        ->take(5)
+        ->get()
+        ->map(function ($pedido) {
+            return [
+                // En el Dashboard usabas 'ref', 'fecha' y 'estado'
+                'ref'    => $pedido->numero_pedido ?? ('Pedido #' . $pedido->id_pedido),
+                'fecha'  => $pedido->fecha_solicitud ? \Carbon\Carbon::parse($pedido->fecha_solicitud)->format('d/m/Y') : '—',
+                'estado' => $pedido->estado ?? 'borrador',
+            ];
+        });
         return Inertia::render('Dashboard', [
             'obras'           => $todasLasObras->take(5),
             'totalObrasCount' => $todasLasObras->count(),
-            'pedidos'         => [],
+            'pedidos'         => $ultimosPedidos,
             'legalizaciones'  => [],
         ]);
     })->name('dashboard');
