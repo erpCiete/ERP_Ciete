@@ -23,7 +23,7 @@ class PedidoController extends Controller
     use ApiResponse;
 
     /**
-     * Listado paginado de pedidos con filtros por trabajo y estado.
+     * Listado paginado de pedidos con filtros por trabajo, estado y contexto.
      */
     public function index(Request $request): JsonResponse
     {
@@ -32,10 +32,19 @@ class PedidoController extends Controller
         $estado = trim((string) $request->input('estado', ''));
         $trabajoId = $request->integer('id_trabajo');
 
+        // 1. Identificar si el usuario es Administrador (Contexto 3 o Rol 'admin')
+        $user = $request->user();
+        $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
         $pedidos = Pedido::query()
+            // 2. Eager loading (Añadido 'trabajo' para optimizar si la tabla del frontend muestra el nombre de la obra)
             ->with(['items' => function ($query) {
                 $query->orderBy('id_pedido_item');
-            }])
+            }, 'trabajo'])
+            // 3. AISLAMIENTO CONDICIONAL: Si NO es admin, filtramos por su contexto. Si es admin, no filtramos (ve todos).
+            ->when(!$isAdmin, function ($query) use ($user): void {
+                $query->where('id_contexto', $user->id_contexto);
+            })
             ->when($trabajoId > 0, function ($query) use ($trabajoId): void {
                 $query->where('id_trabajo', $trabajoId);
             })
@@ -63,8 +72,11 @@ class PedidoController extends Controller
         return DB::transaction(function () use ($request) {
             $pedido = new Pedido();
             
-            // El contexto se asigna automáticamente desde el usuario autenticado
-            $pedido->id_contexto = Auth::user()->id_contexto;
+            // BORRAR ESTO: $pedido->id_contexto = Auth::user()->id_contexto;
+            
+            // NUEVO: Heredar el contexto directamente del Trabajo seleccionado
+            $trabajo = \App\Models\Trabajo::findOrFail($request->input('id_trabajo'));
+            $pedido->id_contexto = $trabajo->id_contexto;
             
             $this->mapRequestToModel($request, $pedido);
             $pedido->save();

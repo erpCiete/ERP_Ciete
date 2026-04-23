@@ -16,12 +16,30 @@ class UpdateFacturaRequest extends BaseApiRequest
     {
         $normalized = [];
 
-        // Casteo estricto de booleanos solo si vienen explícitamente en el request
+        // 0. TRADUCTOR FRONTEND -> BACKEND
+        if ($this->has('factura_ccp')) {
+            $normalized['numero_factura_ccp'] = $this->input('factura_ccp');
+        }
+
+        // Si viene el trabajo pero no la empresa, intentar deducirla
+        if ($this->has('id_trabajo') && !$this->has('id_empresa_cliente')) {
+            $trabajo = \App\Models\Trabajo::find($this->input('id_trabajo'));
+            if ($trabajo) {
+                $normalized['id_empresa_cliente'] = $trabajo->id_empresa_cliente;
+            }
+        }
+
+        // Igualar importe a base_imponible si solo nos envían la base
+        if ($this->has('base_imponible') && !$this->has('importe')) {
+            $normalized['importe'] = $this->input('base_imponible');
+        }
+
+        // Casteo estricto
         if ($this->has('autofactura')) {
             $normalized['autofactura'] = filter_var($this->input('autofactura'), FILTER_VALIDATE_BOOLEAN);
         }
 
-        // Limpieza dinámica de cadenas de texto
+        // Limpieza de cadenas
         $stringFields = ['numero_factura', 'numero_factura_ccp', 'serie', 'sociedad', 'observaciones'];
         foreach ($stringFields as $field) {
             if ($this->has($field)) {
@@ -33,7 +51,7 @@ class UpdateFacturaRequest extends BaseApiRequest
             $this->merge($normalized);
         }
 
-        // Limpieza y validación del array de la tabla pivote (factura_pedidos)
+        // Limpieza pivote
         if ($this->has('pedidos') && is_array($this->input('pedidos'))) {
             $pedidos = collect($this->input('pedidos'))->map(function ($pedido) {
                 return [

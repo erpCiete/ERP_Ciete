@@ -149,12 +149,33 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     // Solo necesitamos rutas web para las vistas Inertia.
     Route::middleware('permission:pedidos.ver')->group(function () {
 
-        Route::get('/pedidos', function () {
+        Route::get('/pedidos', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
+            $search = trim((string) $request->input('search', ''));
+            $estado = trim((string) $request->input('estado', ''));
+
+            $pedidos = \App\Models\Pedido::query()
+                ->with(['trabajo', 'items'])
+                ->when(!$isAdmin, function ($q) use ($user) {
+                    $q->where('id_contexto', $user->id_contexto);
+                })
+                ->when($estado !== '', function ($q) use ($estado) {
+                    $q->where('estado', $estado);
+                })
+                ->when($search !== '', function ($q) use ($search) {
+                    $q->where('numero_pedido', 'like', "%{$search}%");
+                })
+                ->orderByDesc('created_at')
+                ->paginate(15)
+                ->withQueryString();
+
             return Inertia::render('Pedidos/Index', [
-                'pedidos'     => ['data' => [], 'meta' => ['pagination' => ['total' => 0, 'current_page' => 1, 'last_page' => 1]]],
-                'filters'     => [],
-                'contextoIds' => auth()->user()->getAccessibleContextIds() ?? [],
-                'canCreate' => auth()->user()->hasPermission('pedidos.gestionar'),
+                'pedidos'     => \App\Http\Resources\Api\PedidoResource::collection($pedidos),
+                'filters'     => $request->only(['search', 'estado', 'fecha_desde', 'fecha_hasta']),
+                'contextoIds' => $user->getAccessibleContextIds() ?? [],
+                'canCreate'   => $user->hasPermission('pedidos.gestionar'),
             ]);
         })->name('pedidos.index');
 
@@ -188,12 +209,33 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
 
     // ── Sprint 04 · Facturas ──────────────────────────────────────────────────
     Route::middleware('permission:facturas.ver')->group(function () {
-        Route::get('/facturas', function () {
+        Route::get('/facturas', function (\Illuminate\Http\Request $request) {
+            $user = $request->user();
+            $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
+            $search = trim((string) $request->input('search', ''));
+            $estado = trim((string) $request->input('estado', ''));
+
+            $facturas = \App\Models\Factura::query()
+                ->with('trabajo')
+                ->when(!$isAdmin, function ($q) use ($user) {
+                    $q->where('id_contexto', $user->id_contexto);
+                })
+                ->when($estado !== '', function ($q) use ($estado) {
+                    $q->where('estado', $estado);
+                })
+                ->when($search !== '', function ($q) use ($search) {
+                    $q->where('numero_factura', 'like', "%{$search}%");
+                })
+                ->orderByDesc('created_at')
+                ->paginate(15)
+                ->withQueryString();
+
             return Inertia::render('Facturas/Index', [
-                'facturas'    => ['data' => [], 'meta' => ['pagination' => ['total' => 0, 'current_page' => 1, 'last_page' => 1]]],
-                'filters'     => [],
-                'contextoIds' => auth()->user()->getAccessibleContextIds() ?? [],
-                'canCreate' => auth()->user()->hasPermission('facturas.gestionar'),
+                'facturas'    => \App\Http\Resources\Api\FacturaResource::collection($facturas),
+                'filters'     => $request->only(['search', 'estado', 'fecha_desde', 'fecha_hasta']),
+                'contextoIds' => $user->getAccessibleContextIds() ?? [],
+                'canCreate'   => $user->hasPermission('facturas.gestionar'),
             ]);
         })->name('facturas.index');
 

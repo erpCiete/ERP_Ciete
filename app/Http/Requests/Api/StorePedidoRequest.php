@@ -58,7 +58,11 @@ class StorePedidoRequest extends BaseApiRequest
      */
     public function rules(): array
     {
-        $contextId = Auth::user()?->id_contexto;
+        $user = Auth::user();
+        $contextId = $user?->id_contexto;
+        // Asumimos que contexto 3 es el interno (CIETE) o tiene el rol de admin
+        $isAdmin = $contextId === 3 || $user?->hasRole('admin'); 
+        
         $pedido = $this->route('pedido');
         $pedidoId = $pedido instanceof Pedido ? $pedido->id_pedido : $pedido;
 
@@ -69,14 +73,13 @@ class StorePedidoRequest extends BaseApiRequest
                 'required',
                 'integer',
                 Rule::exists('trabajos', 'id_trabajo')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when(!$isAdmin, fn ($query) => $query->where('id_contexto', $contextId)),
             ],
             'id_tarifario' => [
                 'nullable',
                 'integer',
-                // Aseguramos que si envían un tarifario, pertenezca al mismo contexto
                 Rule::exists('tarifarios', 'id_tarifario')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when(!$isAdmin, fn ($query) => $query->where('id_contexto', $contextId)),
             ],
 
             // Datos Base
@@ -85,10 +88,10 @@ class StorePedidoRequest extends BaseApiRequest
                 'required',
                 'string',
                 'max:100',
-                // Ignorar el pedido actual en la validación unique y respetar el contexto
                 Rule::unique('pedidos', 'numero_pedido')
                     ->ignore($pedidoId, 'id_pedido')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    // Si es admin, no forzamos su contexto en la búsqueda unique
+                    ->when(!$isAdmin, fn ($query) => $query->where('id_contexto', $contextId)),
             ],
             'fecha_solicitud' => ['nullable', 'date'],
             'fecha_recepcion' => ['nullable', 'date'],
@@ -107,7 +110,7 @@ class StorePedidoRequest extends BaseApiRequest
             'facturado_completo' => ['sometimes', 'boolean'],
             'observaciones' => ['nullable', 'string'],
 
-            // Validaciones para Líneas de Pedido (Items) - Esquema Real
+            // Validaciones para Líneas de Pedido (Items)
             'items' => ['nullable', 'array'],
             'items.*.id_tarifario_linea' => ['nullable', 'integer'],
             'items.*.codigo_servicio' => ['nullable', 'string', 'max:30'],
@@ -116,8 +119,6 @@ class StorePedidoRequest extends BaseApiRequest
             'items.*.cantidad' => ['required_with:items', 'numeric', 'min:0'],
             'items.*.precio_unitario' => ['required_with:items', 'numeric', 'min:0'],
             'items.*.total_linea' => ['required_with:items', 'numeric'],
-
-            
         ];
     }
 }

@@ -29,8 +29,14 @@ class FacturaController extends Controller
         $trabajoId = $request->integer('id_trabajo');
         $empresaId = $request->integer('id_empresa_cliente');
 
+        $user = $request->user();
+        $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
         $facturas = Factura::query()
-            ->where('id_contexto', Auth::user()->id_contexto) // <-- BLOQUEO MULTI-TENANT CRÍTICO
+            // BLOQUEO MULTI-TENANT CONDICIONAL
+            ->when(!$isAdmin, function ($query) use ($user): void {
+                $query->where('id_contexto', $user->id_contexto);
+            })
             ->with(['trabajo', 'pedidos'])
             ->when($trabajoId > 0, function ($query) use ($trabajoId): void {
                 $query->where('id_trabajo', $trabajoId);
@@ -44,7 +50,7 @@ class FacturaController extends Controller
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($nested) use ($search): void {
                     $nested->where('numero_factura', 'like', "%{$search}%")
-                           ->orWhere('numero_factura_ccp', 'like', "%{$search}%") // Soporte Búsqueda MOEVE
+                           ->orWhere('numero_factura_ccp', 'like', "%{$search}%")
                            ->orWhere('observaciones', 'like', "%{$search}%");
                 });
             })
@@ -54,16 +60,15 @@ class FacturaController extends Controller
         return $this->successResponse(FacturaResource::collection($facturas));
     }
 
-    /**
-     * Creación de una nueva Factura.
-     */
     public function store(StoreFacturaRequest $request): JsonResponse
     {
         return DB::transaction(function () use ($request) {
             $factura = new Factura();
             
-            // Asignación inmutable del contexto
-            $factura->id_contexto = Auth::user()->id_contexto;
+            // ANTES: $factura->id_contexto = Auth::user()->id_contexto;
+            // AHORA: Heredar del Trabajo
+            $trabajo = \App\Models\Trabajo::findOrFail($request->input('id_trabajo'));
+            $factura->id_contexto = $trabajo->id_contexto;
             
             $this->fillFactura($factura, $request->validated());
             $factura->save();
@@ -78,12 +83,12 @@ class FacturaController extends Controller
         });
     }
 
-    /**
-     * Visualización detallada de una Factura.
-     */
     public function show(Factura $factura): JsonResponse
     {
-        if ($factura->id_contexto !== Auth::user()->id_contexto) {
+        $user = Auth::user();
+        $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
+        if (!$isAdmin && $factura->id_contexto !== $user->id_contexto) {
             return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 403);
         }
 
@@ -91,12 +96,12 @@ class FacturaController extends Controller
         return $this->successResponse(new FacturaResource($factura));
     }
 
-    /**
-     * Actualización de Factura.
-     */
     public function update(UpdateFacturaRequest $request, Factura $factura): JsonResponse
     {
-        if ($factura->id_contexto !== Auth::user()->id_contexto) {
+        $user = Auth::user();
+        $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
+        if (!$isAdmin && $factura->id_contexto !== $user->id_contexto) {
             return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 403);
         }
 
@@ -112,17 +117,16 @@ class FacturaController extends Controller
         });
     }
 
-    /**
-     * Eliminación de Factura.
-     */
     public function destroy(Factura $factura): JsonResponse
     {
-        if ($factura->id_contexto !== Auth::user()->id_contexto) {
+        $user = Auth::user();
+        $isAdmin = $user->id_contexto === 3 || $user->hasRole('admin');
+
+        if (!$isAdmin && $factura->id_contexto !== $user->id_contexto) {
             return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 403);
         }
 
         DB::transaction(function () use ($factura): void {
-            // Limpieza de relaciones en tabla pivote (factura_pedidos)
             $factura->pedidos()->detach();
             $factura->delete();
         });
@@ -131,7 +135,7 @@ class FacturaController extends Controller
     }
 
     /**
-     * Mapeo de columnas validadas al modelo.
+     * Asigna dinámicamente los campos validados al modelo de Factura.
      */
     private function fillFactura(Factura $factura, array $data): void
     {
@@ -172,13 +176,10 @@ class FacturaController extends Controller
         
         foreach ($pedidosData as $pedido) {
             $syncData[$pedido['id_pedido']] = [
-                'importe_aplicado' => $pedido['importe_aplicado'] ?? null,
+                'importe_aplicado' => $pedido['importe_aplicado'] ?? 0,
             ];
         }
 
-        // El método sync inserta, actualiza y elimina automáticamente los registros huérfanos.
-        // Si la relación ->pedidos() en el modelo Factura tiene ->withTimestamps(), Laravel 
-        // inyecta el created_at y updated_at automáticamente.
         $factura->pedidos()->sync($syncData);
     }
 }
