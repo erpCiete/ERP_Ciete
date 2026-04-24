@@ -22,6 +22,7 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
     const ReportsIcon = getNavigationIcon('nav.reports');
     const SettingsIcon = getNavigationIcon('nav.configuration');
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
+    const InvoicesIcon = getNavigationIcon('nav.invoices');
 
     const navLinkClass = (active) =>
         `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-hidden ${
@@ -104,16 +105,22 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                                         <span className={navLinkLabelClass(route().current('trabajos.*'))}>{t('nav.works')}</span>
                                     </span>
                                 </Link>
-                                <Link href="#" className={navLinkClass(false)}>
+                                <Link href={route('pedidos.index')} className={navLinkClass(route().current('pedidos.*'))}>
                                     <span className="inline-flex items-center gap-2">
                                         {OrdersIcon && <OrdersIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.orders')}</span>
+                                        <span className={navLinkLabelClass(route().current('pedidos.*'))}>{t('nav.orders')}</span>
                                     </span>
                                 </Link>
                                 <Link href="#" className={navLinkClass(false)}>
                                     <span className="inline-flex items-center gap-2">
                                         {LegalizationsIcon && <LegalizationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
                                         <span className={navLinkLabelClass(false)}>{t('nav.legalizations')}</span>
+                                    </span>
+                                </Link>
+                                <Link href={route('facturas.index')} className={navLinkClass(route().current('facturas.*'))}>
+                                    <span className="inline-flex items-center gap-2">
+                                        {InvoicesIcon && <InvoicesIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                        <span className={navLinkLabelClass(route().current('facturas.*'))}>{t('nav.invoices')}</span>
                                     </span>
                                 </Link>
                             </div>
