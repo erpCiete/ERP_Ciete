@@ -54,6 +54,12 @@ class HandleInertiaRequests extends Middleware
             ]);
         }
 
+        $roleSlugs = $user
+            ? $user->roles->pluck('slug')->map(fn (string $slug): string => $slug)->values()->all()
+            : [];
+        $permissionSlugs = $user?->permission_slugs ?? [];
+        $primaryRole = $user?->roles->first();
+
         $avatarCatalog = collect(config('profile.avatar_catalog', []));
         $fallbackAvatar = $avatarCatalog->first();
         $selectedAvatar = $user ? ($avatarCatalog->get($user->avatar_key) ?? $fallbackAvatar) : null;
@@ -74,13 +80,23 @@ class HandleInertiaRequests extends Middleware
                     'avatar_url' => $selectedAvatar ? asset($selectedAvatar['file']) : null,
                     'activo' => $user->activo,
                     'is_admin' => $user->is_admin,
+                    'is_director' => in_array('director', $roleSlugs, true),
+                    'is_execution' => in_array('ejecucion', $roleSlugs, true),
+                    'is_execution_moeve' => in_array('ejecucion_moeve', $roleSlugs, true),
+                    'is_execution_repsol' => in_array('ejecucion_repsol', $roleSlugs, true),
+                    'is_accounting' => in_array('contable', $roleSlugs, true),
+                    'can_manage_support' => $user->canManageSupport(),
+                    'can_access_direction_panel' => in_array('admin', $roleSlugs, true)
+                        || in_array('director', $roleSlugs, true),
+                    'primary_role_slug' => $primaryRole?->slug,
+                    'primary_role_name' => $primaryRole?->nombre,
                     'roles' => $user->roles->map(fn($role) => [
                         'id_rol' => $role->id_rol,
                         'nombre' => $role->nombre,
                         'slug' => $role->slug,
                     ])->values(),
-                    'role_slugs' => $user->role_slugs,
-                    'permission_slugs' => $user->permission_slugs,
+                    'role_slugs' => $roleSlugs,
+                    'permission_slugs' => $permissionSlugs,
                     'contexto' => $user->contexto ? [
                         'id_contexto' => $user->contexto->id_contexto,
                         'nombre' => $user->contexto->nombre,

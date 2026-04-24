@@ -113,6 +113,16 @@ class InternalCommunicationTest extends TestCase
         ]);
     }
 
+    public function test_support_root_redirects_admin_to_ticket_management(): void
+    {
+        $admin = User::factory()->create();
+        $this->assignRole($admin, 'admin');
+
+        $this->actingAs($admin)
+            ->get(route('support'))
+            ->assertRedirect(route('admin.support.index'));
+    }
+
     public function test_only_owner_or_manager_can_view_support_ticket(): void
     {
         $owner = User::factory()->create();

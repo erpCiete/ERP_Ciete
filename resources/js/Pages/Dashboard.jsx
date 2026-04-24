@@ -60,7 +60,7 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
 
                 {/* BOTONES DE ACCIÓN */}
                 <div className="flex flex-wrap gap-3">
-                    {user.role_slugs?.includes('cierre') && (
+                    {user.can_access_direction_panel && (
                         <Link href={route('cierre.dashboard')} className="ciete-btn-secondary">{t('nav.closurePanel')}</Link>
                     )}
                     {user.is_admin && (

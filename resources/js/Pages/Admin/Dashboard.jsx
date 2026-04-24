@@ -64,12 +64,14 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
 
     const adminModules = [
         { key: 'users', color: 'border-l-state-progress-dot', href: route('admin.users.index') },
-        { key: 'orders', color: 'border-l-state-pending-dot', href: '#' },
-        { key: 'billing', color: 'border-l-state-done-dot', href: '#' },
-        { key: 'legalizations', color: 'border-l-state-blocked-dot', href: '#' },
+        { key: 'direction', color: 'border-l-primary', href: route('cierre.dashboard') },
+        { key: 'orders', color: 'border-l-state-pending-dot', href: route('pedidos.index') },
+        { key: 'billing', color: 'border-l-state-done-dot', href: route('facturas.index') },
         { key: 'clients', color: 'border-l-accent', href: route('clientes.index') },
         { key: 'stations', color: 'border-l-border-heavy', href: route('estaciones.index') },
         { key: 'works', color: 'border-l-primary', href: route('trabajos.index') },
+        { key: 'imports', color: 'border-l-accent', href: route('importaciones.index') },
+        { key: 'support', color: 'border-l-state-progress-dot', href: route('admin.support.index') },
         { key: 'audit', color: 'border-l-text-hint', href: route('admin.audit') },
     ];
 
@@ -352,31 +354,18 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
                         <h3 className="text-sm font-medium text-text-main">{t('adminDashboard.modules.title')}</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-2 p-3 md:grid-cols-4">
-                        {adminModules.map((module) => {
-                            const isPlaceholder = module.href === '#';
-                            return isPlaceholder ? (
-                                <div
-                                    key={module.key}
-                                    className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 opacity-40 ${module.color}`}
-                                >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                                        {t(`adminDashboard.modules.${module.key}`)}
-                                    </span>
-                                    <span className="text-[8px] text-text-hint">{t('adminDashboard.modules.soon')}</span>
-                                </div>
-                            ) : (
-                                <Link
-                                    key={module.key}
-                                    href={module.href}
-                                    className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 transition-colors hover:bg-border ${module.color}`}
-                                >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-main">
-                                        {t(`adminDashboard.modules.${module.key}`)}
-                                    </span>
-                                    <span className="text-xs text-text-hint" aria-hidden>→</span>
-                                </Link>
-                            );
-                        })}
+                        {adminModules.map((module) => (
+                            <Link
+                                key={module.key}
+                                href={module.href}
+                                className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 transition-colors hover:bg-border ${module.color}`}
+                            >
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-text-main">
+                                    {t(`adminDashboard.modules.${module.key}`)}
+                                </span>
+                                <span className="text-xs text-text-hint" aria-hidden>→</span>
+                            </Link>
+                        ))}
                     </div>
                 </div>
 

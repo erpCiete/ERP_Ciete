@@ -8,6 +8,7 @@ use App\Models\ImportacionFila;
 use App\Models\Trabajo;
 use App\Models\EstacionServicio;
 use App\Services\ExcelParserService;
+use Throwable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,13 +19,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ImportacionController extends Controller
 {
-    private ExcelParserService $parser;
-
-    public function __construct(ExcelParserService $parser)
-    {
-        $this->parser = $parser;
-    }
-
     /**
      * Muestra el historial de importaciones.
      */
@@ -52,6 +46,14 @@ class ImportacionController extends Controller
      */
     public function store(StoreImportacionRequest $request): RedirectResponse
     {
+        $parser = $this->resolveParser();
+
+        if (! $parser) {
+            return back()->withErrors([
+                'archivo' => 'El módulo de importaciones no está operativo en este entorno.',
+            ]);
+        }
+
         try {
             DB::beginTransaction();
 
@@ -61,7 +63,7 @@ class ImportacionController extends Controller
             $fullPath = Storage::disk('local')->path($path);
 
             // 2. Extraer arrays con ExcelParserService
-            $parsedData = $this->parser->parseFile($fullPath);
+            $parsedData = $parser->parseFile($fullPath);
 
             if (empty($parsedData)) {
                 // Si el archivo está vacío, borramos el temporal para no ensuciar el disco
@@ -115,6 +117,19 @@ class ImportacionController extends Controller
             DB::rollBack();
             Log::error('Error en importación Store: ' . $e->getMessage());
             return back()->withErrors(['archivo' => 'Ocurrió un error al procesar el archivo: ' . $e->getMessage()]);
+        }
+    }
+
+    private function resolveParser(): ?ExcelParserService
+    {
+        try {
+            return app(ExcelParserService::class);
+        } catch (Throwable $exception) {
+            Log::warning('Importaciones no disponibles: parser Excel no resoluble.', [
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
         }
     }
 

@@ -31,12 +31,14 @@ class AdminDashboardTest extends TestCase
     public function test_admin_user_can_access_admin_dashboard(): void
     {
         $admin = User::factory()->create();
-        $role = Role::query()->create([
-            'nombre' => 'admin',
-            'slug' => 'admin',
-            'descripcion' => 'Acceso total',
-            'activo' => true,
-        ]);
+        $role = Role::query()->firstOrCreate(
+            ['slug' => 'admin'],
+            [
+                'nombre' => 'Admin',
+                'descripcion' => 'Acceso total',
+                'activo' => true,
+            ]
+        );
 
         DB::table('usuario_roles')->insert([
             'id_usuario' => $admin->id_usuario,

@@ -2,27 +2,21 @@ import CieteMark from '@/Components/CieteMark';
 import TopNavbar from '@/Components/TopNavbar';
 import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
+import { buildSidebarSections, getNavigationContextBadge } from '@/navigation/sidebar';
 import { Link, usePage } from '@inertiajs/react';
+
+function resolveRoleLabel(user) {
+    return user?.primary_role_name ?? user?.roles?.[0]?.nombre ?? user?.primary_role_slug ?? '-';
+}
 
 export default function AuthenticatedLayout({ header, children, contentWidthClass = 'max-w-[1400px]' }) {
     const user = usePage().props.auth.user;
     const { t } = useI18n();
-    const hasClosureRole = user?.role_slugs?.includes('cierre');
-    const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
-    const canViewEstaciones = user?.permission_slugs?.some((permission) =>
-        ['estaciones.ver', 'estaciones.gestionar'].includes(permission)
-    );
-    const DashboardIcon = getNavigationIcon('nav.dashboard');
-    const ClosureIcon = getNavigationIcon('nav.closurePanel');
-    const ClientsIcon = getNavigationIcon('nav.clients');
-    const StationsIcon = getNavigationIcon('nav.stations');
-    const WorksIcon = getNavigationIcon('nav.works');
-    const OrdersIcon = getNavigationIcon('nav.orders');
-    const LegalizationsIcon = getNavigationIcon('nav.legalizations');
-    const ReportsIcon = getNavigationIcon('nav.reports');
-    const SettingsIcon = getNavigationIcon('nav.configuration');
+    const sidebarSections = buildSidebarSections(t, user);
+    const contextBadge = getNavigationContextBadge(user, t);
+    const roleLabel = resolveRoleLabel(user);
+    const SettingsIcon = getNavigationIcon('nav.myProfile');
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
-    const InvoicesIcon = getNavigationIcon('nav.invoices');
 
     const navLinkClass = (active) =>
         `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-hidden ${
@@ -46,99 +40,33 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                     </div>
 
                     <nav className="space-y-6">
-                        <div>
-                            <p className="mb-4 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/50">
-                                {t('nav.groups.general')}
-                            </p>
-                            <div className="space-y-1">
-                                <Link href={route('dashboard')} className={navLinkClass(route().current('dashboard'))}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {DashboardIcon && <DashboardIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(route().current('dashboard'))}>{t('nav.dashboard')}</span>
-                                    </span>
-                                </Link>
-                                {hasClosureRole && (
-                                    <Link href={route('cierre.dashboard')} className={navLinkClass(route().current('cierre.dashboard'))}>
-                                        <span className="inline-flex items-center gap-2">
-                                            {ClosureIcon && <ClosureIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                            <span className={navLinkLabelClass(route().current('cierre.dashboard'))}>{t('nav.closurePanel')}</span>
-                                        </span>
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-
-                        {(canManageClientes || canViewEstaciones) && (
-                            <div>
+                        {sidebarSections.map((section) => (
+                            <div key={section.id}>
                                 <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/40">
-                                    {t('nav.groups.masters')}
+                                    {section.label}
                                 </p>
                                 <div className="space-y-1 text-white/70">
-                                    {canManageClientes && (
-                                        <Link href={route('clientes.index')} className={navLinkClass(route().current('clientes.*'))}>
-                                            <span className="inline-flex items-center gap-2">
-                                                {ClientsIcon && <ClientsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                                <span className={navLinkLabelClass(route().current('clientes.*'))}>{t('nav.clients')}</span>
-                                            </span>
-                                        </Link>
-                                    )}
-                                    {canViewEstaciones && (
-                                        <Link href={route('estaciones.index')} className={navLinkClass(route().current('estaciones.*'))}>
-                                            <span className="inline-flex items-center gap-2">
-                                                {StationsIcon && <StationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                                <span className={navLinkLabelClass(route().current('estaciones.*'))}>{t('nav.stations')}</span>
-                                            </span>
-                                        </Link>
-                                    )}
+                                    {section.items.map((item) => {
+                                        const ItemIcon = getNavigationIcon(item.key);
+
+                                        return (
+                                            <Link
+                                                key={item.id}
+                                                href={item.href}
+                                                method={item.method}
+                                                as={item.method ? 'button' : undefined}
+                                                className={navLinkClass(item.active)}
+                                            >
+                                                <span className="inline-flex items-center gap-2">
+                                                    {ItemIcon && <ItemIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
+                                                    <span className={navLinkLabelClass(item.active)}>{item.label}</span>
+                                                </span>
+                                            </Link>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                        )}
-
-                        <div>
-                            <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/40">
-                                {t('nav.groups.operations')}
-                            </p>
-                            <div className="space-y-1 text-white/70">
-                                <Link href={route('trabajos.index')} className={navLinkClass(route().current('trabajos.*'))}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {WorksIcon && <WorksIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(route().current('trabajos.*'))}>{t('nav.works')}</span>
-                                    </span>
-                                </Link>
-                                <Link href={route('pedidos.index')} className={navLinkClass(route().current('pedidos.*'))}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {OrdersIcon && <OrdersIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(route().current('pedidos.*'))}>{t('nav.orders')}</span>
-                                    </span>
-                                </Link>
-                                <Link href="#" className={navLinkClass(false)}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {LegalizationsIcon && <LegalizationsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.legalizations')}</span>
-                                    </span>
-                                </Link>
-                                <Link href={route('facturas.index')} className={navLinkClass(route().current('facturas.*'))}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {InvoicesIcon && <InvoicesIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(route().current('facturas.*'))}>{t('nav.invoices')}</span>
-                                    </span>
-                                </Link>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.2em] text-text-hint/40">
-                                {t('nav.groups.reports')}
-                            </p>
-                            <div className="space-y-1 text-white/70">
-                                <Link href="#" className={navLinkClass(false)}>
-                                    <span className="inline-flex items-center gap-2">
-                                        {ReportsIcon && <ReportsIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                        <span className={navLinkLabelClass(false)}>{t('nav.reports')}</span>
-                                    </span>
-                                </Link>
-                            </div>
-                        </div>
+                        ))}
                     </nav>
                 </div>
 
@@ -151,9 +79,17 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                                 className="h-10 w-10 rounded-lg border border-white/20 bg-white/5 p-1"
                             />
                         )}
-                        <div>
+                        <div className="min-w-0">
                             <p className="truncate text-xs font-bold text-white">{user.nombre ?? user.nombre_usuario ?? '-'}</p>
                             <p className="truncate text-[10px] text-text-hint">{user.email}</p>
+                            <p className="truncate pt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
+                                {roleLabel}
+                            </p>
+                            {contextBadge && (
+                                <p className="mt-1 inline-flex rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/70">
+                                    {contextBadge}
+                                </p>
+                            )}
                         </div>
                     </div>
                     <Link
@@ -161,7 +97,7 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                         className="mb-1 inline-flex items-center gap-1.5 px-2 text-left text-[10px] text-white/50 transition-colors hover:text-white"
                     >
                         {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
-                        {t('nav.configuration')}
+                        {t('nav.myProfile')}
                     </Link>
                     <Link
                         href={route('logout')}

@@ -1,5 +1,5 @@
 import InputError from '@/Components/InputError';
-import { useEstaciones } from '@/hooks/useEstaciones'; // Asegúrate de que 'hooks' esté en minúscula si así se llama la carpeta
+import { useEstaciones } from '@/Hooks/useEstaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
 import { Head, router } from '@inertiajs/react';

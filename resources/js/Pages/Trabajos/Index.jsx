@@ -6,7 +6,7 @@ import { useI18n } from '@/i18n';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import TrabajosColumnas from '@/Components/ui/TrabajosColumnas';
-import { useTrabajos } from '@/hooks/useTrabajos';
+import { useTrabajos } from '@/Hooks/useTrabajos';
 
 // ─── Opciones de estado para el filtro ───────────────────────────────────────
 const ESTADO_OPTIONS = ['borrador', 'en_curso', 'terminado', 'cerrado', 'cancelado'];

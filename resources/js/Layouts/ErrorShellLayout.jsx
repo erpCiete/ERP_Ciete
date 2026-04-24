@@ -2,59 +2,11 @@ import CieteMark from '@/Components/CieteMark';
 import GlobalPreferenceSelectors from '@/Components/GlobalPreferenceSelectors';
 import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
+import { buildSidebarSections, buildTopNavbarItems, getNavigationContextBadge } from '@/navigation/sidebar';
 import { Link, usePage } from '@inertiajs/react';
 
-function buildSidebarSections(t, user) {
-    const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
-    const canViewEstaciones = user?.permission_slugs?.some((permission) =>
-        ['estaciones.ver', 'estaciones.gestionar'].includes(permission),
-    );
-
-    const generalItems = [
-        { id: 'home', key: 'nav.home', href: route('index') },
-        ...(user ? [{ id: 'dashboard', key: 'nav.dashboard', href: route('dashboard') }] : []),
-        ...(user?.is_admin ? [{ id: 'admin', key: 'nav.adminPanel', href: route('admin.dashboard') }] : []),
-    ];
-
-    const masterItems = [
-        ...(canManageClientes ? [{ id: 'clients', key: 'nav.clients', href: route('clientes.index') }] : []),
-        ...(canViewEstaciones ? [{ id: 'stations', key: 'nav.stations', href: route('estaciones.index') }] : []),
-    ];
-
-    const accessItems = [
-        { id: 'profile', key: 'nav.configuration', href: route('profile.edit') },
-        { id: 'logout', key: 'common.actions.logOut', href: route('logout'), method: 'post' },
-    ];
-
-    return [
-        {
-            id: 'general',
-            label: t('nav.groups.general'),
-            items: generalItems,
-        },
-        ...(masterItems.length > 0
-            ? [
-                  {
-                      id: 'masters',
-                      label: t('nav.groups.masters'),
-                      items: masterItems,
-                  },
-              ]
-            : []),
-        {
-            id: 'access',
-            label: t('errors.navigationSection'),
-            items: accessItems,
-        },
-    ];
-}
-
-function buildTopItems(t, user) {
-    return [
-        { id: 'home', key: 'nav.home', href: route('index') },
-        { id: 'dashboard', key: 'nav.dashboard', href: route('dashboard') },
-        ...(user?.is_admin ? [{ id: 'admin', key: 'nav.adminPanel', href: route('admin.dashboard') }] : []),
-    ];
+function resolveRoleLabel(user) {
+    return user?.primary_role_name ?? user?.roles?.[0]?.nombre ?? user?.primary_role_slug ?? '-';
 }
 
 export default function ErrorShellLayout({ header, children }) {
@@ -62,7 +14,11 @@ export default function ErrorShellLayout({ header, children }) {
     const { auth = {} } = usePage().props;
     const user = auth.user ?? null;
     const sidebarSections = user ? buildSidebarSections(t, user) : [];
-    const topItems = user ? buildTopItems(t, user) : [];
+    const topItems = user ? buildTopNavbarItems(t, user) : [];
+    const contextBadge = user ? getNavigationContextBadge(user, t) : null;
+    const roleLabel = user ? resolveRoleLabel(user) : null;
+    const SettingsIcon = getNavigationIcon('nav.myProfile');
+    const LogOutIcon = getNavigationIcon('common.actions.logOut');
 
     const sidebarLinkClass =
         'group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/78 transition-colors duration-200 hover:bg-white/10 hover:text-white focus-visible:outline-hidden focus-visible:bg-white/10 focus-visible:text-white';
@@ -104,7 +60,7 @@ export default function ErrorShellLayout({ header, children }) {
                                                         <ItemIcon className="h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />
                                                     )}
                                                     <span className="relative inline-block after:absolute after:bottom-[-2px] after:left-0 after:h-px after:w-full after:origin-left after:bg-(--ciete-red) after:scale-x-0 after:content-[''] after:transition-transform after:duration-200 group-hover:after:scale-x-100">
-                                                        {t(item.key)}
+                                                        {item.label}
                                                     </span>
                                                 </Link>
                                             );
@@ -116,12 +72,37 @@ export default function ErrorShellLayout({ header, children }) {
                     </div>
 
                     <div className="mt-auto border-t border-white/10 bg-black/10 p-4">
-                        <div className="px-2">
+                        <div className="mb-3 px-2">
                             <p className="truncate text-xs font-bold text-white">
                                 {user.nombre ?? user.nombre_usuario ?? '-'}
                             </p>
                             <p className="mt-1 truncate text-[10px] text-white/55">{user.email}</p>
+                            <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
+                                {roleLabel}
+                            </p>
+                            {contextBadge && (
+                                <p className="mt-2 inline-flex rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/70">
+                                    {contextBadge}
+                                </p>
+                            )}
                         </div>
+
+                        <Link
+                            href={route('profile.edit')}
+                            className="mb-1 inline-flex items-center gap-1.5 px-2 text-left text-[10px] text-white/50 transition-colors hover:text-white"
+                        >
+                            {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
+                            {t('nav.myProfile')}
+                        </Link>
+                        <Link
+                            href={route('logout')}
+                            method="post"
+                            as="button"
+                            className="inline-flex w-full items-center gap-1.5 px-2 text-left text-[10px] font-bold uppercase tracking-widest text-text-hint transition-colors hover:text-primary"
+                        >
+                            {LogOutIcon && <LogOutIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
+                            {t('common.actions.logOut')}
+                        </Link>
                     </div>
                 </aside>
             )}
@@ -160,7 +141,7 @@ export default function ErrorShellLayout({ header, children }) {
                                             >
                                                 {ItemIcon && <ItemIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
                                                 <span className="relative inline-block after:absolute after:-bottom-px after:left-0 after:h-px after:w-full after:origin-left after:bg-(--ciete-red) after:scale-x-0 after:content-[''] after:transition-transform after:duration-200 group-hover:after:scale-x-100">
-                                                    {t(item.key)}
+                                                    {item.label}
                                                 </span>
                                             </Link>
                                         </div>
