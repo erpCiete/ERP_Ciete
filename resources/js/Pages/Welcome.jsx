@@ -99,7 +99,7 @@ function getSectionMotion(delay, shouldReduceMotion) {
     };
 }
 
-export default function Welcome({ homeNotices = {} }) {
+export default function Welcome({ homeNotices = {}, featuredNotice = null }) {
     const shouldReduceMotion = useReducedMotion();
     const { t, locale } = useI18n();
     const showDeferredSections = useDeferredLandingSections();
@@ -117,7 +117,11 @@ export default function Welcome({ homeNotices = {} }) {
 
             <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 pb-5 sm:gap-12">
                 <motion.section className="w-full" {...getSectionMotion(0, shouldReduceMotion)}>
-                    <InstitutionalHero shouldReduceMotion={shouldReduceMotion} />
+                    <InstitutionalHero
+                        shouldReduceMotion={shouldReduceMotion}
+                        featuredNotice={featuredNotice}
+                        locale={lang}
+                    />
                 </motion.section>
 
                 <motion.section className="w-full" {...getSectionMotion(0.12, shouldReduceMotion)}>

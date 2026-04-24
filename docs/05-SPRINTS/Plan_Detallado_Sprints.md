@@ -1,7 +1,7 @@
 # Plan detallado de sprints — ERP Ciete
 
 > **Fecha:** 13 de abril de 2026 (actualizado: 13/04/2026 fin de jornada)  
-> **Versión ERP:** v1.2.0  
+> **Versión ERP:** v1.4.2  
 > **Coordinación general:** Pablo Sevillano  
 > **Stack:** Laravel 12 + Inertia.js + React 19 + MariaDB 10.4  
 > **Horario:** Lunes a viernes, 09:00–14:00 (desarrollo) · 15:00–18:00 (formación)  

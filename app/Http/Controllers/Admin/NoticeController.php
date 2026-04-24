@@ -3,16 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\HomeNoticeCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class NoticeController extends Controller
 {
-    private const FILE = 'notices.json';
-
-    private const CATEGORIES = ['notices', 'updates', 'companyNews'];
-
     public function update(Request $request): RedirectResponse
     {
         $request->validate([
@@ -20,38 +16,27 @@ class NoticeController extends Controller
             'updates'     => 'required|array|max:5',
             'companyNews' => 'required|array|max:5',
 
+            'notices.*.id'     => 'nullable|string|max:120',
             'notices.*.es'     => 'required|string|max:300',
             'notices.*.en'     => 'required|string|max:300',
+            'notices.*.featured' => 'nullable|boolean',
+            'updates.*.id'     => 'nullable|string|max:120',
             'updates.*.es'     => 'required|string|max:300',
             'updates.*.en'     => 'required|string|max:300',
+            'updates.*.featured' => 'nullable|boolean',
+            'companyNews.*.id' => 'nullable|string|max:120',
             'companyNews.*.es' => 'required|string|max:300',
             'companyNews.*.en' => 'required|string|max:300',
+            'companyNews.*.featured' => 'nullable|boolean',
         ]);
 
-        $data = $request->only(self::CATEGORIES);
-
-        Storage::put(self::FILE, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        HomeNoticeCatalog::save($request->only(HomeNoticeCatalog::categories()));
 
         return back();
     }
 
     public static function load(): array
     {
-        if (! Storage::exists(self::FILE)) {
-            return ['notices' => [], 'updates' => [], 'companyNews' => []];
-        }
-
-        $raw = Storage::get(self::FILE);
-        $data = json_decode($raw, true);
-
-        if (! is_array($data)) {
-            return ['notices' => [], 'updates' => [], 'companyNews' => []];
-        }
-
-        return [
-            'notices'     => $data['notices'] ?? [],
-            'updates'     => $data['updates'] ?? [],
-            'companyNews' => $data['companyNews'] ?? [],
-        ];
+        return HomeNoticeCatalog::load();
     }
 }

@@ -1,4 +1,5 @@
 import CieteMark from '@/Components/CieteMark';
+import FloatingContextHelp from '@/Components/FloatingContextHelp';
 import TopNavbar from '@/Components/TopNavbar';
 import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
@@ -10,11 +11,14 @@ function resolveRoleLabel(user) {
 }
 
 export default function AuthenticatedLayout({ header, children, contentWidthClass = 'max-w-[1400px]' }) {
-    const user = usePage().props.auth.user;
+    const page = usePage();
+    const user = page.props.auth.user;
     const { t } = useI18n();
     const sidebarSections = buildSidebarSections(t, user);
     const contextBadge = getNavigationContextBadge(user, t);
     const roleLabel = resolveRoleLabel(user);
+    const shouldShowFloatingHelp = page.component !== 'Welcome';
+    const isProfileActive = route().current('profile.*');
     const SettingsIcon = getNavigationIcon('nav.myProfile');
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
 
@@ -94,10 +98,12 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                     </div>
                     <Link
                         href={route('profile.edit')}
-                        className="mb-1 inline-flex items-center gap-1.5 px-2 text-left text-[10px] text-white/50 transition-colors hover:text-white"
+                        className={`${navLinkClass(isProfileActive)} mb-1 text-left text-[10px]`}
                     >
-                        {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
-                        {t('nav.myProfile')}
+                        <span className="inline-flex items-center gap-1.5">
+                            {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
+                            <span className={navLinkLabelClass(isProfileActive)}>{t('nav.myProfile')}</span>
+                        </span>
                     </Link>
                     <Link
                         href={route('logout')}
@@ -122,6 +128,8 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                     {t('common.footer.projectVersion')}
                 </footer>
             </div>
+
+            {shouldShowFloatingHelp && <FloatingContextHelp />}
         </div>
     );
 }

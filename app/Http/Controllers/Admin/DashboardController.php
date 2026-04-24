@@ -11,6 +11,7 @@ use App\Models\Legalizacion;
 use App\Models\Pedido;
 use App\Models\Trabajo;
 use App\Models\User;
+use App\Support\HomeNoticeCatalog;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,6 +19,8 @@ class DashboardController extends Controller
 {
     public function __invoke(): Response
     {
+        $homeNotices = NoticeController::load();
+
         $stats = [
             'active_works'   => Trabajo::whereIn('estado', ['borrador', 'en_curso'])->count(),
             'pending_orders' => Pedido::where('estado', 'pendiente')->count(),
@@ -57,7 +60,8 @@ class DashboardController extends Controller
             'users'        => $users,
             'activity'     => $activity,
             'userContexts' => $userContexts,
-            'homeNotices'  => NoticeController::load(),
+            'homeNotices'  => $homeNotices,
+            'featuredNotice' => HomeNoticeCatalog::featured($homeNotices),
         ]);
     }
 }

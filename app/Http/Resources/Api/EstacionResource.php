@@ -14,6 +14,7 @@ class EstacionResource extends JsonResource
 
         return [
             'id' => $this->id_estacion_servicio,
+            'id_contexto' => $this->id_contexto,
             'id_empresa_cliente' => $this->id_empresa_cliente,
             'nombre' => $this->nombre,
             'codigo_estacion' => $this->codigo_estacion,

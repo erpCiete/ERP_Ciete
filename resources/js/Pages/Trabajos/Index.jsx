@@ -38,7 +38,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
     const hasFilters = search !== '' || estado !== '' || fechaDesde !== '' || fechaHasta !== '';
 
     // Número de columnas total — para colSpan dinámico
-    const totalCols = 6 + (isMoeve ? 2 : 0) + (isRepsol ? 3 : 0) + 1;
+    const totalCols = 8;
 
     // ── Aplicar filtros en el servidor via Inertia ────────────────────────────
     // Los filtros NO son locales — cada cambio dispara un router.get al servidor.
@@ -240,61 +240,28 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
 
                 {/* ── Tabla ─────────────────────────────────────────────────── */}
                 <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-border text-sm">
+                    <div className="overflow-x-auto xl:overflow-visible">
+                        <table className="min-w-full table-fixed divide-y divide-border text-sm">
+                            <colgroup>
+                                <col className="w-[88px]" />
+                                <col className="w-[24%]" />
+                                <col className="w-[120px]" />
+                                <col className="w-[150px]" />
+                                <col className="w-[18%]" />
+                                <col className="w-[118px]" />
+                                <col className="w-[22%]" />
+                                <col className="w-[140px]" />
+                            </colgroup>
                             <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                                 <tr>
-                                    {/* Columnas siempre visibles */}
-                                    <th className="px-5 py-3 whitespace-nowrap">Nº</th>
-                                    <th className="px-5 py-3">Descripción</th>
-                                    <th className="px-5 py-3">Estado</th>
-                                    <th className="px-5 py-3">Empresa</th>
-                                    <th className="px-5 py-3">Estación</th>
-                                    <th className="px-5 py-3 whitespace-nowrap">F. encargo</th>
-
-                                    {/* Columnas MOEVE — indicadas con badge azul */}
-                                    {isMoeve && (
-                                        <>
-                                            <th className="px-5 py-3 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1">
-                                                    Contrato
-                                                    <span className="rounded bg-blue-100 px-1 py-0.5 text-[9px] font-bold text-blue-700">M</span>
-                                                </span>
-                                            </th>
-                                            <th className="px-5 py-3 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1">
-                                                    Categoría
-                                                    <span className="rounded bg-blue-100 px-1 py-0.5 text-[9px] font-bold text-blue-700">M</span>
-                                                </span>
-                                            </th>
-                                        </>
-                                    )}
-
-                                    {/* Columnas REPSOL — indicadas con badge rojo */}
-                                    {isRepsol && (
-                                        <>
-                                            <th className="px-5 py-3 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1">
-                                                    Tipo doc.
-                                                    <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">R</span>
-                                                </span>
-                                            </th>
-                                            <th className="px-5 py-3 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1">
-                                                    Tipo trabajo
-                                                    <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">R</span>
-                                                </span>
-                                            </th>
-                                            <th className="px-5 py-3 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1">
-                                                    Nº aviso
-                                                    <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">R</span>
-                                                </span>
-                                            </th>
-                                        </>
-                                    )}
-
-                                    <th className="px-5 py-3 text-right">Acciones</th>
+                                    <th className="px-3 py-3 whitespace-nowrap">Nº</th>
+                                    <th className="px-3 py-3">Descripción</th>
+                                    <th className="px-3 py-3">Estado</th>
+                                    <th className="px-3 py-3">Empresa</th>
+                                    <th className="px-3 py-3">Estación</th>
+                                    <th className="px-3 py-3 whitespace-nowrap">F. encargo</th>
+                                    <th className="px-3 py-3">Detalle cliente</th>
+                                    <th className="px-3 py-3 text-right">Acciones</th>
                                 </tr>
                             </thead>
 
@@ -305,7 +272,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                     Array.from({ length: 4 }, (_, i) => (
                                         <tr key={i} className="animate-pulse">
                                             {Array.from({ length: totalCols }, (_, j) => (
-                                                <td key={j} className="px-5 py-4">
+                                                <td key={j} className="px-3 py-4">
                                                     <div className="h-4 rounded bg-surface-2 w-full max-w-28" />
                                                 </td>
                                             ))}
@@ -316,7 +283,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                 {/* Error */}
                                 {status === 'error' && (
                                     <tr>
-                                        <td colSpan={totalCols} className="px-5 py-10 text-center text-text-muted">
+                                        <td colSpan={totalCols} className="px-3 py-10 text-center text-text-muted">
                                             <p>No se pudo cargar la lista de trabajos.</p>
                                             <button
                                                 type="button"
@@ -332,7 +299,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                 {/* Vacío */}
                                 {status === 'ready' && rows.length === 0 && (
                                     <tr>
-                                        <td colSpan={totalCols} className="px-5 py-12 text-center text-text-muted">
+                                        <td colSpan={totalCols} className="px-3 py-12 text-center text-text-muted">
                                             <p className="mb-3">{t('trabajos.empty')}</p>
                                             {canCreate && (
                                                 <button
@@ -352,36 +319,36 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                     <tr key={trabajo.id_trabajo} className="hover:bg-surface-2/60">
 
                                         {/* Nº trabajo — en mono rojo igual que referencias OBR/PED */}
-                                        <td className="px-5 py-4 align-top">
+                                        <td className="px-3 py-4 align-top">
                                             <span className="font-mono text-xs font-semibold text-(--ciete-red)">
                                                 {String(trabajo.numero_trabajo).padStart(4, '0')}
                                             </span>
                                         </td>
 
                                         {/* Descripción */}
-                                        <td className="px-5 py-4 align-top max-w-xs">
+                                        <td className="px-3 py-4 align-top">
                                             <p className="font-medium text-text-main line-clamp-2">
                                                 {trabajo.descripcion_trabajo}
                                             </p>
                                         </td>
 
                                         {/* Estado */}
-                                        <td className="px-5 py-4 align-top">
+                                        <td className="px-3 py-4 align-top">
                                             <BadgeTrabajo estado={trabajo.estado} />
                                         </td>
 
                                         {/* Empresa — badge de cliente */}
-                                        <td className="px-5 py-4 align-top">
+                                        <td className="px-3 py-4 align-top">
                                             <BadgeCliente cliente={trabajo.empresa?.nombre_comercial} />
                                         </td>
 
                                         {/* Estación */}
-                                        <td className="px-5 py-4 align-top text-text-muted">
-                                            {trabajo.estacion?.nombre ?? '—'}
+                                        <td className="px-3 py-4 align-top text-text-muted">
+                                            <p className="truncate">{trabajo.estacion?.nombre ?? '—'}</p>
                                         </td>
 
                                         {/* Fecha encargo */}
-                                        <td className="px-5 py-4 align-top whitespace-nowrap text-text-muted">
+                                        <td className="px-3 py-4 align-top whitespace-nowrap text-text-muted">
                                             {trabajo.fecha_encargo
                                                 ? new Date(trabajo.fecha_encargo).toLocaleDateString('es-ES')
                                                 : '—'}
@@ -391,7 +358,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                         <TrabajosColumnas isMoeve={isMoeve} isRepsol={isRepsol} trabajo={trabajo} />
 
                                         {/* Acciones */}
-                                        <td className="px-5 py-4 align-top">
+                                        <td className="px-3 py-4 align-top">
                                             <div className="flex justify-end gap-3">
                                                 <button
                                                     type="button"
@@ -419,7 +386,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
 
                     {/* ── Paginación ─────────────────────────────────────────── */}
                     {trabajos?.meta?.pagination?.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-border px-5 py-3">
+                        <div className="flex items-center justify-between border-t border-border px-3 py-3">
                             <p className="text-xs text-text-hint">
                                 Página {trabajos.meta.pagination.current_page} de {trabajos.meta.pagination.last_page}
                                 {' · '}{total} resultados

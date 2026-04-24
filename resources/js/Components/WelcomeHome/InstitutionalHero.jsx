@@ -4,7 +4,7 @@ import { useTheme } from '@/theme';
 import { motion } from 'framer-motion';
 import { useId } from 'react';
 
-export default function InstitutionalHero({ shouldReduceMotion = false }) {
+export default function InstitutionalHero({ shouldReduceMotion = false, featuredNotice = null, locale = 'es' }) {
     const { t } = useI18n();
     const { theme } = useTheme();
     const patternId = `ciete-tech-grid-${useId().replace(/:/g, '')}`;
@@ -12,6 +12,10 @@ export default function InstitutionalHero({ shouldReduceMotion = false }) {
         t('welcome.home.hero.badgeErp'),
         t('welcome.home.hero.badgeVersion'),
     ];
+    const featuredLabel = featuredNotice ? (t('welcome.home.hero.featuredBadge')) : null;
+    const featuredMessage = featuredNotice
+        ? (featuredNotice[locale] || featuredNotice.es || featuredNotice.en || '')
+        : '';
 
     return (
         <article className="group relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-surface px-6 py-8 shadow-sm sm:px-8 sm:py-10">
@@ -92,9 +96,25 @@ export default function InstitutionalHero({ shouldReduceMotion = false }) {
                     <p className="mt-3 text-base font-medium text-text-main sm:text-lg">
                         {t('welcome.home.hero.subtitle')}
                     </p>
-                    <p className="mt-4 max-w-xl text-sm leading-relaxed text-text-muted sm:text-[15px]">
-                        {t('welcome.home.hero.description')}
-                    </p>
+                    {featuredNotice ? (
+                        <div className="mt-5 max-w-2xl rounded-2xl border border-primary/15 bg-primary/6 px-4 py-4 shadow-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex rounded-full border border-primary/20 bg-surface px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                                    {featuredLabel}
+                                </span>
+                                <span className="text-[11px] font-medium uppercase tracking-[0.16em] text-text-hint">
+                                    {t(`welcome.home.${featuredNotice.category}.title`)}
+                                </span>
+                            </div>
+                            <p className="mt-3 text-sm leading-relaxed text-text-main sm:text-[15px]">
+                                {featuredMessage}
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="mt-4 max-w-xl text-sm leading-relaxed text-text-muted sm:text-[15px]">
+                            {t('welcome.home.hero.description')}
+                        </p>
+                    )}
                 </div>
 
                 <div

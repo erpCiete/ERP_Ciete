@@ -25,6 +25,7 @@ use App\Models\EstacionServicio;
 use App\Models\Trabajo;
 use App\Models\Pedido; // <--- ESTA ES LA QUE FALTA PARA EL DASHBOARD
 use App\Models\Factura;
+use App\Support\HomeNoticeCatalog;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -40,8 +41,11 @@ Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update
 Route::middleware(['auth', 'maintenance'])->group(function () {
 
     Route::get('/', function () {
+        $homeNotices = AdminNoticeController::load();
+
         return Inertia::render('Welcome', [
-            'homeNotices' => AdminNoticeController::load(),
+            'homeNotices' => $homeNotices,
+            'featuredNotice' => HomeNoticeCatalog::featured($homeNotices),
         ]);
     })->name('index');
 

@@ -21,7 +21,7 @@ Desarrollado por ABACO para Ciete Ingenieros.
 
 | Dato          | Valor                                                  |
 | ------------- | ------------------------------------------------------ |
-| Versión       | v1.3.0                                                 |
+| Versión       | v1.4.2                                                 |
 | Sprint actual | Sprint 03 cerrado — Sprint 04 en preparación           |
 | Tests         | 65 pass (2 fail preexistentes en `TrabajoRequestTest`) |
 | Build         | Vite 8 — OK                                            |

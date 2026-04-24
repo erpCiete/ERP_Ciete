@@ -8,6 +8,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use App\Models\ContextoCliente;
 use App\Http\Requests\Api\StoreTrabajoRequest;
 use App\Http\Requests\Api\UpdateTrabajoRequest;
 use App\Http\Resources\Api\TrabajoResource;
@@ -43,7 +44,7 @@ class TrabajoController extends Controller
             // Pasamos por el Resource para que actúe el firewall de contexto (Tarea B03-03)
             'trabajos'    => TrabajoResource::collection($trabajos),
             'contextoIds' => $request->user()->getAccessibleContextIds(),
-            'filtros'     => $request->only(['search', 'estado']),
+            'filters'     => $request->only(['search', 'estado']),
         ]);
     }
 
@@ -52,9 +53,18 @@ class TrabajoController extends Controller
      */
     public function create(Request $request): Response
     {
+        $accessibleContextIds = $request->user()->getAccessibleContextIds();
+        $clientContexts = ContextoCliente::query()
+            ->whereIn('id_contexto', $accessibleContextIds)
+            ->whereIn('codigo', ['MOEVE', 'REPSOL'])
+            ->where('activo', true)
+            ->orderBy('id_contexto')
+            ->get(['id_contexto', 'nombre', 'codigo']);
+
         return Inertia::render('Trabajos/Form', [
             'trabajo'     => null,
-            'contextoIds' => $request->user()->getAccessibleContextIds(),
+            'contextoIds' => $accessibleContextIds,
+            'clientContexts' => $clientContexts,
             // @TODO: Aquí se inyectarían catálogos (empresas, contratos) si no se cargan vía API independiente.
         ]);
     }
@@ -84,10 +94,18 @@ class TrabajoController extends Controller
     {
         // Eager loading para el recurso individual
         $trabajo->load(['empresa', 'estacion', 'contrato', 'tipoDocumento', 'tipoTrabajo']);
+        $accessibleContextIds = $request->user()->getAccessibleContextIds();
+        $clientContexts = ContextoCliente::query()
+            ->whereIn('id_contexto', $accessibleContextIds)
+            ->whereIn('codigo', ['MOEVE', 'REPSOL'])
+            ->where('activo', true)
+            ->orderBy('id_contexto')
+            ->get(['id_contexto', 'nombre', 'codigo']);
 
         return Inertia::render('Trabajos/Form', [
             'trabajo'     => new TrabajoResource($trabajo),
-            'contextoIds' => $request->user()->getAccessibleContextIds(),
+            'contextoIds' => $accessibleContextIds,
+            'clientContexts' => $clientContexts,
         ]);
     }
 
