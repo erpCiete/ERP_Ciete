@@ -77,76 +77,100 @@
 ### Handoff
 - Endpoints de Pedidos y Facturas operando al 100% bajo el nuevo modelo de datos.
 - Las vistas en `web.php` ahora rechazan correctamente a usuarios de solo-lectura, mejorando la UX y la seguridad. Base de datos segura para hacer `migrate:fresh --seed`.
-```
+
 
 ## 2026-04-22
 ### Objetivo del dia
-- 
+- Implementar el motor de importaciones masivas de Excel (Tarea B04-03) aplicando las mejores prácticas para evitar saturación de memoria en el servidor.
+- Preparar la estructura de tablas temporales (staging) para previsualización.
 
 ### Tareas realizadas
-- 
+- Desarrollo de la clase `ExcelParserService` implementando lectura por trozos (`ChunkReadFilter`) usando la librería `PhpSpreadsheet`.
+- Mapeo estricto de columnas (A-E) y creación de parseador inteligente para fechas serializadas de Excel.
+- Refactorización de `ImportacionController` para implementar el flujo en 3 fases: Subida -> Staging (`importacion_filas`) -> Confirmación Transaccional.
+- Creación de Form Request y API Resource para las validaciones y listados de historiales de importación.
 
 ### Archivos tocados
-- 
+- `app/Services/ExcelParserService.php`
+- `app/Http/Controllers/ImportacionController.php`
+- `app/Http/Requests/Api/StoreImportacionRequest.php`
+- `app/Http/Resources/Api/ImportacionResource.php`
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 11:30 | Error 500: `Allowed memory size exhausted` al cargar un Excel grande. | Alto | Implementación de la interfaz `IReadFilter` (`ChunkReadFilter`) para leer el archivo en bloques de 200 filas. | Cerrado |
+| 16:20 | Archivos temporales saturando el disco del servidor (`Storage`). | Medio | Se añadió la eliminación forzada del Excel original (`Storage::delete`) inmediatamente después de volcar los datos a la tabla de staging. | Cerrado |
 
 ### Decisiones tomadas
-- 
+- Se decidió insertar los registros en la base de datos de previsualización (`importacion_filas`) en bloques usando `array_chunk($filas, 500)` para optimizar el rendimiento de MySQL.
+- Relegar las validaciones de negocio (ej. "Estación no existe" o "Trabajo duplicado") al método `preview` para que el frontend las pinte de rojo antes de confirmar, mejorando enormemente la UX.
 
 ### Pendiente para mañana
-- 
+- Finalizar pruebas de integración Frontend/Backend en los módulos de Facturas y Pedidos con los contextos cruzados (MOEVE/REPSOL).
 
 ### Handoff
-- 
+- Backend de importaciones v1 100% operativo. El frontend ya puede consumir las rutas de `/importaciones` usando Inertia.
+
+---
 
 ## 2026-04-23
 ### Objetivo del dia
-- 
+- Resolver incidencias críticas (Blockers) de integración entre Frontend (React/Inertia) y Backend en la creación y listado de Pedidos y Facturas.
 
 ### Tareas realizadas
-- 
+- Reconfiguración del sistema de aislamiento Multi-Tenant (Multicliente). Se adaptó el código para que el usuario Administrador (Contexto 3) pueda ver y operar sobre todos los contextos.
+- Corrección del envío de datos desde `routes/web.php` a las vistas de React mediante Inyección de Resources de API en Inertia.
+- Creación de un "traductor" de nomenclatura en los métodos `prepareForValidation` de Facturas para alinear los payloads del Front con las exigencias estrictas del esquema de la Base de Datos.
 
 ### Archivos tocados
-- 
+- `app/Http/Controllers/Api/PedidoController.php`
+- `app/Http/Controllers/Api/FacturaController.php`
+- `routes/web.php`
+- `app/Http/Requests/Api/StoreFacturaRequest.php`
+- `app/Http/Requests/Api/UpdateFacturaRequest.php`
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 09:30 | Select de Trabajos vacío / Error 422 `The selected id trabajo is invalid` al crear. | Alto (Blocker) | El admin no pasaba la regla de contexto de BBDD. Se modificó la validación y el controlador para heredar el `id_contexto` del Trabajo seleccionado. | Cerrado |
+| 11:45 | "Pedidos Fantasma": Al crear un pedido, no aparecía en el listado `Index.jsx`. | Alto | `web.php` estaba forzando un array `[]` vacío. Se cambió a inyectar `PedidoResource::collection()` directamente desde la BD. | Cerrado |
+| 16:15 | Error fantasma 422 en Form de Facturas (ningún input marcado en rojo). | Alto | Front enviaba `factura_ccp` y nulls; Back esperaba `numero_factura_ccp` e `id_empresa`. Se aplicó traducción de keys y deducción de empresa en el `FormRequest`. | Cerrado |
+| 18:50 | Error HTTP 500 `Call to undefined method fillFactura()`. | Alto (Blocker) | Métodos privados `fillFactura` y `syncPedidos` borrados accidentalmente durante refactor. Fueron restaurados al final del controlador. | Cerrado |
 
 ### Decisiones tomadas
-- 
+- Se aplicó la filosofía de "Smart Backend": En lugar de modificar los estados o nombres de variables del Frontend, el Backend se encarga de interceptar la petición (`prepareForValidation`), sanearla, deducir relaciones implícitas (ej. inferir la empresa a través del trabajo) y convertir nulos a ceros para que la validación fluya sin fricción.
 
 ### Pendiente para mañana
-- 
+- Consolidar código, limpiar ramas locales y abrir Pull Requests para pasar a Producción/Develop.
 
 ### Handoff
-- 
+- El flujo completo de Pedidos y Facturas funciona perfectamente tanto a nivel visual (React) como transaccional (MySQL), tolerando correctamente las reglas de MOEVE (CCP) y REPSOL (Doble orden).
+
+---
 
 ## 2026-04-24
 ### Objetivo del dia
-- 
+- Cierre del Sprint 04. Mergeo de todas las ramas trabajadas a la rama principal (`develop`). Documentación de las Pull Requests y resolución final de dudas de arquitectura.
 
 ### Tareas realizadas
-- 
+- Creación de *Pull Request* del Backend agrupando la refactorización de Tareas B04-01, B04-02 y B04-03.
+- Creación de *Pull Request* del Frontend detallando la implementación de renderizado condicional, manejo de errores y consumo de la nueva API.
+- Revisión cruzada del código subido para comprobar el cumplimiento de los estándares (PSR-12 en PHP, buenas prácticas de Hooks en React).
 
 ### Archivos tocados
-- 
+- Historial de Git (Merge commits).
 
 ### Errores / bloqueos
 | Hora | Error/Bloqueo | Impacto (Alto/Medio/Bajo) | Accion tomada | Estado (Abierto/Cerrado) |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| N/A | Jornada libre de bugs, enfocada 100% en documentación y despliegue. | - | N/A | - |
 
 ### Decisiones tomadas
-- 
+- Se documentaron formalmente en los PRs las decisiones de negocio clave adoptadas durante la semana (el aislamiento de contexto y el tratamiento de claves virtuales). Esto facilitará el "onboarding" si entra otro programador al proyecto.
 
-### Pendiente para mañana
-- 
+### Pendiente para el lunes
+- Arrancar el Sprint 05 (Módulos adicionales o mejoras de visualización de métricas).
 
 ### Handoff
-- 
+- Todo el código del Sprint 04 ha sido empaquetado, verificado y está listo en `develop`.
