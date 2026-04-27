@@ -1,6 +1,6 @@
 # Sprint 04 — Semana 20–24 abril 2026
 
-> **Versión inicial:** v1.3.0 → **Versión objetivo:** v1.4.0  
+> **Versión inicial:** v1.3.0 → **Versión objetivo:** v1.4.2  
 > **Foco principal:** Módulo de Pedidos — CRUD completo con líneas anidadas  
 > **Foco secundario:** Módulo de Facturas v1 — CRUD con doble factura REPSOL y campos condicionales MOEVE  
 > **Foco complementario:** Importación Excel/CSV v1 — flujo mínimo usable desde cero (subir, previsualizar, confirmar)

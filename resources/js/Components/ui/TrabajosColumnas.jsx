@@ -1,41 +1,56 @@
-import React from 'react';
+import BadgeCliente from '@/Components/ui/BadgeCliente';
 
-/**
- * TrabajosColumnas
- * Componente que renderiza columnas condicionales según el contexto MOEVE/REPSOL.
- *
- * Props:
- * - isMoeve (boolean): Si true, muestra columnas MOEVE (Contrato, Categoría)
- * - isRepsol (boolean): Si true, muestra columnas REPSOL (Tipo documento, Tipo trabajo, Nº aviso)
- * - trabajo (object): Objeto del trabajo con los datos
- *
- * Columnas MOEVE: Contrato, Categoría
- * Columnas REPSOL: Tipo documento, Tipo trabajo, Nº aviso
- */
+function DetailItem({ label, value }) {
+    return (
+        <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{label}</p>
+            <p className="truncate text-sm text-text-main">{value || '—'}</p>
+        </div>
+    );
+}
+
 export default function TrabajosColumnas({ isMoeve = false, isRepsol = false, trabajo = {} }) {
-    // Usamos Optional Chaining (?.) para intentar leer el '.nombre'.
-// Si el objeto existe, pinta el nombre. Si el backend lo ha ocultado por el contexto, pinta '—'.
-    const contratoValue = trabajo.contrato?.nombre ?? trabajo.contrato_nombre ?? '—';
-    const categoriaValue = trabajo.categoria?.nombre ?? trabajo.categoria_nombre ?? '—'; 
-    const tipoDocumentoValue = trabajo.tipo_documento?.nombre ?? trabajo.tipoDocumento?.nombre ?? '—';
-    const tipoTrabajoValue = trabajo.tipo_trabajo?.nombre ?? trabajo.tipoTrabajo?.nombre ?? '—';
-    const numeroAvisoValue = trabajo.numero_aviso ?? trabajo.numeroAviso ?? '—';
+    const contractValue = trabajo.contrato?.nombre ?? trabajo.contrato_nombre ?? '—';
+    const categoryValue = trabajo.categoria?.nombre ?? trabajo.categoria_nombre ?? trabajo.categoria ?? '—';
+    const documentValue = trabajo.tipo_documento?.nombre ?? trabajo.tipoDocumento?.nombre ?? '—';
+    const workTypeValue = trabajo.tipo_trabajo?.nombre ?? trabajo.tipoTrabajo?.nombre ?? '—';
+    const noticeValue = trabajo.numero_aviso ?? trabajo.numeroAviso ?? '—';
+    const contextClient = Number(trabajo.id_contexto) === 1 ? 'moeve' : Number(trabajo.id_contexto) === 2 ? 'repsol' : null;
+
+    if (!isMoeve && !isRepsol) {
+        return null;
+    }
 
     return (
-        <>
-            {isMoeve && (
-                <>
-                    <td className="px-4 py-3 text-sm text-text-main">{contratoValue}</td>
-                    <td className="px-4 py-3 text-sm text-text-main">{categoriaValue}</td>
-                </>
-            )}
-            {isRepsol && (
-                <>
-                    <td className="px-4 py-3 text-sm text-text-main">{tipoDocumentoValue}</td>
-                    <td className="px-4 py-3 text-sm text-text-main">{tipoTrabajoValue}</td>
-                    <td className="px-4 py-3 text-sm text-text-main">{numeroAvisoValue}</td>
-                </>
-            )}
-        </>
+        <td className="px-3 py-4 align-top">
+            <div className="grid min-w-[220px] gap-2">
+                {contextClient && (
+                    <div>
+                        <BadgeCliente cliente={contextClient} />
+                    </div>
+                )}
+
+                {Number(trabajo.id_contexto) === 1 && isMoeve && (
+                    <div className="grid gap-2 xl:grid-cols-2">
+                        <DetailItem label="Contrato" value={contractValue} />
+                        <DetailItem label="Categoría" value={categoryValue} />
+                    </div>
+                )}
+
+                {Number(trabajo.id_contexto) === 2 && isRepsol && (
+                    <div className="grid gap-2">
+                        <DetailItem label="Tipo doc." value={documentValue} />
+                        <div className="grid gap-2 xl:grid-cols-2">
+                            <DetailItem label="Tipo trabajo" value={workTypeValue} />
+                            <DetailItem label="Nº aviso" value={noticeValue} />
+                        </div>
+                    </div>
+                )}
+
+                {!contextClient && (
+                    <p className="text-sm text-text-muted">—</p>
+                )}
+            </div>
+        </td>
     );
 }

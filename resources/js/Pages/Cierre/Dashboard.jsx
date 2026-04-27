@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
-import { Head, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
 
 const FLOW_STEPS = [
     'encargo',
@@ -398,9 +398,8 @@ function formatCsvValue(value) {
     return `"${text.replace(/"/g, '""')}"`;
 }
 
-export default function ClosureDashboard() {
+export default function ClosureDashboard({ works: initialWorks = [], contexts = [] }) {
     const { t, locale } = useI18n();
-    const user = usePage().props.auth.user;
     const localeForIntl = locale === 'en' ? 'en-US' : 'es-ES';
     const moneyFormatter = useMemo(
         () =>
@@ -425,12 +424,7 @@ export default function ClosureDashboard() {
     const statusLabel = (status) => t(`closureDashboard.statusLabels.${status}`);
     const legalizationLabel = (status) => t(`closureDashboard.legalizationLabels.${status}`);
 
-    const actorName =
-        user?.nombre_usuario ||
-        [user?.nombre, user?.apellidos].filter(Boolean).join(' ') ||
-        t('closureDashboard.fallbackUser');
-
-    const [works, setWorks] = useState(INITIAL_WORKS);
+    const [works, setWorks] = useState(initialWorks);
     const [contextFilter, setContextFilter] = useState('todos');
     const [statusFilter, setStatusFilter] = useState('todos');
     const [search, setSearch] = useState('');
@@ -439,11 +433,15 @@ export default function ClosureDashboard() {
     const [reopenReason, setReopenReason] = useState('');
     const [exportFormat, setExportFormat] = useState('csv');
 
+    useEffect(() => {
+        setWorks(initialWorks);
+    }, [initialWorks]);
+
     const scopedWorks = useMemo(() => {
         const normalizedSearch = normalizeText(search);
 
         return works
-            .filter((work) => (contextFilter === 'todos' ? true : work.cliente.toLowerCase() === contextFilter))
+            .filter((work) => (contextFilter === 'todos' ? true : work.contextoId === contextFilter))
             .filter((work) => {
                 if (!normalizedSearch) return true;
 
@@ -530,54 +528,13 @@ export default function ClosureDashboard() {
         selectedWorks.length > 0 &&
         selectedWorks.every((work) => resolveClosureStatus(work) === 'listo');
 
-    const updateWork = (id, updater) => {
-        setWorks((current) =>
-            current.map((work) => (work.id === id ? updater(work) : work)),
-        );
-    };
-
-    const closeWork = (id) => {
-        updateWork(id, (work) => {
-            if (resolveClosureStatus(work) !== 'listo') return work;
-
-            return {
-                ...work,
-                cerrado: true,
-                revisionCierreMarcada: true,
-                faseActual: 'cerrado',
-                trazabilidad: {
-                    ...work.trazabilidad,
-                    cerradoPor: actorName,
-                    fechaCierre: new Date().toISOString(),
-                },
-            };
-        });
-    };
-
-    const reopenWork = (id, reason) => {
-        updateWork(id, (work) => {
-            if (!work.cerrado) return work;
-
-            return {
-                ...work,
-                cerrado: false,
-                revisionCierreMarcada: false,
-                faseActual: 'revision_cierre',
-                trazabilidad: {
-                    ...work.trazabilidad,
-                    reabiertoPor: actorName,
-                    fechaReapertura: new Date().toISOString(),
-                    reaperturaMotivo: reason || t('closureDashboard.messages.defaultReopenReason'),
-                },
-            };
-        });
-    };
-
     const handleMainAction = (work) => {
         const status = resolveClosureStatus(work);
 
         if (status === 'listo') {
-            closeWork(work.id);
+            router.post(route('cierre.close', work.id), {}, {
+                preserveScroll: true,
+            });
             return;
         }
 
@@ -611,37 +568,21 @@ export default function ClosureDashboard() {
     };
 
     const handleMassMarkReviewed = () => {
-        setWorks((current) =>
-            current.map((work) =>
-                selectedIds.includes(work.id)
-                    ? {
-                        ...work,
-                        revisionCierreMarcada: true,
-                    }
-                    : work,
-            ),
-        );
+        if (selectedIds.length === 0) return;
+
+        router.post(route('cierre.review'), { ids: selectedIds }, {
+            preserveScroll: true,
+            onSuccess: () => setSelectedIds([]),
+        });
     };
 
     const handleMassClose = () => {
-        setWorks((current) =>
-            current.map((work) => {
-                if (!selectedIds.includes(work.id)) return work;
-                if (resolveClosureStatus(work) !== 'listo') return work;
+        if (!canMassClose) return;
 
-                return {
-                    ...work,
-                    cerrado: true,
-                    revisionCierreMarcada: true,
-                    faseActual: 'cerrado',
-                    trazabilidad: {
-                        ...work.trazabilidad,
-                        cerradoPor: actorName,
-                        fechaCierre: new Date().toISOString(),
-                    },
-                };
-            }),
-        );
+        router.post(route('cierre.bulk-close'), { ids: selectedIds }, {
+            preserveScroll: true,
+            onSuccess: () => setSelectedIds([]),
+        });
     };
 
     const buildExportRows = (status) =>
@@ -806,8 +747,11 @@ export default function ClosureDashboard() {
                                 className="rounded-md border-border bg-surface-2 text-xs text-text-main"
                             >
                                 <option value="todos">{t('closureDashboard.filters.all')}</option>
-                                <option value="repsol">Repsol</option>
-                                <option value="moeve">Moeve</option>
+                                {contexts.map((context) => (
+                                    <option key={context.id} value={context.id}>
+                                        {context.label}
+                                    </option>
+                                ))}
                             </select>
                         </label>
 
@@ -1316,8 +1260,15 @@ export default function ClosureDashboard() {
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                reopenWork(activeWork.id, reopenReason);
-                                                setActiveWorkId(null);
+                                                router.post(route('cierre.reopen', activeWork.id), {
+                                                    reason: reopenReason,
+                                                }, {
+                                                    preserveScroll: true,
+                                                    onSuccess: () => {
+                                                        setActiveWorkId(null);
+                                                        setReopenReason('');
+                                                    },
+                                                });
                                             }}
                                             className="inline-flex items-center rounded-md bg-state-blocked-bg px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-state-blocked-text transition hover:opacity-90"
                                         >
@@ -1329,8 +1280,10 @@ export default function ClosureDashboard() {
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                closeWork(activeWork.id);
-                                                setActiveWorkId(null);
+                                                router.post(route('cierre.close', activeWork.id), {}, {
+                                                    preserveScroll: true,
+                                                    onSuccess: () => setActiveWorkId(null),
+                                                });
                                             }}
                                             disabled={detailStatus !== 'listo'}
                                             className="inline-flex items-center rounded-md bg-(--ciete-red) px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50"

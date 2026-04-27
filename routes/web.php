@@ -8,7 +8,9 @@ use App\Http\Controllers\StatusController;
 use App\Http\Controllers\SupportController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\NoticeController as AdminNoticeController;
+use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\ClosureDashboardController;
 use App\Http\Controllers\ImportacionController;
 
 // Sprint 03 — el TrabajoController web renderiza Inertia (namespace raíz)
@@ -23,6 +25,7 @@ use App\Models\EstacionServicio;
 use App\Models\Trabajo;
 use App\Models\Pedido; // <--- ESTA ES LA QUE FALTA PARA EL DASHBOARD
 use App\Models\Factura;
+use App\Support\HomeNoticeCatalog;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,8 +41,11 @@ Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update
 Route::middleware(['auth', 'maintenance'])->group(function () {
 
     Route::get('/', function () {
+        $homeNotices = AdminNoticeController::load();
+
         return Inertia::render('Welcome', [
-            'homeNotices' => AdminNoticeController::load(),
+            'homeNotices' => $homeNotices,
+            'featuredNotice' => HomeNoticeCatalog::featured($homeNotices),
         ]);
     })->name('index');
 
@@ -101,6 +107,8 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
     Route::get('/estado',  [StatusController::class, 'index'])->name('status');
     Route::get('/soporte', [SupportController::class, 'index'])->name('support');
     Route::post('/soporte',[SupportController::class, 'send'])->name('support.send');
+    Route::get('/soporte/{solicitudSoporte}', [SupportController::class, 'show'])->name('support.show');
+    Route::post('/soporte/{solicitudSoporte}/reply', [SupportController::class, 'reply'])->name('support.reply');
 
     Route::get('/mensajes', [MessageController::class, 'index'])->name('messages.index');
     Route::post('/mensajes', [MessageController::class, 'store'])->name('messages.store');
@@ -127,13 +135,19 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
         Route::put('/admin/usuarios/{user}',      [AdminUserController::class, 'update'])->name('admin.users.update');
         Route::post('/admin/usuarios/{user}/toggle',[AdminUserController::class, 'toggle'])->name('admin.users.toggle');
         Route::get('/admin/auditoria',            [AdminUserController::class, 'audit'])->name('admin.audit');
+        Route::get('/admin/soporte', [AdminSupportTicketController::class, 'index'])->name('admin.support.index');
+        Route::get('/admin/soporte/{solicitudSoporte}', [AdminSupportTicketController::class, 'show'])->name('admin.support.show');
+        Route::patch('/admin/soporte/{solicitudSoporte}/status', [AdminSupportTicketController::class, 'updateStatus'])->name('admin.support.status');
+        Route::post('/admin/soporte/{solicitudSoporte}/reply', [AdminSupportTicketController::class, 'reply'])->name('admin.support.reply');
     });
 
     // ── Cierre ────────────────────────────────────────────────────────────────
-    Route::middleware('role:cierre')->group(function () {
-        Route::get('/cierre', function () {
-            return Inertia::render('Cierre/Dashboard');
-        })->name('cierre.dashboard');
+    Route::middleware('role:admin,director')->group(function () {
+        Route::get('/cierre', [ClosureDashboardController::class, 'index'])->name('cierre.dashboard');
+        Route::post('/cierre/revisar', [ClosureDashboardController::class, 'markReviewed'])->name('cierre.review');
+        Route::post('/cierre/cerrar', [ClosureDashboardController::class, 'bulkClose'])->name('cierre.bulk-close');
+        Route::post('/cierre/{trabajo}/cerrar', [ClosureDashboardController::class, 'close'])->name('cierre.close');
+        Route::post('/cierre/{trabajo}/reabrir', [ClosureDashboardController::class, 'reopen'])->name('cierre.reopen');
     });
 
     if (app()->environment(['local', 'testing'])) {
@@ -201,7 +215,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                                     ->get(),
                 'contextoIds' => auth()->user()->getAccessibleContextIds() ?? [],
             ]);
-        })->name('pedidos.create');
+        })->name('pedidos.create')->middleware('permission:pedidos.gestionar');
         
         Route::get('/pedidos/{id}/editar', function ($id) {
             return Inertia::render('Pedidos/Form', [
@@ -211,7 +225,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                                     ->get(),
                 'contextoIds' => auth()->user()->getAccessibleContextIds() ?? [],
             ]);
-        })->name('pedidos.edit');
+        })->name('pedidos.edit')->middleware('permission:pedidos.gestionar');
 
         // Las rutas de mutación no son necesarias en web.php porque el Form usa axios
         // directamente contra /api/v1/pedidos. Se definen aquí solo para que
@@ -261,7 +275,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                                     ->get(),
                 'contextoIds' => auth()->user()->getAccessibleContextIds() ?? [],
             ]);
-        })->name('facturas.create');
+        })->name('facturas.create')->middleware('permission:facturas.gestionar');
         
         Route::get('/facturas/{id}/editar', function ($id) {
             return Inertia::render('Facturas/Form', [
@@ -271,7 +285,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                                     ->get(),
                 'contextoIds' => auth()->user()->getAccessibleContextIds() ?? [],
             ]);
-        })->name('facturas.edit');
+        })->name('facturas.edit')->middleware('permission:facturas.gestionar');
 
         Route::delete('/facturas/{factura}', [FacturaController::class, 'destroy'])
                 ->name('facturas.destroy')

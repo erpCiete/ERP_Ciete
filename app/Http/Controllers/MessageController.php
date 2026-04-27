@@ -71,6 +71,12 @@ class MessageController extends Controller
     {
         $user = $request->user();
 
+        abort_unless(
+            in_array($user->id_usuario, [$mensaje->id_destinatario, $mensaje->id_remitente], true),
+            403,
+            'No tienes acceso a este mensaje.'
+        );
+
         if ($mensaje->id_destinatario === $user->id_usuario && ! $mensaje->leido_at) {
             $mensaje->update(['leido_at' => now()]);
         }

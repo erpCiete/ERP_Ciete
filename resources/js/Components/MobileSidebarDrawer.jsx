@@ -1,6 +1,11 @@
 import CieteMark from '@/Components/CieteMark';
 import { getNavigationIcon } from '@/Components/navigationIcons';
+import { getNavigationContextBadge } from '@/navigation/sidebar';
 import { Link } from '@inertiajs/react';
+
+function resolveRoleLabel(user) {
+    return user?.primary_role_name ?? user?.roles?.[0]?.nombre ?? user?.primary_role_slug ?? '-';
+}
 
 export default function MobileSidebarDrawer({
     open,
@@ -12,8 +17,10 @@ export default function MobileSidebarDrawer({
     user,
     t,
 }) {
-    const SettingsIcon = getNavigationIcon('nav.configuration');
+    const SettingsIcon = getNavigationIcon('nav.myProfile');
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
+    const contextBadge = getNavigationContextBadge(user, t);
+    const roleLabel = resolveRoleLabel(user);
 
     return (
         <>
@@ -67,19 +74,12 @@ export default function MobileSidebarDrawer({
                                                 : 'text-white/80 hover:bg-white/10 hover:text-white'
                                         }`;
 
-                                        if (!item.href) {
-                                            return (
-                                                <span key={item.id} className={`${baseClass} opacity-60`}>
-                                                    {ItemIcon && <ItemIcon className="mr-2 h-5 w-5 shrink-0" strokeWidth={1.9} aria-hidden />}
-                                                    {item.label}
-                                                </span>
-                                            );
-                                        }
-
                                         return (
                                             <Link
                                                 key={item.id}
                                                 href={item.href}
+                                                method={item.method}
+                                                as={item.method ? 'button' : undefined}
                                                 className={baseClass}
                                                 onClick={onNavigate}
                                             >
@@ -103,9 +103,17 @@ export default function MobileSidebarDrawer({
                                 className="h-10 w-10 rounded-lg border border-white/20 bg-white/5 p-1"
                             />
                         )}
-                        <div>
+                        <div className="min-w-0">
                             <p className="truncate text-xs font-bold text-white">{user.nombre ?? user.nombre_usuario ?? '-'}</p>
                             <p className="truncate text-[10px] text-white/55">{user.email}</p>
+                            <p className="truncate pt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
+                                {roleLabel}
+                            </p>
+                            {contextBadge && (
+                                <p className="mt-1 inline-flex rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/70">
+                                    {contextBadge}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -115,7 +123,7 @@ export default function MobileSidebarDrawer({
                         onClick={onNavigate}
                     >
                         {SettingsIcon && <SettingsIcon className="h-4 w-4 shrink-0" strokeWidth={1.9} aria-hidden />}
-                        {t('nav.configuration')}
+                        {t('nav.myProfile')}
                     </Link>
 
                     <Link

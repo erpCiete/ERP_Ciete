@@ -25,57 +25,50 @@ class RolPermisosSeeder extends Seeder
             'trabajos.ver',
             'trabajos.crear',
             'trabajos.editar',
-            'trabajos.cerrar',
-            'trabajos.reabrir',
             'presupuestos.ver',
             'presupuestos.gestionar',
             'pedidos.ver',
             'pedidos.gestionar',
+        ];
+
+        $direction = [
+            'trabajos.ver',
+            'trabajos.cerrar',
+            'trabajos.reabrir',
+            'trabajos_cerrados.editar',
+            'trabajos_cerrados.reabrir',
+            'pedidos.ver',
+            'pedidos.gestionar',
             'facturas.ver',
             'facturas.gestionar',
-            'cobros.gestionar',
-            'legalizaciones.ver',
-            'legalizaciones.gestionar',
-            'estaciones.ver',
-            'estaciones.gestionar',
-            'tarifarios.ver',
-            'tarifarios.gestionar',
-            'contratos.ver',
-            'contratos.gestionar',
-            'empresas_contactos.gestionar',
-            'importaciones.ver',
-            'importaciones.ejecutar',
-            'reportes.ver',
+        ];
+
+        $accounting = [
+            'pedidos.ver',
+            'facturas.ver',
+            'facturas.gestionar',
         ];
 
         $map = [
             'admin' => array_keys($permisos->all()),
-            'usuario' => $operativos,
-            'cierre' => [
-                'trabajos.ver',
-                'trabajos.cerrar',
-                'trabajos.reabrir',
-                'trabajos_cerrados.editar',
-                'trabajos_cerrados.reabrir',
-                'pedidos.ver',
-                'legalizaciones.ver',
-                'estaciones.ver',
-                'estaciones.gestionar',
-                'empresas_contactos.gestionar',
-                'reportes.ver',
-            ],
-            'gestor_moeve' => $operativos,
-            'gestor_repsol' => $operativos,
+            'ejecucion' => $operativos,
+            'director' => array_values(array_unique([...$direction])),
+            'ejecucion_moeve' => $operativos,
+            'ejecucion_repsol' => $operativos,
+            'contable' => $accounting,
         ];
 
         $rows = [];
         $now = now();
+        $roleIdsToSync = [];
 
         foreach ($map as $roleSlug => $permissionSlugs) {
             $roleId = $roles->get($roleSlug);
             if (! $roleId) {
                 continue;
             }
+
+            $roleIdsToSync[] = $roleId;
 
             foreach ($permissionSlugs as $permissionSlug) {
                 $permissionId = $permisos->get($permissionSlug);
@@ -92,7 +85,8 @@ class RolPermisosSeeder extends Seeder
         }
 
         if ($rows !== []) {
-            DB::table('rol_permisos')->insertOrIgnore($rows);
+            DB::table('rol_permisos')->whereIn('id_rol', array_unique($roleIdsToSync))->delete();
+            DB::table('rol_permisos')->insert($rows);
         }
     }
 }

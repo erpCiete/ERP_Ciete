@@ -174,9 +174,9 @@
     --color-state-closed-text: var(--theme-state-closed-text);
     --color-state-closed-dot: var(--theme-state-closed-dot);
 
-    --theme-state-blocked-bg: #401b1f;
-    --theme-state-blocked-text: #f8a5aa;
-    --theme-state-blocked-dot: #ff4d57;
+    --theme-state-blocked-bg: #482126;
+    --theme-state-blocked-text: #ffccd0;
+    --theme-state-blocked-dot: #ff6b74;
     --color-state-blocked-bg: var(--theme-state-blocked-bg);
     --color-state-blocked-text: var(--theme-state-blocked-text);
     --color-state-blocked-dot: var(--theme-state-blocked-dot);

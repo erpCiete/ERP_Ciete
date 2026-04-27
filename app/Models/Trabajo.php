@@ -91,6 +91,11 @@ class Trabajo extends Model
         return $this->belongsTo(User::class, 'id_responsable_ciete', 'id_usuario');
     }
 
+    public function usuarioCierre(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_usuario_cierre', 'id_usuario');
+    }
+
     public function pedidos(): HasMany
     {
         return $this->hasMany(Pedido::class, 'id_trabajo', 'id_trabajo');

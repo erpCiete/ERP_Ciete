@@ -3,7 +3,23 @@ import { useI18n } from '@/i18n';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function AdminDashboard({ stats = {}, users = [], activity = [], userContexts = [], homeNotices = {} }) {
+function makeDraftNotice() {
+    return {
+        id: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        es: '',
+        en: '',
+        featured: false,
+    };
+}
+
+export default function AdminDashboard({
+    stats = {},
+    users = [],
+    activity = [],
+    userContexts = [],
+    homeNotices = {},
+    featuredNotice = null,
+}) {
     const user = usePage().props.auth.user;
     const maintenanceActive = usePage().props.maintenance?.active ?? false;
     const { t } = useI18n();
@@ -15,17 +31,22 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
     };
 
     const CATEGORIES = ['notices', 'updates', 'companyNews'];
-    const makeEmpty = () => ({ es: '', en: '' });
 
     const [editingNotices, setEditingNotices] = useState(false);
     const [noticesData, setNoticesData] = useState(() => {
         const base = {};
         CATEGORIES.forEach((cat) => {
-            base[cat] = (homeNotices[cat] || []).map((item) => ({ es: item.es || '', en: item.en || '' }));
+            base[cat] = (homeNotices[cat] || []).map((item) => ({
+                id: item.id,
+                es: item.es || '',
+                en: item.en || '',
+                featured: Boolean(item.featured),
+            }));
         });
         return base;
     });
     const [savingNotices, setSavingNotices] = useState(false);
+    const activeFeaturedNotice = featuredNotice ?? null;
 
     const updateNoticeField = (category, index, lang, value) => {
         setNoticesData((prev) => {
@@ -40,7 +61,7 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
         if ((noticesData[category] || []).length >= 5) return;
         setNoticesData((prev) => ({
             ...prev,
-            [category]: [...(prev[category] || []), makeEmpty()],
+            [category]: [...(prev[category] || []), makeDraftNotice()],
         }));
     };
 
@@ -62,14 +83,29 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
         });
     };
 
+    const toggleFeatured = (category, index) => {
+        setNoticesData((prev) => {
+            const copy = { ...prev };
+            copy[category] = [...(copy[category] || [])];
+            copy[category][index] = {
+                ...copy[category][index],
+                featured: !copy[category][index]?.featured,
+            };
+
+            return copy;
+        });
+    };
+
     const adminModules = [
         { key: 'users', color: 'border-l-state-progress-dot', href: route('admin.users.index') },
-        { key: 'orders', color: 'border-l-state-pending-dot', href: '#' },
-        { key: 'billing', color: 'border-l-state-done-dot', href: '#' },
-        { key: 'legalizations', color: 'border-l-state-blocked-dot', href: '#' },
+        { key: 'direction', color: 'border-l-primary', href: route('cierre.dashboard') },
+        { key: 'orders', color: 'border-l-state-pending-dot', href: route('pedidos.index') },
+        { key: 'billing', color: 'border-l-state-done-dot', href: route('facturas.index') },
         { key: 'clients', color: 'border-l-accent', href: route('clientes.index') },
         { key: 'stations', color: 'border-l-border-heavy', href: route('estaciones.index') },
         { key: 'works', color: 'border-l-primary', href: route('trabajos.index') },
+        { key: 'imports', color: 'border-l-accent', href: route('importaciones.index') },
+        { key: 'support', color: 'border-l-state-progress-dot', href: route('admin.support.index') },
         { key: 'audit', color: 'border-l-text-hint', href: route('admin.audit') },
     ];
 
@@ -203,7 +239,12 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
                                             setEditingNotices(false);
                                             const base = {};
                                             CATEGORIES.forEach((cat) => {
-                                                base[cat] = (homeNotices[cat] || []).map((item) => ({ es: item.es || '', en: item.en || '' }));
+                                                base[cat] = (homeNotices[cat] || []).map((item) => ({
+                                                    id: item.id,
+                                                    es: item.es || '',
+                                                    en: item.en || '',
+                                                    featured: Boolean(item.featured),
+                                                }));
                                             });
                                             setNoticesData(base);
                                         }}
@@ -230,6 +271,28 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
                                 </button>
                             )}
                         </div>
+                    </div>
+
+                    <div className="border-b border-border bg-surface-2/70 px-4 py-3">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">
+                            {t('adminDashboard.notices.featuredTitle')}
+                        </p>
+                        {activeFeaturedNotice ? (
+                            <div className="mt-2 rounded-xl border border-primary/15 bg-primary/6 px-3 py-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex rounded-full border border-primary/20 bg-surface px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+                                        {t('adminDashboard.notices.featuredBadge')}
+                                    </span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-hint">
+                                        {t(`adminDashboard.notices.categories.${activeFeaturedNotice.category}`)}
+                                    </span>
+                                </div>
+                                <p className="mt-2 text-sm text-text-main">{activeFeaturedNotice.es}</p>
+                                <p className="mt-1 text-xs text-text-hint">{activeFeaturedNotice.en}</p>
+                            </div>
+                        ) : (
+                            <p className="mt-2 text-xs text-text-hint">{t('adminDashboard.notices.featuredEmpty')}</p>
+                        )}
                     </div>
 
                     <div className="divide-y divide-border">
@@ -269,6 +332,20 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
                                                 </div>
                                                 <button
                                                     type="button"
+                                                    onClick={() => toggleFeatured(cat, idx)}
+                                                    className={`mt-1 inline-flex h-8 shrink-0 items-center rounded-full border px-2.5 text-[9px] font-bold uppercase tracking-widest transition ${
+                                                        item.featured
+                                                            ? 'border-primary/30 bg-primary/10 text-primary'
+                                                            : 'border-border bg-surface text-text-hint hover:bg-surface-2'
+                                                    }`}
+                                                    title={t('adminDashboard.notices.toggleFeatured')}
+                                                >
+                                                    {item.featured
+                                                        ? t('adminDashboard.notices.featuredOn')
+                                                        : t('adminDashboard.notices.featuredOff')}
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() => removeNoticeItem(cat, idx)}
                                                     className="mt-1 shrink-0 text-[10px] text-text-hint transition hover:text-(--ciete-red)"
                                                     title={t('common.actions.delete')}
@@ -292,9 +369,16 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
                                         {(noticesData[cat] || []).map((item, idx) => (
                                             <li key={idx} className="flex items-start gap-2">
                                                 <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-(--ciete-red)" />
-                                                <span className="text-xs leading-relaxed text-text-muted">
-                                                    {item.es}
-                                                </span>
+                                                <div className="min-w-0">
+                                                    <span className="text-xs leading-relaxed text-text-muted">
+                                                        {item.es}
+                                                    </span>
+                                                    {item.featured && (
+                                                        <span className="ml-2 inline-flex rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+                                                            {t('adminDashboard.notices.featuredBadge')}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </li>
                                         ))}
                                         {(noticesData[cat] || []).length === 0 && (
@@ -352,31 +436,18 @@ export default function AdminDashboard({ stats = {}, users = [], activity = [], 
                         <h3 className="text-sm font-medium text-text-main">{t('adminDashboard.modules.title')}</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-2 p-3 md:grid-cols-4">
-                        {adminModules.map((module) => {
-                            const isPlaceholder = module.href === '#';
-                            return isPlaceholder ? (
-                                <div
-                                    key={module.key}
-                                    className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 opacity-40 ${module.color}`}
-                                >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                                        {t(`adminDashboard.modules.${module.key}`)}
-                                    </span>
-                                    <span className="text-[8px] text-text-hint">{t('adminDashboard.modules.soon')}</span>
-                                </div>
-                            ) : (
-                                <Link
-                                    key={module.key}
-                                    href={module.href}
-                                    className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 transition-colors hover:bg-border ${module.color}`}
-                                >
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-text-main">
-                                        {t(`adminDashboard.modules.${module.key}`)}
-                                    </span>
-                                    <span className="text-xs text-text-hint" aria-hidden>→</span>
-                                </Link>
-                            );
-                        })}
+                        {adminModules.map((module) => (
+                            <Link
+                                key={module.key}
+                                href={module.href}
+                                className={`flex items-center justify-between rounded-[8px] border-l-[3px] bg-surface-2 px-3 py-2 transition-colors hover:bg-border ${module.color}`}
+                            >
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-text-main">
+                                    {t(`adminDashboard.modules.${module.key}`)}
+                                </span>
+                                <span className="text-xs text-text-hint" aria-hidden>→</span>
+                            </Link>
+                        ))}
                     </div>
                 </div>
 
