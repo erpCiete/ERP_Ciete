@@ -70,7 +70,7 @@ export default function Help() {
     const [search, setSearch] = useState('');
 
     const isAdmin = user?.is_admin;
-    const isCierre = user?.role_slugs?.includes('cierre');
+    const isCierre = user?.can_access_direction_panel;
     const canManageClientes = user?.permission_slugs?.includes('empresas_contactos.gestionar');
     const canViewEstaciones = user?.permission_slugs?.some((p) =>
         ['estaciones.ver', 'estaciones.gestionar'].includes(p),

@@ -11,66 +11,79 @@ class RoleModuleAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_shared_modules_are_available_to_admin_cierre_and_usuario(): void
+    public function test_admin_can_access_masters_direction_operations_and_imports(): void
     {
         $this->seed(DatabaseSeeder::class);
 
-        $users = [
-            User::query()->where('email', 'admin@ciete.es')->firstOrFail(),
-            User::query()->where('email', 'cesar@ciete.es')->firstOrFail(),
-            User::query()->where('email', 'usuario@ciete.es')->firstOrFail(),
-        ];
+        $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
 
-        foreach ($users as $user) {
-            $this->actingAs($user)
-                ->get('/clientes')
-                ->assertOk();
+        $this->actingAs($admin)->get('/clientes')->assertOk();
+        $this->actingAs($admin)->get('/estaciones')->assertOk();
+        $this->actingAs($admin)->get('/cierre')->assertOk();
+        $this->actingAs($admin)->get('/trabajos')->assertOk();
+        $this->actingAs($admin)->get('/pedidos')->assertOk();
+        $this->actingAs($admin)->get('/facturas')->assertOk();
+        $this->actingAs($admin)->get('/importaciones')->assertOk();
+    }
 
-            $this->actingAs($user)
-                ->get('/estaciones')
-                ->assertOk();
+    public function test_director_can_access_direction_trabajos_pedidos_facturas_but_not_masters_or_imports(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $director = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
+
+        $this->actingAs($director)->get('/cierre')->assertOk();
+        $this->actingAs($director)->get('/trabajos')->assertOk();
+        $this->actingAs($director)->get('/pedidos')->assertOk();
+        $this->actingAs($director)->get('/pedidos/crear')->assertOk();
+        $this->actingAs($director)->get('/facturas')->assertOk();
+        $this->actingAs($director)->get('/facturas/crear')->assertOk();
+        $this->actingAs($director)->get('/clientes')->assertForbidden();
+        $this->actingAs($director)->get('/estaciones')->assertForbidden();
+        $this->actingAs($director)->get('/importaciones')->assertForbidden();
+    }
+
+    public function test_execution_cannot_access_direction_or_facturas_and_keeps_operational_modules(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $ejecucion = User::query()->where('email', 'usuario@ciete.es')->firstOrFail();
+
+        $this->actingAs($ejecucion)->get('/trabajos')->assertOk();
+        $this->actingAs($ejecucion)->get('/pedidos')->assertOk();
+        $this->actingAs($ejecucion)->get('/cierre')->assertForbidden();
+        $this->actingAs($ejecucion)->get('/facturas')->assertForbidden();
+        $this->actingAs($ejecucion)->get('/clientes')->assertForbidden();
+    }
+
+    public function test_context_execution_profiles_keep_their_operational_access_without_global_panels(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $moeve = User::query()->where('email', 'moeve@ciete.es')->firstOrFail();
+        $repsol = User::query()->where('email', 'repsol@ciete.es')->firstOrFail();
+
+        foreach ([$moeve, $repsol] as $user) {
+            $this->actingAs($user)->get('/trabajos')->assertOk();
+            $this->actingAs($user)->get('/pedidos')->assertOk();
+            $this->actingAs($user)->get('/cierre')->assertForbidden();
+            $this->actingAs($user)->get('/facturas')->assertForbidden();
+            $this->actingAs($user)->get('/clientes')->assertForbidden();
         }
     }
 
-    public function test_cierre_panel_is_only_available_to_cierre(): void
+    public function test_contable_can_access_pedidos_y_facturas_but_not_operational_trabajos_or_direction(): void
     {
         $this->seed(DatabaseSeeder::class);
 
-        $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
-        $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
-        $usuario = User::query()->where('email', 'usuario@ciete.es')->firstOrFail();
+        $contable = User::query()->where('email', 'contable@ciete.es')->firstOrFail();
 
-        $this->actingAs($cesar)
-            ->get('/cierre')
-            ->assertOk();
-
-        $this->actingAs($admin)
-            ->get('/cierre')
-            ->assertForbidden();
-
-        $this->actingAs($usuario)
-            ->get('/cierre')
-            ->assertForbidden();
-    }
-
-    public function test_admin_panel_is_only_available_to_admin(): void
-    {
-        $this->seed(DatabaseSeeder::class);
-
-        $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
-        $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
-        $usuario = User::query()->where('email', 'usuario@ciete.es')->firstOrFail();
-
-        $this->actingAs($admin)
-            ->get('/admin')
-            ->assertOk();
-
-        $this->actingAs($cesar)
-            ->get('/admin')
-            ->assertForbidden();
-
-        $this->actingAs($usuario)
-            ->get('/admin')
-            ->assertForbidden();
+        $this->actingAs($contable)->get('/pedidos')->assertOk();
+        $this->actingAs($contable)->get('/pedidos/crear')->assertForbidden();
+        $this->actingAs($contable)->get('/facturas')->assertOk();
+        $this->actingAs($contable)->get('/facturas/crear')->assertOk();
+        $this->actingAs($contable)->get('/trabajos')->assertForbidden();
+        $this->actingAs($contable)->get('/cierre')->assertForbidden();
+        $this->actingAs($contable)->get('/clientes')->assertForbidden();
     }
 }

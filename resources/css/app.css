@@ -134,8 +134,8 @@
 
 @layer base {
     :root {
-        --ciete-red: #b91c1c;
-        --ciete-red-dark: #991b1b;
+        --ciete-red: var(--color-primary);
+        --ciete-red-dark: var(--color-primary-hover);
         --ciete-slate: var(--color-text-main);
     }
 

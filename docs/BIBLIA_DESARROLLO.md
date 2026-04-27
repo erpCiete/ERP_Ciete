@@ -1,7 +1,7 @@
 # Biblia de Desarrollo — ERP Ciete
 
 > **Documento vivo. Actualizar con cada sprint.**  
-> **Versión actual:** v1.2.0 · **Última actualización:** 13/04/2026  
+> **Versión actual:** v1.4.2 · **Última actualización:** 24/04/2026  
 > **Stack:** Laravel 12 + Inertia.js + React 19 + MariaDB 10.4 + Tailwind CSS 4.2
 
 ---
@@ -973,7 +973,7 @@ class TrabajoFactory extends Factory
 }
 ```
 
-### Inventario de tests actual (v1.2.0 — 13/04/2026)
+### Inventario de tests actual (v1.4.2 — 24/04/2026)
 
 > **58 tests, 248 assertions — 100% passing**  
 > Última ejecución: `php artisan test` → 17.50s
@@ -1101,13 +1101,14 @@ git push origin versionDesplegada
 **Único punto:** `app/Http/Controllers/StatusController.php` línea 56:
 
 ```php
-'version' => 'v1.2.0',
+'version' => 'v1.4.2',
 ```
 
 ### Historial de versiones
 
 | Versión | Fecha      | Sprint     | Cambios principales                                                                                             |
 | ------- | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
+| v1.4.2  | 24/04/2026 | Sprint 04+ | Ajustes UX/UI globales, ayuda contextual flotante, mensaje destacado en Inicio, mejoras de trabajos multi-contexto y pulido visual |
 | v1.0.0  | 26/03/2026 | Sprint 01  | Arranque: auth, RBAC, layout, sidebar, error pages, tema                                                        |
 | v1.1.0  | 10/04/2026 | Sprint 02  | Clientes CRUD, Estaciones CRUD, mantenimiento, recuperar password, mensajes, soporte, ayuda, estado del sistema |
 | v1.2.0  | 13/04/2026 | Sprint 02+ | Seguridad rate-limit (5 intentos/5 min), estado role-based (admin vs user), i18n fixes, manual expandido        |
@@ -1115,6 +1116,14 @@ git push origin versionDesplegada
 ---
 
 ## 13. Changelog
+
+### v1.4.2 — 24/04/2026
+
+- Ajustes UX/UI del ERP en navegación, tablas y formularios.
+- Botón flotante de ayuda contextual integrado en layout autenticado.
+- Inicio con mensaje destacado gestionable desde administración.
+- Mejora de creación de trabajos con contextualización operativa Moeve/Repsol.
+- Corrección de textos sin traducir en soporte/admin y pulido visual en modo oscuro.
 
 ### v1.2.0 — 13/04/2026
 

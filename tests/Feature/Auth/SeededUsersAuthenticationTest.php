@@ -20,7 +20,10 @@ class SeededUsersAuthenticationTest extends TestCase
             ['email' => 'usuario@ciete.es', 'password' => 'Usuario1234!'],
             ['email' => 'moeve@ciete.es', 'password' => 'Moeve1234!'],
             ['email' => 'repsol@ciete.es', 'password' => 'Repsol1234!'],
+            ['email' => 'contable@ciete.es', 'password' => 'Contable1234!'],
         ];
+
+        $this->assertCount(6, $credentials);
 
         foreach ($credentials as $credential) {
             $response = $this->post('/login', $credential);

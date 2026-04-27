@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
 import { Head, router } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
-import { usePedidos } from '@/hooks/usePedidos';
+import { usePedidos } from '@/Hooks/usePedidos';
 import BadgePedido from '@/Components/ui/BadgePedidos'; // Asegúrate de que la ruta coincide con tu archivo
 
 // ─── Opciones de estado para el filtro ───────────────────────────────────────

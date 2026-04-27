@@ -176,6 +176,69 @@ class User extends Authenticatable
         return $this->hasRole('admin');
     }
 
+    public function isDirector(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasRole('director');
+    }
+
+    public function canAccessDirectionPanel(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasAnyRole(['admin', 'director']);
+    }
+
+    public function isExecution(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasRole('ejecucion');
+    }
+
+    public function isExecutionMoeve(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasRole('ejecucion_moeve');
+    }
+
+    public function isExecutionRepsol(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasRole('ejecucion_repsol');
+    }
+
+    public function isAccounting(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasRole('contable');
+    }
+
+    public function canManageSupport(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->isAdmin() || $this->hasPermission('soporte.gestionar');
+    }
+
     public function getIsAdminAttribute(): bool
     {
         return $this->isAdmin();

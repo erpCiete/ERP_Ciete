@@ -1,30 +1,50 @@
-// resources/js/Components/ui/BadgeTrabajo.jsx
-// Uso: <BadgeTrabajo estado="en_curso" />
-// Estados: borrador · en_curso · terminado · cerrado · cancelado
-
 const ESTADOS = {
-    borrador:  { label: 'Borrador',  bg: '#f9fafb', text: '#374151', dot: '#9ca3af' },
-    en_curso:  { label: 'En curso',  bg: '#eff2ff', text: '#1e3a8a', dot: '#0033FF' },
-    terminado: { label: 'Terminado', bg: '#f0fdf4', text: '#14532d', dot: '#22c55e' },
-    cerrado:   { label: 'Cerrado',   bg: '#f9fafb', text: '#374151', dot: '#6b7280' },
-    cancelado: { label: 'Cancelado', bg: '#fff0f0', text: '#7f1d1d', dot: '#E8000D' },
+    borrador: {
+        label: 'Borrador',
+        bg: 'var(--color-state-closed-bg)',
+        text: 'var(--color-state-closed-text)',
+        dot: 'var(--color-state-closed-dot)',
+    },
+    en_curso: {
+        label: 'En curso',
+        bg: 'var(--color-state-progress-bg)',
+        text: 'var(--color-state-progress-text)',
+        dot: 'var(--color-state-progress-dot)',
+    },
+    terminado: {
+        label: 'Terminado',
+        bg: 'var(--color-state-done-bg)',
+        text: 'var(--color-state-done-text)',
+        dot: 'var(--color-state-done-dot)',
+    },
+    cerrado: {
+        label: 'Cerrado',
+        bg: 'var(--color-state-closed-bg)',
+        text: 'var(--color-state-closed-text)',
+        dot: 'var(--color-state-closed-dot)',
+    },
+    cancelado: {
+        label: 'Cancelado',
+        bg: 'var(--color-state-blocked-bg)',
+        text: 'var(--color-state-blocked-text)',
+        dot: 'var(--color-state-blocked-dot)',
+    },
 };
 
 export default function BadgeTrabajo({ estado }) {
     const config = ESTADOS[estado?.toLowerCase()] ?? {
         label: estado ?? '—',
-        bg: '#f9fafb', text: '#374151', dot: '#6b7280',
+        bg: 'var(--color-state-closed-bg)',
+        text: 'var(--color-state-closed-text)',
+        dot: 'var(--color-state-closed-dot)',
     };
 
     return (
         <span
-            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
             style={{ backgroundColor: config.bg, color: config.text }}
         >
-            <span
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: config.dot }}
-            />
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: config.dot }} />
             {config.label}
         </span>
     );

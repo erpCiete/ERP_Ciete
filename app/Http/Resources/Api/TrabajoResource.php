@@ -21,7 +21,7 @@ class TrabajoResource extends JsonResource
             'id_estacion_servicio' => $this->id_estacion_servicio,
             'estado'               => $this->estado,
             'fecha_encargo'        => $this->fecha_encargo,
-            'fecha_terminado'      => $this->fecha_terminado,
+            'fecha_terminado'      => $this->fecha_terminacion,
             'id_contexto'          => $this->id_contexto,
 
             $this->mergeWhen($this->id_contexto === 1, [

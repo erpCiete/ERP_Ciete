@@ -14,6 +14,9 @@ class MensajeInterno extends Model
     protected $fillable = [
         'id_remitente',
         'id_destinatario',
+        'id_mensaje_padre',
+        'id_solicitud_soporte',
+        'tipo_remitente',
         'asunto',
         'cuerpo',
         'prioridad',

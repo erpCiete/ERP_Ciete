@@ -84,7 +84,7 @@ class TrabajoTest extends TestCase
 
     public function test_context_isolation_repsol_cannot_see_moeve_jobs()
     {
-        $gestorRepsol = $this->createUserWithContext('gestor_repsol', $this->ctxRepsol);
+        $gestorRepsol = $this->createUserWithContext('ejecucion_repsol', $this->ctxRepsol);
 
         $empresaMoeve = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
         $trabajoMoeve = Trabajo::factory()->create([
@@ -108,7 +108,7 @@ class TrabajoTest extends TestCase
 
     public function test_validation_fails_if_moeve_job_misses_contrato()
     {
-        $gestorMoeve = $this->createUserWithContext('gestor_moeve', $this->ctxMoeve);
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
 
         // Crear empresa y estación en contexto MOEVE para activar la regla
         $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
@@ -131,7 +131,7 @@ class TrabajoTest extends TestCase
 
     public function test_normal_user_cannot_update_closed_job()
     {
-        $gestorRepsol = $this->createUserWithContext('gestor_repsol', $this->ctxRepsol);
+        $gestorRepsol = $this->createUserWithContext('ejecucion_repsol', $this->ctxRepsol);
 
         $empresaRepsol = Empresa::factory()->create(['id_contexto' => $this->ctxRepsol->id_contexto]);
         $trabajoCerrado = Trabajo::factory()->create([
