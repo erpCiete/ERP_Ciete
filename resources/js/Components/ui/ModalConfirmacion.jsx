@@ -19,18 +19,18 @@ export default function ModalConfirmacion({
                     <p className="mt-2 text-sm text-text-muted">{message}</p>
                 </div>
 
-                <div className="flex justify-end gap-3 px-6 py-4">
+                <div className="flex flex-col-reverse gap-3 px-6 py-4 sm:flex-row sm:justify-end">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-md border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-muted transition hover:bg-surface-2 hover:text-text-main"
+                        className="w-full rounded-md border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-muted transition hover:bg-surface-2 hover:text-text-main sm:w-auto"
                     >
                         {t('common.actions.cancel')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className="rounded-md bg-(--ciete-red) px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark)"
+                        className="w-full rounded-md bg-(--ciete-red) px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) sm:w-auto"
                     >
                         {confirmLabel || t('common.actions.confirm')}
                     </button>

@@ -1,11 +1,6 @@
 import CieteMark from '@/Components/CieteMark';
 import { getNavigationIcon } from '@/Components/navigationIcons';
-import { getNavigationContextBadge } from '@/navigation/sidebar';
 import { Link } from '@inertiajs/react';
-
-function resolveRoleLabel(user) {
-    return user?.primary_role_name ?? user?.roles?.[0]?.nombre ?? user?.primary_role_slug ?? '-';
-}
 
 export default function MobileSidebarDrawer({
     open,
@@ -19,8 +14,6 @@ export default function MobileSidebarDrawer({
 }) {
     const SettingsIcon = getNavigationIcon('nav.myProfile');
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
-    const contextBadge = getNavigationContextBadge(user, t);
-    const roleLabel = resolveRoleLabel(user);
 
     return (
         <>
@@ -28,7 +21,7 @@ export default function MobileSidebarDrawer({
                 <button
                     type="button"
                     aria-label={t('common.aria.closeNavigationPanel')}
-                    className="fixed inset-0 z-70 bg-black/45 md:hidden"
+                    className="fixed inset-0 z-70 bg-black/45 xl:hidden"
                     onClick={onClose}
                 />
             )}
@@ -40,7 +33,7 @@ export default function MobileSidebarDrawer({
                 aria-modal="true"
                 aria-label={t('common.aria.navigationMenu')}
                 tabIndex={-1}
-                className={`fixed inset-y-0 left-0 z-80 flex w-[min(22rem,90vw)] flex-col bg-secondary text-white shadow-2xl transition-transform duration-200 ease-out md:hidden ${
+                className={`fixed inset-y-0 left-0 z-80 flex w-[min(22rem,90vw)] max-w-full flex-col bg-secondary text-white shadow-2xl transition-transform duration-200 ease-out xl:hidden ${
                     open ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
@@ -95,26 +88,8 @@ export default function MobileSidebarDrawer({
                 </div>
 
                 <div className="border-t border-white/10 bg-black/10 p-4">
-                    <div className="mb-3 flex items-center gap-3 px-1">
-                        {user.avatar_url && (
-                            <img
-                                src={user.avatar_url}
-                                alt="Avatar"
-                                className="h-10 w-10 rounded-lg border border-white/20 bg-white/5 p-1"
-                            />
-                        )}
-                        <div className="min-w-0">
-                            <p className="truncate text-xs font-bold text-white">{user.nombre ?? user.nombre_usuario ?? '-'}</p>
-                            <p className="truncate text-[10px] text-white/55">{user.email}</p>
-                            <p className="truncate pt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">
-                                {roleLabel}
-                            </p>
-                            {contextBadge && (
-                                <p className="mt-1 inline-flex rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold text-white/70">
-                                    {contextBadge}
-                                </p>
-                            )}
-                        </div>
+                    <div className="mb-3 px-1">
+                        <p className="truncate text-[10px] font-semibold text-white/55">{user.email}</p>
                     </div>
 
                     <Link

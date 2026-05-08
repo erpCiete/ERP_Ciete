@@ -29,9 +29,9 @@ class ContextosClienteSeeder extends Seeder
             ],
             [
                 'id_contexto' => 3,
-                'nombre' => 'OTRO',
-                'codigo' => 'OTRO',
-                'descripcion' => 'Contexto general u otros clientes',
+                'nombre' => 'OTROS CLIENTES',
+                'codigo' => 'OTROS',
+                'descripcion' => 'Contexto operativo OTROS CLIENTES',
                 'activo' => true,
             ],
         ];

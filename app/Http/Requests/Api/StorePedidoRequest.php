@@ -3,11 +3,33 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\Pedido;
+use App\Support\ContextGuard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class StorePedidoRequest extends BaseApiRequest
 {
+    public function authorize(): bool
+    {
+        return ContextGuard::canCreateInActiveContext($this->user());
+    }
+
+    protected function authorizationFailureMessage(): string
+    {
+        return ContextGuard::CREATE_FROM_ALL_MESSAGE;
+    }
+
+    private const ALLOWED_STATUSES = [
+        'pendiente',
+        'solicitado',
+        'recibido',
+        'en_ejecucion',
+        'facturado_parcial',
+        'facturado',
+        'cancelado',
+        'anulado',
+    ];
+
     /**
      * Prepara los datos para validación, casteando booleanos
      * y recalculando los totales de las líneas si es necesario.
@@ -35,10 +57,12 @@ class StorePedidoRequest extends BaseApiRequest
         // Limpieza y estructuración de los items anidados (Esquema Real de abaco_ciete)
         if ($this->has('items') && is_array($this->input('items'))) {
             $items = collect($this->input('items'))->map(function ($item) {
+                $idPedidoItem = $item['id_pedido_item'] ?? $item['id'] ?? null;
                 $cantidad = isset($item['cantidad']) ? (float) $item['cantidad'] : 1;
                 $precioUnitario = isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : 0;
                 
                 return [
+                    'id_pedido_item' => $idPedidoItem !== null && $idPedidoItem !== '' ? (int) $idPedidoItem : null,
                     'id_tarifario_linea' => $item['id_tarifario_linea'] ?? null,
                     'codigo_servicio' => $this->normalizeNullableString($item['codigo_servicio'] ?? null),
                     'numero_tarifa' => $this->normalizeNullableString($item['numero_tarifa'] ?? null),
@@ -59,39 +83,37 @@ class StorePedidoRequest extends BaseApiRequest
     public function rules(): array
     {
         $user = Auth::user();
-        $contextId = $user?->id_contexto;
-        // Asumimos que contexto 3 es el interno (CIETE) o tiene el rol de admin
-        $isAdmin = $contextId === 3 || $user?->hasRole('admin'); 
-        
+        $accessibleContextIds = $user?->getActiveContextIds() ?? [];
+        $trabajo = $this->input('id_trabajo')
+            ? \App\Models\Trabajo::query()->withoutGlobalScopes()->find($this->input('id_trabajo'))
+            : null;
+        $targetContextId = $trabajo?->id_contexto;
         $pedido = $this->route('pedido');
         $pedidoId = $pedido instanceof Pedido ? $pedido->id_pedido : $pedido;
 
         return [
             // Relaciones
             'id_trabajo' => [
-                'sometimes',
                 'required',
                 'integer',
                 Rule::exists('trabajos', 'id_trabajo')
-                    ->when(!$isAdmin, fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'id_tarifario' => [
                 'nullable',
                 'integer',
                 Rule::exists('tarifarios', 'id_tarifario')
-                    ->when(!$isAdmin, fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
             ],
 
             // Datos Base
             'numero_pedido' => [
-                'sometimes',
                 'required',
                 'string',
                 'max:100',
                 Rule::unique('pedidos', 'numero_pedido')
                     ->ignore($pedidoId, 'id_pedido')
-                    // Si es admin, no forzamos su contexto en la búsqueda unique
-                    ->when(!$isAdmin, fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'fecha_solicitud' => ['nullable', 'date'],
             'fecha_recepcion' => ['nullable', 'date'],
@@ -104,7 +126,7 @@ class StorePedidoRequest extends BaseApiRequest
             'unidades_solicitadas' => ['sometimes', 'required', 'numeric', 'min:0'],
 
             // Flags y Estado
-            'estado' => ['sometimes', 'required', 'string', 'max:50'],
+            'estado' => ['sometimes', 'required', Rule::in(self::ALLOWED_STATUSES)],
             'pedido_completo' => ['sometimes', 'boolean'],
             'tiene_mas_de_1_item' => ['sometimes', 'boolean'],
             'facturado_completo' => ['sometimes', 'boolean'],
@@ -112,6 +134,7 @@ class StorePedidoRequest extends BaseApiRequest
 
             // Validaciones para Líneas de Pedido (Items)
             'items' => ['nullable', 'array'],
+            'items.*.id_pedido_item' => ['nullable', 'integer', 'min:1'],
             'items.*.id_tarifario_linea' => ['nullable', 'integer'],
             'items.*.codigo_servicio' => ['nullable', 'string', 'max:30'],
             'items.*.numero_tarifa' => ['nullable', 'string', 'max:30'],

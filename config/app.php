@@ -43,6 +43,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Demo Users
+    |--------------------------------------------------------------------------
+    |
+    | Demo users must be enabled explicitly outside testing. This prevents
+    | predictable credentials from being seeded by mistake in shared or
+    | production-like environments.
+    |
+    */
+
+    'allow_demo_users' => (bool) env('APP_ALLOW_DEMO_USERS', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

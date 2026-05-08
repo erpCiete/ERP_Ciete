@@ -19,7 +19,7 @@ class ContextScope implements Scope
 
         $table = (string) $builder->getModel()->getTable();
 
-        $contextIds = $user->getAccessibleContextIds();
+        $contextIds = $user->getActiveContextIds();
 
         $builder->whereIn("{$table}.id_contexto", $contextIds);
     }

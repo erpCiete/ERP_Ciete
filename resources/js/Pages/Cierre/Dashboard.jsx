@@ -8,252 +8,15 @@ const FLOW_STEPS = [
     'pedido',
     'ejecucion',
     'terminado',
-    'revision_cierre',
-    'cerrado',
-];
-
-const INITIAL_WORKS = [
-    {
-        id: 1,
-        cliente: 'Repsol',
-        estacion: 'Repsol M-50 Norte',
-        numeroAviso: 'AV-24031',
-        numeroPedido: 'PED-9012',
-        tipoTrabajo: 'Sustitución surtidor',
-        responsable: 'Diego Ramos',
-        fechaEncargo: '2026-03-10',
-        fechaFinReal: '2026-03-24',
-        importePedido: 11800,
-        importeTrabajo: 11720,
-        legalizacionEstado: 'completa',
-        legalizacionObservaciones: 'Documentación validada por legalizaciones.',
-        legalizacionCritica: false,
-        incidenciaBloqueante: false,
-        incidencias: ['Revisión documental completada'],
-        terminadoConfirmado: true,
-        camposObligatoriosCompletos: true,
-        revisionEconomicaAprobada: true,
-        requiereContratoTarifario: true,
-        contratoTarifarioValidado: true,
-        faseActual: 'revision_cierre',
-        revisionCierreMarcada: true,
-        cerrado: false,
-        trazabilidad: {
-            marcadoTerminadoPor: 'Lucía Esteban',
-            fechaMarcadoTerminado: '2026-03-24 10:18',
-            fechaFinInformadaPor: 'Lucía Esteban',
-            fechaFinInformadaAt: '2026-03-24 10:20',
-            importeActualizadoPor: 'Diego Ramos',
-            importeActualizadoAt: '2026-03-24 11:05',
-            cerradoPor: null,
-            fechaCierre: null,
-            reabiertoPor: null,
-            fechaReapertura: null,
-            reaperturaMotivo: null,
-        },
-    },
-    {
-        id: 2,
-        cliente: 'Moeve',
-        estacion: 'Moeve Arcos',
-        numeroAviso: 'AV-24045',
-        numeroPedido: 'PED-9040',
-        tipoTrabajo: 'Actualización cuadro eléctrico',
-        responsable: 'César Martín',
-        fechaEncargo: '2026-03-12',
-        fechaFinReal: null,
-        importePedido: 6400,
-        importeTrabajo: 6120,
-        legalizacionEstado: 'en_revision',
-        legalizacionObservaciones: 'A la espera de firma de instalador autorizado.',
-        legalizacionCritica: true,
-        incidenciaBloqueante: true,
-        incidencias: ['Trabajo terminado sin fecha real de terminación'],
-        terminadoConfirmado: true,
-        camposObligatoriosCompletos: false,
-        revisionEconomicaAprobada: true,
-        requiereContratoTarifario: false,
-        contratoTarifarioValidado: true,
-        faseActual: 'terminado',
-        revisionCierreMarcada: false,
-        cerrado: false,
-        trazabilidad: {
-            marcadoTerminadoPor: 'César Martín',
-            fechaMarcadoTerminado: '2026-03-25 16:44',
-            fechaFinInformadaPor: null,
-            fechaFinInformadaAt: null,
-            importeActualizadoPor: 'César Martín',
-            importeActualizadoAt: '2026-03-25 16:49',
-            cerradoPor: null,
-            fechaCierre: null,
-            reabiertoPor: null,
-            fechaReapertura: null,
-            reaperturaMotivo: null,
-        },
-    },
-    {
-        id: 3,
-        cliente: 'Repsol',
-        estacion: 'Repsol Logroño Este',
-        numeroAviso: 'AV-24051',
-        numeroPedido: 'PED-9055',
-        tipoTrabajo: 'Reforma zona lavado',
-        responsable: 'Marta Aguilar',
-        fechaEncargo: '2026-03-15',
-        fechaFinReal: '2026-03-26',
-        importePedido: 9800,
-        importeTrabajo: 11290,
-        legalizacionEstado: 'pendiente',
-        legalizacionObservaciones: 'Pendiente de registro ante organismo autonómico.',
-        legalizacionCritica: true,
-        incidenciaBloqueante: true,
-        incidencias: ['Importe de trabajo supera pedido sin validación económica'],
-        terminadoConfirmado: true,
-        camposObligatoriosCompletos: true,
-        revisionEconomicaAprobada: false,
-        requiereContratoTarifario: true,
-        contratoTarifarioValidado: true,
-        faseActual: 'revision_cierre',
-        revisionCierreMarcada: false,
-        cerrado: false,
-        trazabilidad: {
-            marcadoTerminadoPor: 'Marta Aguilar',
-            fechaMarcadoTerminado: '2026-03-26 18:11',
-            fechaFinInformadaPor: 'Marta Aguilar',
-            fechaFinInformadaAt: '2026-03-26 18:12',
-            importeActualizadoPor: 'Marta Aguilar',
-            importeActualizadoAt: '2026-03-26 18:13',
-            cerradoPor: null,
-            fechaCierre: null,
-            reabiertoPor: null,
-            fechaReapertura: null,
-            reaperturaMotivo: null,
-        },
-    },
-    {
-        id: 4,
-        cliente: 'Moeve',
-        estacion: 'Moeve Seseña',
-        numeroAviso: 'AV-24022',
-        numeroPedido: 'PED-8991',
-        tipoTrabajo: 'Mantenimiento preventivo',
-        responsable: 'Álvaro Mena',
-        fechaEncargo: '2026-03-05',
-        fechaFinReal: '2026-03-18',
-        importePedido: 5200,
-        importeTrabajo: 5200,
-        legalizacionEstado: 'no_aplica',
-        legalizacionObservaciones: 'Mantenimiento sin impacto legalizatorio.',
-        legalizacionCritica: false,
-        incidenciaBloqueante: false,
-        incidencias: [],
-        terminadoConfirmado: true,
-        camposObligatoriosCompletos: true,
-        revisionEconomicaAprobada: true,
-        requiereContratoTarifario: true,
-        contratoTarifarioValidado: true,
-        faseActual: 'revision_cierre',
-        revisionCierreMarcada: false,
-        cerrado: false,
-        trazabilidad: {
-            marcadoTerminadoPor: 'Álvaro Mena',
-            fechaMarcadoTerminado: '2026-03-18 13:05',
-            fechaFinInformadaPor: 'Álvaro Mena',
-            fechaFinInformadaAt: '2026-03-18 13:07',
-            importeActualizadoPor: 'Álvaro Mena',
-            importeActualizadoAt: '2026-03-18 13:08',
-            cerradoPor: null,
-            fechaCierre: null,
-            reabiertoPor: null,
-            fechaReapertura: null,
-            reaperturaMotivo: null,
-        },
-    },
-    {
-        id: 5,
-        cliente: 'Repsol',
-        estacion: 'Repsol Toledo Sur',
-        numeroAviso: 'AV-23998',
-        numeroPedido: 'PED-8930',
-        tipoTrabajo: 'Adecuación tanque',
-        responsable: 'César Martín',
-        fechaEncargo: '2026-02-28',
-        fechaFinReal: '2026-03-20',
-        importePedido: 15100,
-        importeTrabajo: 14980,
-        legalizacionEstado: 'completa',
-        legalizacionObservaciones: 'Expediente archivado sin salvedades.',
-        legalizacionCritica: false,
-        incidenciaBloqueante: false,
-        incidencias: [],
-        terminadoConfirmado: true,
-        camposObligatoriosCompletos: true,
-        revisionEconomicaAprobada: true,
-        requiereContratoTarifario: true,
-        contratoTarifarioValidado: true,
-        faseActual: 'cerrado',
-        revisionCierreMarcada: true,
-        cerrado: true,
-        trazabilidad: {
-            marcadoTerminadoPor: 'César Martín',
-            fechaMarcadoTerminado: '2026-03-20 15:21',
-            fechaFinInformadaPor: 'César Martín',
-            fechaFinInformadaAt: '2026-03-20 15:23',
-            importeActualizadoPor: 'César Martín',
-            importeActualizadoAt: '2026-03-20 15:25',
-            cerradoPor: 'César Martín',
-            fechaCierre: '2026-03-27 09:10',
-            reabiertoPor: null,
-            fechaReapertura: null,
-            reaperturaMotivo: null,
-        },
-    },
-    {
-        id: 6,
-        cliente: 'Moeve',
-        estacion: 'Moeve Albacete Centro',
-        numeroAviso: 'AV-24066',
-        numeroPedido: 'PED-9078',
-        tipoTrabajo: 'Actualización PCI',
-        responsable: 'Nora Vidal',
-        fechaEncargo: '2026-03-18',
-        fechaFinReal: '2026-03-26',
-        importePedido: 8600,
-        importeTrabajo: 8600,
-        legalizacionEstado: 'en_revision',
-        legalizacionObservaciones: 'Pendiente de visto bueno interno de calidad.',
-        legalizacionCritica: false,
-        incidenciaBloqueante: false,
-        incidencias: ['Revisión económica pendiente de firma de responsable'],
-        terminadoConfirmado: true,
-        camposObligatoriosCompletos: true,
-        revisionEconomicaAprobada: true,
-        requiereContratoTarifario: true,
-        contratoTarifarioValidado: true,
-        faseActual: 'revision_cierre',
-        revisionCierreMarcada: false,
-        cerrado: false,
-        trazabilidad: {
-            marcadoTerminadoPor: 'Nora Vidal',
-            fechaMarcadoTerminado: '2026-03-26 17:32',
-            fechaFinInformadaPor: 'Nora Vidal',
-            fechaFinInformadaAt: '2026-03-26 17:35',
-            importeActualizadoPor: 'Nora Vidal',
-            importeActualizadoAt: '2026-03-26 17:40',
-            cerradoPor: null,
-            fechaCierre: null,
-            reabiertoPor: null,
-            fechaReapertura: null,
-            reaperturaMotivo: null,
-        },
-    },
+    'revision_finalizacion',
+    'finalizado',
 ];
 
 const statusOrder = {
     pendiente: 0,
     listo: 1,
     bloqueado: 2,
-    cerrado: 3,
+    finalizado: 3,
 };
 
 function normalizeText(value) {
@@ -296,7 +59,7 @@ function buildValidationItems(work) {
         {
             id: 'validOrder',
             labelKey: 'closureDashboard.checklist.validOrder',
-            ok: Boolean(work.numeroPedido),
+            ok: Boolean(work.numeroPedido) && work.numeroPedido !== '—',
             blocking: true,
         },
         {
@@ -316,7 +79,7 @@ function buildValidationItems(work) {
                 work.legalizacionEstado === 'completa' ||
                 work.legalizacionEstado === 'no_aplica' ||
                 (work.legalizacionEstado === 'en_revision' && !work.legalizacionCritica),
-            blocking: true,
+            blocking: false,
         },
         {
             id: 'mandatoryFields',
@@ -339,26 +102,26 @@ function buildValidationItems(work) {
         {
             id: 'flowReady',
             labelKey: 'closureDashboard.checklist.flowReady',
-            ok: ['revision_cierre', 'cerrado'].includes(work.faseActual),
+            ok: ['terminado', 'pendiente_facturar', 'facturado', 'revision_finalizacion', 'finalizado'].includes(work.faseActual),
             blocking: true,
         },
         {
-            id: 'readyToClose',
-            labelKey: 'closureDashboard.checklist.readyToClose',
-            ok: work.revisionCierreMarcada || work.cerrado,
+            id: 'readyToFinalize',
+            labelKey: 'closureDashboard.checklist.readyToFinalize',
+            ok: work.revisionFinalizacionMarcada || work.finalizado,
             blocking: false,
         },
     ];
 }
 
 function resolveClosureStatus(work) {
-    if (work.cerrado) return 'cerrado';
+    if (work.finalizado) return 'finalizado';
 
     const checks = buildValidationItems(work);
     const hasBlockingChecks = checks.some((item) => item.blocking && !item.ok);
 
     if (hasBlockingChecks) return 'bloqueado';
-    if (!work.revisionCierreMarcada) return 'pendiente';
+    if (!work.revisionFinalizacionMarcada) return 'pendiente';
 
     return 'listo';
 }
@@ -368,7 +131,7 @@ function closureStatusBadgeClass(status) {
         pendiente: 'bg-state-pending-bg text-state-pending-text',
         listo: 'bg-state-done-bg text-state-done-text',
         bloqueado: 'bg-state-blocked-bg text-state-blocked-text',
-        cerrado: 'bg-accent/10 text-accent',
+        finalizado: 'bg-accent/10 text-accent',
     };
 
     return map[status] ?? 'bg-surface-2 text-text-muted';
@@ -388,7 +151,7 @@ function legalizationBadgeClass(status) {
 function closureActionKey(status) {
     if (status === 'listo') return 'closureDashboard.actions.close';
     if (status === 'bloqueado') return 'closureDashboard.actions.review';
-    if (status === 'cerrado') return 'closureDashboard.actions.reopen';
+    if (status === 'finalizado') return 'closureDashboard.actions.viewDetail';
 
     return 'closureDashboard.actions.validate';
 }
@@ -430,7 +193,6 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
     const [activeWorkId, setActiveWorkId] = useState(null);
-    const [reopenReason, setReopenReason] = useState('');
     const [exportFormat, setExportFormat] = useState('csv');
 
     useEffect(() => {
@@ -482,9 +244,11 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
             bloqueados: statuses.filter((status) => status === 'bloqueado').length,
             sinFechaFin: scopedWorks.filter((work) => !work.fechaFinReal).length,
             legalizacionesPendientes: scopedWorks.filter((work) => ['pendiente', 'en_revision'].includes(work.legalizacionEstado)).length,
-            cerradosHoy: scopedWorks.filter((work) => {
-                if (!work.cerrado || !work.trazabilidad?.fechaCierre) return false;
-                return formatDateValue(work.trazabilidad.fechaCierre) === today;
+            finalizadosHoy: scopedWorks.filter((work) => {
+                const finalizationDate = work.trazabilidad?.fechaFinalizacion;
+
+                if (!work.finalizado || !finalizationDate) return false;
+                return formatDateValue(finalizationDate) === today;
             }).length,
         };
     }, [scopedWorks]);
@@ -539,9 +303,6 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
         }
 
         setActiveWorkId(work.id);
-        if (status === 'cerrado') {
-            setReopenReason(t('closureDashboard.messages.defaultReopenReason'));
-        }
     };
 
     const handleSelectRow = (workId) => {
@@ -716,6 +477,41 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
     const detailStatus = activeWork ? resolveClosureStatus(activeWork) : null;
     const hasBlockingIssues = detailChecks.some((item) => item.blocking && !item.ok);
     const amountDiff = activeWork ? activeWork.importeTrabajo - activeWork.importePedido : 0;
+    const detailActionNode = activeWork ? (
+        <>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                {t('closureDashboard.detail.sections.finalAction')}
+            </h4>
+
+            {detailStatus === 'finalizado' ? (
+                <div className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-xs text-text-muted">
+                    {t('closureDashboard.messages.workIsClosed')}
+                </div>
+            ) : (
+                <div className="mt-3 space-y-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            router.post(route('cierre.close', activeWork.id), {}, {
+                                preserveScroll: true,
+                                onSuccess: () => setActiveWorkId(null),
+                            });
+                        }}
+                        disabled={detailStatus !== 'listo'}
+                        className="inline-flex w-full items-center justify-center rounded-md bg-(--ciete-red) px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    >
+                        {t('closureDashboard.actions.closeWork')}
+                    </button>
+
+                    {(detailStatus !== 'listo' || hasBlockingIssues) && (
+                        <p className="text-xs text-state-blocked-text">
+                            {t('closureDashboard.messages.cannotCloseYet')}
+                        </p>
+                    )}
+                </div>
+            )}
+        </>
+    ) : null;
 
     return (
         <AuthenticatedLayout
@@ -728,8 +524,8 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
         >
             <Head title={t('closureDashboard.headTitle')} />
 
-            <div className="mx-auto w-full space-y-5 px-2 py-8">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="mx-auto w-full max-w-[1760px] space-y-5 py-2 lg:py-4">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div>
                         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
                             {t('closureDashboard.panelLabel')}
@@ -738,7 +534,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                         <p className="mt-1 text-sm text-text-muted">{t('closureDashboard.subtitle')}</p>
                     </div>
 
-                    <div className="grid w-full gap-2 rounded-[12px] border border-border bg-surface p-3 shadow-sm lg:w-auto lg:min-w-120 lg:grid-cols-2">
+                    <div className="grid w-full gap-2 rounded-[12px] border border-border bg-surface p-3 shadow-sm sm:grid-cols-2 xl:max-w-[34rem] xl:self-stretch 2xl:w-auto 2xl:min-w-[420px]">
                         <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
                             {t('closureDashboard.filters.context')}
                             <select
@@ -766,11 +562,11 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                 <option value="pendiente">{statusLabel('pendiente')}</option>
                                 <option value="listo">{statusLabel('listo')}</option>
                                 <option value="bloqueado">{statusLabel('bloqueado')}</option>
-                                <option value="cerrado">{statusLabel('cerrado')}</option>
+                                <option value="finalizado">{statusLabel('finalizado')}</option>
                             </select>
                         </label>
 
-                        <label className="col-span-full flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
+                        <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint sm:col-span-2">
                             {t('closureDashboard.filters.quickSearch')}
                             <input
                                 value={search}
@@ -782,14 +578,14 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-pending-dot bg-surface p-3 shadow-sm">
                         <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.pendingToClose')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.pendientes}</p>
                         <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.pendingReview')}</p>
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-done-dot bg-surface p-3 shadow-sm">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.readyToClose')}</p>
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.readyToFinalize')}</p>
                         <p className="text-2xl font-medium leading-none text-text-main">{metrics.listos}</p>
                         <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.validForClose')}</p>
                     </div>
@@ -810,23 +606,23 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                     </div>
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-state-done-dot bg-surface p-3 shadow-sm">
                         <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.metrics.closedToday')}</p>
-                        <p className="text-2xl font-medium leading-none text-text-main">{metrics.cerradosHoy}</p>
+                        <p className="text-2xl font-medium leading-none text-text-main">{metrics.finalizadosHoy}</p>
                         <p className="mt-1 text-[9px] text-text-hint">{t('closureDashboard.metrics.confirmedClosures')}</p>
                     </div>
                 </div>
 
                 <section className="overflow-hidden rounded-[12px] border border-border bg-surface">
                     <div className="border-b border-border px-4 py-3">
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                             <div>
                                 <h3 className="text-sm font-medium text-text-main">{t('closureDashboard.main.title')}</h3>
                                 <p className="mt-1 text-xs text-text-hint">{t('closureDashboard.main.subtitle')}</p>
                             </div>
-                            <div className="grid w-full grid-cols-2 gap-2 lg:w-auto lg:grid-cols-none lg:auto-cols-max lg:grid-flow-col lg:items-center">
-                                <span className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-text-hint lg:col-span-1">
+                            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto xl:justify-end">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-text-hint sm:mr-auto xl:mr-2">
                                     {t('closureDashboard.main.selectedCount', { count: selectedWorks.length })}
                                 </span>
-                                <label className="inline-flex items-center justify-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-text-main">
+                                <label className="inline-flex w-full items-center justify-between gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-text-main sm:w-auto sm:justify-center">
                                     {t('closureDashboard.main.format')}
                                     <select
                                         value={exportFormat}
@@ -841,7 +637,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                     type="button"
                                     onClick={handleMassMarkReviewed}
                                     disabled={selectedWorks.length === 0}
-                                    className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="inline-flex w-full items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                                 >
                                     <span className="sm:hidden">{t('closureDashboard.actions.shortMarkReviewed')}</span>
                                     <span className="hidden sm:inline">{t('closureDashboard.actions.markReviewed')}</span>
@@ -849,7 +645,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                 <button
                                     type="button"
                                     onClick={() => handleExport('pendiente')}
-                                    className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
+                                    className="inline-flex w-full items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border sm:w-auto"
                                 >
                                     <span className="sm:hidden">{t('closureDashboard.actions.shortExportPending')}</span>
                                     <span className="hidden sm:inline">{t('closureDashboard.actions.exportPending')}</span>
@@ -857,7 +653,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                 <button
                                     type="button"
                                     onClick={() => handleExport('bloqueado')}
-                                    className="inline-flex items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
+                                    className="inline-flex w-full items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border sm:w-auto"
                                 >
                                     <span className="sm:hidden">{t('closureDashboard.actions.shortExportBlocked')}</span>
                                     <span className="hidden sm:inline">{t('closureDashboard.actions.exportBlocked')}</span>
@@ -866,7 +662,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                     type="button"
                                     onClick={handleMassClose}
                                     disabled={!canMassClose}
-                                    className="col-span-2 inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50 lg:col-span-1"
+                                    className="inline-flex w-full items-center justify-center rounded-md bg-(--ciete-red) px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                                 >
                                     {t('closureDashboard.actions.massClose')}
                                 </button>
@@ -903,7 +699,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
 
                                         <p className="mb-2 text-xs font-medium text-text-main">{work.estacion}</p>
 
-                                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] leading-tight">
+                                        <div className="grid grid-cols-1 gap-x-3 gap-y-1 text-[11px] leading-tight sm:grid-cols-2">
                                             <p><span className="text-text-hint">{t('closureDashboard.columns.client')}:</span> {work.cliente}</p>
                                             <p><span className="text-text-hint">{t('closureDashboard.mobile.orderShort')}:</span> {work.numeroPedido}</p>
                                             <p><span className="text-text-hint">{t('closureDashboard.columns.owner')}:</span> {work.responsable}</p>
@@ -923,26 +719,26 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                             <span>{work.incidencias.length} {t('closureDashboard.mobile.incidentsSuffix')}</span>
                                         </div>
 
-                                        <div className="mt-3 grid grid-cols-2 gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleMainAction(work)}
-                                                className={`inline-flex items-center justify-center rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest transition ${
-                                                    closureStatus === 'bloqueado'
-                                                        ? 'bg-state-blocked-bg text-state-blocked-text hover:opacity-90'
-                                                        : closureStatus === 'listo'
-                                                          ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
-                                                          : closureStatus === 'cerrado'
-                                                            ? 'bg-accent/10 text-accent hover:bg-accent/20'
-                                                            : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
-                                                }`}
-                                            >
-                                                {t(closureActionKey(closureStatus))}
-                                            </button>
+                                        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                            {closureStatus !== 'finalizado' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMainAction(work)}
+                                                    className={`inline-flex items-center justify-center rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest transition ${
+                                                        closureStatus === 'bloqueado'
+                                                            ? 'bg-state-blocked-bg text-state-blocked-text hover:opacity-90'
+                                                            : closureStatus === 'listo'
+                                                              ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
+                                                              : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
+                                                    }`}
+                                                >
+                                                    {t(closureActionKey(closureStatus))}
+                                                </button>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() => setActiveWorkId(work.id)}
-                                                className="inline-flex items-center justify-center rounded-md border border-border bg-surface px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
+                                                className={`inline-flex items-center justify-center rounded-md border border-border bg-surface px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border ${closureStatus === 'finalizado' ? 'sm:col-span-2' : ''}`}
                                             >
                                                 {t('closureDashboard.actions.viewDetail')}
                                             </button>
@@ -953,8 +749,9 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                         )}
                     </div>
 
-                    <div className="hidden md:block">
-                        <table className="w-full table-fixed">
+                    <p className="ciete-table-hint hidden md:block">{t('help.sections.mobile.tablesNote')}</p>
+                    <div className="hidden overflow-x-auto overscroll-x-contain md:block">
+                        <table className="min-w-[1480px] w-full table-fixed">
                             <thead className="border-b border-border bg-surface-2">
                                 <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-text-muted">
                                     <th className="w-8 px-2 py-2">
@@ -1004,12 +801,12 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                                         className="rounded-sm border-border"
                                                     />
                                                 </td>
-                                                <td className="px-2 py-2.5 text-[11px] font-semibold leading-tight text-text-main wrap-break-word">{work.cliente}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.estacion}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.numeroAviso}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.numeroPedido}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.tipoTrabajo}</td>
-                                                <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main wrap-break-word">{work.responsable}</td>
+                                                <td className="break-words px-2 py-2.5 text-[11px] font-semibold leading-tight text-text-main">{work.cliente}</td>
+                                                <td className="break-words px-2 py-2.5 text-[11px] leading-tight text-text-main">{work.estacion}</td>
+                                                <td className="break-words px-2 py-2.5 text-[11px] leading-tight text-text-main">{work.numeroAviso}</td>
+                                                <td className="break-words px-2 py-2.5 text-[11px] leading-tight text-text-main">{work.numeroPedido}</td>
+                                                <td className="break-words px-2 py-2.5 text-[11px] leading-tight text-text-main">{work.tipoTrabajo}</td>
+                                                <td className="break-words px-2 py-2.5 text-[11px] leading-tight text-text-main">{work.responsable}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDateValue(work.fechaEncargo)}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-muted">{formatDateValue(work.fechaFinReal)}</td>
                                                 <td className="px-2 py-2.5 text-[11px] leading-tight text-text-main">{formatMoneyValue(work.importePedido)}</td>
@@ -1032,21 +829,21 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                                 </td>
                                                 <td className="px-2 py-2.5">
                                                     <div className="flex flex-col gap-1.5">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleMainAction(work)}
-                                                            className={`inline-flex items-center justify-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition ${
-                                                                closureStatus === 'bloqueado'
-                                                                    ? 'bg-state-blocked-bg text-state-blocked-text hover:opacity-90'
-                                                                    : closureStatus === 'listo'
-                                                                      ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
-                                                                      : closureStatus === 'cerrado'
-                                                                        ? 'bg-accent/10 text-accent hover:bg-accent/20'
-                                                                        : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
-                                                            }`}
-                                                        >
-                                                            {t(closureActionKey(closureStatus))}
-                                                        </button>
+                                                        {closureStatus !== 'finalizado' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleMainAction(work)}
+                                                                className={`inline-flex items-center justify-center rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-widest transition ${
+                                                                    closureStatus === 'bloqueado'
+                                                                        ? 'bg-state-blocked-bg text-state-blocked-text hover:opacity-90'
+                                                                        : closureStatus === 'listo'
+                                                                          ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
+                                                                          : 'bg-state-pending-bg text-state-pending-text hover:opacity-90'
+                                                                }`}
+                                                            >
+                                                                {t(closureActionKey(closureStatus))}
+                                                            </button>
+                                                        )}
                                                         <button
                                                             type="button"
                                                             onClick={() => setActiveWorkId(work.id)}
@@ -1066,7 +863,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                 </section>
 
                 <section className="rounded-[12px] border border-border bg-surface p-4 shadow-sm">
-                    <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <h3 className="text-sm font-medium text-text-main">{t('closureDashboard.incidents.title')}</h3>
                             <p className="mt-1 text-xs text-text-hint">{t('closureDashboard.incidents.subtitle')}</p>
@@ -1074,7 +871,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                         <button
                             type="button"
                             onClick={() => setStatusFilter('bloqueado')}
-                            className="inline-flex items-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border"
+                            className="inline-flex w-full items-center justify-center rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-border sm:w-auto"
                         >
                             {t('closureDashboard.incidents.viewBlocked')}
                         </button>
@@ -1085,7 +882,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                     ) : (
                         <ul className="space-y-2">
                             {closureIncidents.map((incident) => (
-                                <li key={incident.id} className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2">
+                                <li key={incident.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                                     <span className="text-xs font-medium text-text-main">{incident.label}</span>
                                     <span className="inline-flex items-center rounded-full bg-state-blocked-bg px-2 py-0.5 text-[10px] font-bold text-state-blocked-text">
                                         {incident.count}
@@ -1106,8 +903,8 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                         aria-label={t('closureDashboard.detail.closeReviewAria')}
                     />
 
-                    <aside className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl overflow-y-auto border-l border-border bg-surface shadow-2xl">
-                        <div className="sticky top-0 z-10 border-b border-border bg-surface px-5 py-4">
+                    <aside className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full max-w-[min(100vw,48rem)] flex-col overflow-hidden border-l border-border bg-surface shadow-2xl">
+                        <div className="border-b border-border bg-surface px-4 py-4 sm:px-5">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('closureDashboard.detail.title')}</p>
@@ -1125,10 +922,11 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                             </div>
                         </div>
 
-                        <div className="space-y-5 px-5 py-5">
-                            <section className="rounded-[10px] border border-border bg-surface-2 p-4">
+                        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5">
+                            <div className="space-y-5 pb-5">
+                                <section className="rounded-[10px] border border-border bg-surface-2 p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.baseData')}</h4>
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-text-main">
+                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-text-main sm:grid-cols-2">
                                     <p><span className="text-text-hint">{t('closureDashboard.columns.client')}:</span> {activeWork.cliente}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.columns.station')}:</span> {activeWork.estacion}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.columns.noticeNumber')}:</span> {activeWork.numeroAviso}</p>
@@ -1138,9 +936,9 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                     <p><span className="text-text-hint">{t('closureDashboard.columns.assignmentDate')}:</span> {formatDateValue(activeWork.fechaEncargo)}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.columns.realEndDate')}:</span> {formatDateValue(activeWork.fechaFinReal)}</p>
                                 </div>
-                            </section>
+                                </section>
 
-                            <section className="rounded-[10px] border border-border bg-surface-2 p-4">
+                                <section className="rounded-[10px] border border-border bg-surface-2 p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.flowState')}</h4>
                                 <div className="mt-3 flex flex-wrap gap-1.5">
                                     {FLOW_STEPS.map((step, index) => {
@@ -1164,9 +962,9 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                         );
                                     })}
                                 </div>
-                            </section>
+                                </section>
 
-                            <section className="rounded-[10px] border border-border bg-surface-2 p-4">
+                                <section className="rounded-[10px] border border-border bg-surface-2 p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.economicControl')}</h4>
                                 <div className="mt-3 space-y-2 text-xs text-text-main">
                                     <p><span className="text-text-hint">{t('closureDashboard.columns.orderAmount')}:</span> {formatMoneyValue(activeWork.importePedido)}</p>
@@ -1183,9 +981,9 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                         {t('closureDashboard.messages.amountExceeded')}
                                     </p>
                                 )}
-                            </section>
+                                </section>
 
-                            <section className="rounded-[10px] border border-border bg-surface-2 p-4">
+                                <section className="rounded-[10px] border border-border bg-surface-2 p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.legalizations')}</h4>
                                 <div className="mt-3 space-y-2 text-xs text-text-main">
                                     <p>
@@ -1197,14 +995,12 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                     <p><span className="text-text-hint">{t('closureDashboard.detail.notes')}:</span> {activeWork.legalizacionObservaciones}</p>
                                     <p>
                                         <span className="text-text-hint">{t('closureDashboard.detail.closureImpact')}:</span>{' '}
-                                        {activeWork.legalizacionCritica
-                                            ? t('closureDashboard.detail.blocksClosure')
-                                            : t('closureDashboard.detail.doesNotBlockClosure')}
+                                        {t('closureDashboard.metrics.impactsClose')}
                                     </p>
                                 </div>
-                            </section>
+                                </section>
 
-                            <section className="rounded-[10px] border border-border bg-surface-2 p-4">
+                                <section className="rounded-[10px] border border-border bg-surface-2 p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.finalChecklist')}</h4>
                                 <ul className="mt-3 space-y-2">
                                     {detailChecks.map((check) => (
@@ -1221,83 +1017,27 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                         </li>
                                     ))}
                                 </ul>
-                            </section>
+                                </section>
 
-                            <section className="rounded-[10px] border border-border bg-surface-2 p-4">
+                                <section className="rounded-[10px] border border-border bg-surface-2 p-4">
                                 <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.traceability')}</h4>
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-text-main">
+                                <div className="mt-3 grid grid-cols-1 gap-2 text-xs text-text-main sm:grid-cols-2">
                                     <p><span className="text-text-hint">{t('closureDashboard.traceability.markedFinishedBy')}:</span> {activeWork.trazabilidad?.marcadoTerminadoPor || '-'}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.traceability.markedFinishedAt')}:</span> {activeWork.trazabilidad?.fechaMarcadoTerminado || '-'}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.traceability.endDateBy')}:</span> {activeWork.trazabilidad?.fechaFinInformadaPor || '-'}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.traceability.endDateAt')}:</span> {activeWork.trazabilidad?.fechaFinInformadaAt || '-'}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.traceability.amountUpdatedBy')}:</span> {activeWork.trazabilidad?.importeActualizadoPor || '-'}</p>
                                     <p><span className="text-text-hint">{t('closureDashboard.traceability.amountUpdatedAt')}:</span> {activeWork.trazabilidad?.importeActualizadoAt || '-'}</p>
-                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.closedBy')}:</span> {activeWork.trazabilidad?.cerradoPor || '-'}</p>
-                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.closedAt')}:</span> {activeWork.trazabilidad?.fechaCierre ? formatDateValue(activeWork.trazabilidad.fechaCierre) : '-'}</p>
-                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.reopenedBy')}:</span> {activeWork.trazabilidad?.reabiertoPor || '-'}</p>
-                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.reopenedAt')}:</span> {activeWork.trazabilidad?.fechaReapertura ? formatDateValue(activeWork.trazabilidad.fechaReapertura) : '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.finalizedBy')}:</span> {activeWork.trazabilidad?.finalizadoPor || '-'}</p>
+                                    <p><span className="text-text-hint">{t('closureDashboard.traceability.finalizedAt')}:</span> {activeWork.trazabilidad?.fechaFinalizacion ? formatDateValue(activeWork.trazabilidad.fechaFinalizacion) : '-'}</p>
                                 </div>
-                                {activeWork.trazabilidad?.reaperturaMotivo && (
-                                    <p className="mt-2 text-xs text-text-main">
-                                        <span className="text-text-hint">{t('closureDashboard.traceability.reopenReason')}:</span> {activeWork.trazabilidad.reaperturaMotivo}
-                                    </p>
-                                )}
-                            </section>
+                                </section>
+                            </div>
+                        </div>
 
+                        <div className="border-t border-border bg-surface px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:px-5">
                             <section className="rounded-[10px] border border-border bg-surface-2 p-4">
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-text-muted">{t('closureDashboard.detail.sections.finalAction')}</h4>
-
-                                {detailStatus === 'cerrado' ? (
-                                    <div className="mt-3 space-y-2">
-                                        <label className="flex flex-col gap-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
-                                            {t('closureDashboard.traceability.reopenReason')}
-                                            <textarea
-                                                value={reopenReason}
-                                                onChange={(event) => setReopenReason(event.target.value)}
-                                                className="min-h-[84px] rounded-md border-border bg-surface text-xs text-text-main"
-                                            />
-                                        </label>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                router.post(route('cierre.reopen', activeWork.id), {
-                                                    reason: reopenReason,
-                                                }, {
-                                                    preserveScroll: true,
-                                                    onSuccess: () => {
-                                                        setActiveWorkId(null);
-                                                        setReopenReason('');
-                                                    },
-                                                });
-                                            }}
-                                            className="inline-flex items-center rounded-md bg-state-blocked-bg px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-state-blocked-text transition hover:opacity-90"
-                                        >
-                                            {t('closureDashboard.actions.reopenWork')}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="mt-3 space-y-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                router.post(route('cierre.close', activeWork.id), {}, {
-                                                    preserveScroll: true,
-                                                    onSuccess: () => setActiveWorkId(null),
-                                                });
-                                            }}
-                                            disabled={detailStatus !== 'listo'}
-                                            className="inline-flex items-center rounded-md bg-(--ciete-red) px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                            {t('closureDashboard.actions.closeWork')}
-                                        </button>
-
-                                        {(detailStatus !== 'listo' || hasBlockingIssues) && (
-                                            <p className="text-xs text-state-blocked-text">
-                                                {t('closureDashboard.messages.cannotCloseYet')}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
+                                {detailActionNode}
                             </section>
                         </div>
                     </aside>

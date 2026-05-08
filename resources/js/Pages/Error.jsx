@@ -1,26 +1,115 @@
 import CieteMark from '@/Components/CieteMark';
 import ErrorShellLayout from '@/Layouts/ErrorShellLayout';
-import { useI18n } from '@/i18n';
 import { Head } from '@inertiajs/react';
 
-function resolveErrorContent(t, status) {
+const COPY = {
+    es: {
+        pageTitle: 'Error',
+        label: 'Entorno corporativo protegido',
+        codeLabel: 'Error {status}',
+        footer: 'ERP Ciete',
+        statuses: {
+            '401': {
+                title: 'Necesitas una sesión válida',
+                message: 'La acción solicitada requiere una sesión iniciada. Accede de nuevo y continúa desde el menú principal.',
+            },
+            '403': {
+                title: 'Acceso no disponible para tu perfil',
+                message: 'Tu sesión actual no tiene permisos suficientes para abrir esta sección. Puedes seguir navegando por el resto del portal.',
+            },
+            '404': {
+                title: 'La página solicitada no está disponible',
+                message: 'La ruta que intentabas abrir no existe o ya no forma parte del portal actual.',
+            },
+            '419': {
+                title: 'La sesión de la operación ha caducado',
+                message: 'La solicitud ya no es válida por seguridad y debe repetirse desde la pantalla actual.',
+            },
+            '500': {
+                title: 'Se ha producido una incidencia interna temporal',
+                message: 'El sistema no ha podido completar la solicitud correctamente. Vuelve a intentarlo en unos minutos.',
+            },
+            '503': {
+                title: 'Servicio temporalmente no disponible',
+                message: 'El portal está realizando tareas internas o no puede atender la solicitud en este momento.',
+            },
+            generic: {
+                title: 'La solicitud no ha podido completarse',
+                message: 'Se ha producido una incidencia no prevista.',
+            },
+        },
+    },
+    en: {
+        pageTitle: 'Error',
+        label: 'Protected corporate environment',
+        codeLabel: 'Error {status}',
+        footer: 'Ciete ERP',
+        statuses: {
+            '401': {
+                title: 'A valid session is required',
+                message: 'The requested action requires an active session. Sign in again and continue from the main navigation.',
+            },
+            '403': {
+                title: 'This area is not available for your profile',
+                message: 'Your current session does not have enough permissions to open this section.',
+            },
+            '404': {
+                title: 'The requested page is not available',
+                message: 'The route you tried to open does not exist or is no longer part of the current portal.',
+            },
+            '419': {
+                title: 'The operation session has expired',
+                message: 'The request is no longer valid for security reasons and must be repeated from the current screen.',
+            },
+            '500': {
+                title: 'A temporary internal incident has occurred',
+                message: 'The system could not complete the request correctly. Please try again in a few minutes.',
+            },
+            '503': {
+                title: 'Service temporarily unavailable',
+                message: 'The portal is performing internal tasks or cannot process the request right now.',
+            },
+            generic: {
+                title: 'The request could not be completed',
+                message: 'An unexpected incident has occurred.',
+            },
+        },
+    },
+};
+
+function resolveLocale() {
+    if (typeof document === 'undefined') {
+        return 'es';
+    }
+
+    const lang = String(document.documentElement.lang || 'es').toLowerCase();
+
+    return lang.startsWith('en') ? 'en' : 'es';
+}
+
+function format(template, params = {}) {
+    return template.replace(/\{(\w+)\}/g, (_, token) => String(params[token] ?? `{${token}}`));
+}
+
+function resolveErrorContent(locale, status) {
+    const catalog = COPY[locale] ?? COPY.es;
     const key = String(status);
-    const availableKeys = ['401', '403', '404', '419', '500', '503'];
-    const suffix = availableKeys.includes(key) ? key : 'generic';
+    const entry = catalog.statuses[key] ?? catalog.statuses.generic;
 
     return {
-        title: t(`errors.statuses.${suffix}.title`),
-        message: t(`errors.statuses.${suffix}.message`),
+        catalog,
+        title: entry.title,
+        message: entry.message,
     };
 }
 
 export default function ErrorPage({ status = 500 }) {
-    const { t } = useI18n();
-    const { title, message } = resolveErrorContent(t, status);
-    const pageTitle = `${t('errors.pageTitle')} ${status}`;
+    const locale = resolveLocale();
+    const { catalog, title, message } = resolveErrorContent(locale, status);
+    const pageTitle = `${catalog.pageTitle} ${status}`;
 
     return (
-        <ErrorShellLayout header={pageTitle}>
+        <ErrorShellLayout header={pageTitle} footerText={catalog.footer}>
             <Head title={pageTitle} />
 
             <section className="relative overflow-hidden rounded-[28px] border border-border bg-gradient-to-br from-surface via-surface to-surface-2 p-8 shadow-sm md:p-12">
@@ -38,10 +127,10 @@ export default function ErrorPage({ status = 500 }) {
 
                     <div className="max-w-3xl text-center lg:text-left">
                         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-text-hint">
-                            {t('errors.label')}
+                            {catalog.label}
                         </p>
                         <p className="mt-3 text-sm font-semibold uppercase tracking-[0.18em] text-(--ciete-red)">
-                            {t('errors.codeLabel', { status })}
+                            {format(catalog.codeLabel, { status })}
                         </p>
                         <h1 className="mt-4 text-3xl font-semibold tracking-tight text-text-main sm:text-4xl">
                             {title}

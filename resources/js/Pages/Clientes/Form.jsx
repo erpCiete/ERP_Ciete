@@ -1,4 +1,5 @@
 import InputError from '@/Components/InputError';
+import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import { useClientes } from '@/Hooks/useClientes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
@@ -183,7 +184,7 @@ export default function ClientesForm({ clienteId = null }) {
                     <p>{t('clientes.loadError')}</p>
                     <button
                         type="button"
-                        onClick={() => router.visit(route('clientes.index'))}
+                        onClick={() => router.visit(route('maestros.index'))}
                         className="mt-4 text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
                     >
                         {t('common.actions.back')}
@@ -199,14 +200,13 @@ export default function ClientesForm({ clienteId = null }) {
         >
             <Head title={pageTitle} />
 
-            <div className="mx-auto max-w-3xl space-y-6">
-                <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">{t('nav.groups.masters')}</p>
-                    <h1 className="mt-2 text-2xl font-semibold text-text-main">{pageTitle}</h1>
-                    <p className="mt-2 text-sm text-text-muted">
-                        {isEditing ? t('clientes.editDescription') : t('clientes.createDescription')}
-                    </p>
-                </section>
+            <div className="ciete-page max-w-3xl">
+                <ContextualPageHeader
+                    eyebrow={t('nav.groups.masters')}
+                    title={pageTitle}
+                    description={isEditing ? t('clientes.editDescription') : t('clientes.createDescription')}
+                    backHref={route('maestros.index')}
+                />
 
                 <form onSubmit={handleSubmit} noValidate className="space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-sm">
                     <div className="grid gap-5 md:grid-cols-2">
@@ -313,11 +313,11 @@ export default function ClientesForm({ clienteId = null }) {
 
                     {submitError && <p className="text-sm text-primary">{submitError}</p>}
 
-                    <div className="flex items-center justify-between border-t border-border pt-4">
+                    <div className="ciete-form-actions border-0 border-t bg-transparent px-0 py-4 shadow-none sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => router.visit(route('clientes.index'))}
-                            className="text-sm font-medium text-text-muted transition hover:text-text-main"
+                            onClick={() => router.visit(route('maestros.index'))}
+                            className="inline-flex w-full items-center justify-center text-sm font-medium text-text-muted transition hover:text-text-main sm:w-auto"
                         >
                             {t('common.actions.cancel')}
                         </button>
@@ -325,7 +325,7 @@ export default function ClientesForm({ clienteId = null }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-60"
+                            className="inline-flex w-full items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-60 sm:w-auto"
                         >
                             {loading ? t('clientes.saving') : t('common.actions.save')}
                         </button>

@@ -27,7 +27,7 @@ const STATE_STYLES = {
         container: 'bg-state-blocked-bg text-state-blocked-text',
         dot: 'bg-state-blocked-dot',
     },
-    cerrado: {
+    finalizado: {
         container: 'bg-state-closed-bg text-state-closed-text',
         dot: 'bg-state-closed-dot',
     },

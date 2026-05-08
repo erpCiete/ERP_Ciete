@@ -162,8 +162,8 @@ export default function AdminDashboard({
         >
             <Head title={t('adminDashboard.headTitle')} />
 
-            <div className="mx-auto max-w-7xl space-y-5 px-6 py-8">
-                <div className="flex items-start justify-between">
+            <div className="ciete-page ciete-page-wide">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
                             {t('adminDashboard.panelLabel')}
@@ -173,7 +173,7 @@ export default function AdminDashboard({
                     <p className="text-[11px] text-text-hint">{t('adminDashboard.lastAccessToday')}</p>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 md:grid-cols-7">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
                     <div className="rounded-[10px] border border-border border-l-[3px] border-l-primary bg-surface p-3">
                         <p className="mb-1 text-[9px] font-bold uppercase leading-tight tracking-widest text-text-muted">
                             {t('adminDashboard.metrics.activeWorks')}
@@ -435,7 +435,7 @@ export default function AdminDashboard({
                     <div className="border-b border-border px-4 py-3">
                         <h3 className="text-sm font-medium text-text-main">{t('adminDashboard.modules.title')}</h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 p-3 md:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 xl:grid-cols-4">
                         {adminModules.map((module) => (
                             <Link
                                 key={module.key}

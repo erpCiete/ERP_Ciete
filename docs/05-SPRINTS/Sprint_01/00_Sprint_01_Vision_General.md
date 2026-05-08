@@ -1,60 +1,22 @@
-# Sprint 01 · Visión general
+# Sprint 01 - Vision general
 
-## Fechas y capacidad
+> **Documento histórico.**  
+> Este documento refleja una decisión, planificación o análisis anterior del proyecto.  
+> Puede contener nombres, estados, modelos o prioridades ya superadas.  
+> Fuente de verdad vigente: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
 
-- Fechas: 23/03/2026 - 26/03/2026
-- Días efectivos: 4
-- Horas: 20 h
+Estado: vision historica compactada.
 
-## Objetivo conjunto
+La vision vigente del producto esta en:
 
-Arranque técnico y documental del ERP.
+`docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`
 
-## Entregables esperados
+La prioridad vigente esta en:
 
-- Base de documentación de proyecto alineada.
-- Entorno de trabajo común preparado.
-- Criterios de trazabilidad requisito -> sprint definidos.
+`docs/02_CLIENTE/tareasComparar.md`
 
-## Resumen del Sprint 01
+## Uso
 
-### General / Coordinación
+Este documento solo indica que Sprint 01 fue una fase inicial de ordenacion tecnica y funcional.
 
-- Coordinación general del sprint: Pablo
-- Preparación de sprints y reparto inicial: Pablo / Edu / Daniel López
-- Seguimiento transversal back/front: Pablo / Edu / Daniel López
-- Revisión global de cierre: Pablo
-- Control de GitHub, ramas, versiones e integración: Edu
-
-### Front
-
-- Crear el proyecto: Pablo
-- Pantalla de login: Pablo
-- Navbar superior reutilizable: Bascope
-- Recuperar contraseña funcional: Carlos Garrido
-- Revisión de diseño: Daniel López
-- Pantalla inicial: Pablo
-- Menú lateral: Bascope
-- Revisión transversal front: Pablo
-- Multilenguaje base: Pablo
-- Modo claro/oscuro: Pablo
-- Dashboard de administrador: Daniel López
-- Dashboard personal de usuario: Jimmy / Daniel López
-- Componentes básicos reutilizables: Sebas
-- Microinteracciones ligeras: Pablo
-
-### Back
-
-- Endpoints Auth (login/logout + sesión): Puma
-- Middlewares RBAC + conexión BBDD: Chad
-- Contrato API base: Pablo
-- Rutas y controladores stub: Edu / Puchol
-- Cierre técnico Sprint 1: Pablo
-
-### BBDD
-
-- Pulido de base de datos inicial: Pablo
-
-### Docs
-
-- Pruebas Auth/RBAC + documentación API: Sebas / Carlos Garrido
+No usar como alcance actual.

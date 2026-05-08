@@ -17,6 +17,18 @@ abstract class BaseApiRequest extends FormRequest
         return true;
     }
 
+    protected function failedAuthorization(): void
+    {
+        throw new HttpResponseException(
+            $this->errorResponse(
+                $this->authorizationFailureMessage(),
+                'AUTHORIZATION_ERROR',
+                [],
+                403,
+            )
+        );
+    }
+
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(
@@ -52,5 +64,12 @@ abstract class BaseApiRequest extends FormRequest
         return app()->isLocale('en')
             ? 'The provided data is invalid.'
             : 'Los datos proporcionados no son validos.';
+    }
+
+    protected function authorizationFailureMessage(): string
+    {
+        return app()->isLocale('en')
+            ? 'You are not authorized to perform this action.'
+            : 'No autorizado.';
     }
 }

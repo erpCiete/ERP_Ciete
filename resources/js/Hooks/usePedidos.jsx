@@ -66,14 +66,12 @@ export function usePedidos() {
     const irAEditar = (id) => router.visit(route('pedidos.edit', id));
 
     const eliminarPedido = (id, onSuccess) => {
-        if (confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
-            router.delete(route('pedidos.destroy', id), {
-                onSuccess: () => {
-                    if (onSuccess) onSuccess();
-                },
-                preserveScroll: true,
-            });
-        }
+        router.delete(route('pedidos.destroy', id), {
+            onSuccess: () => {
+                if (onSuccess) onSuccess();
+            },
+            preserveScroll: true,
+        });
     };
 
     return {

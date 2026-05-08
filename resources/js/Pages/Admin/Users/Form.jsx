@@ -54,13 +54,12 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
         >
             <Head title={isEditing ? t('adminUsers.editUser') : t('adminUsers.newUser')} />
 
-            <div className="mx-auto max-w-3xl space-y-5 px-6 py-8">
+            <div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6 sm:py-8">
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Datos básicos */}
                     <section className="rounded-[12px] border border-border bg-surface p-5 space-y-4">
                         <h3 className="text-sm font-medium text-text-main">{t('adminUsers.sections.basicInfo')}</h3>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-text-muted">
                                     {t('adminUsers.fields.nombre')}
@@ -77,7 +76,7 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-text-muted">
                                     {t('adminUsers.fields.nombre_usuario')}
@@ -94,7 +93,7 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-text-muted">
                                     {t('adminUsers.fields.password')} {isEditing && <span className="normal-case font-normal">({t('adminUsers.fields.passwordHint')})</span>}
@@ -112,11 +111,10 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
                         </div>
                     </section>
 
-                    {/* Contexto y estado */}
                     <section className="rounded-[12px] border border-border bg-surface p-5 space-y-4">
                         <h3 className="text-sm font-medium text-text-main">{t('adminUsers.sections.contextStatus')}</h3>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-text-muted">
                                     {t('adminUsers.fields.contextoPrincipal')}
@@ -170,7 +168,6 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
                         </div>
                     </section>
 
-                    {/* Roles */}
                     <section className="rounded-[12px] border border-border bg-surface p-5 space-y-4">
                         <h3 className="text-sm font-medium text-text-main">{t('adminUsers.sections.roles')}</h3>
                         <div className="flex flex-wrap gap-2">
@@ -192,12 +189,14 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
                         {errors.roles && <p className="mt-1 text-[10px] text-state-blocked-text">{errors.roles}</p>}
                     </section>
 
-                    {/* Acciones */}
-                    <div className="flex items-center justify-between">
-                        <Link href={route('admin.users.index')} className="text-xs text-text-hint hover:text-text-muted">
-                            ← {t('adminUsers.backToList')}
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <Link
+                            href={route('maestros.index')}
+                            className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-main transition hover:bg-surface-2"
+                        >
+                            Volver a maestros
                         </Link>
-                        <button type="submit" disabled={processing} className="ciete-btn-primary text-xs">
+                        <button type="submit" disabled={processing} className="ciete-btn-primary w-full text-xs sm:w-auto">
                             {processing ? t('adminUsers.saving') : isEditing ? t('adminUsers.updateUser') : t('adminUsers.createUser')}
                         </button>
                     </div>

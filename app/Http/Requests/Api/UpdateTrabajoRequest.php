@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\EstacionServicio;
+use App\Models\Trabajo;
+use App\Support\ContextGuard;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -27,26 +29,32 @@ class UpdateTrabajoRequest extends FormRequest
     {
         return [
             'id_contexto' => ['nullable', 'integer'],
-            'numero_trabajo' => ['required', 'string', 'max:50'],
-            'descripcion_trabajo' => ['required', 'string', 'max:150'],
-            'id_estacion_servicio' => ['required', 'exists:estaciones_servicio,id_estacion_servicio'],
-            'fecha_encargo' => ['required', 'date'],
+            'numero_trabajo' => ['sometimes', 'required', 'integer'],
+            'numero_trabajo_operativo' => ['nullable', 'string', 'max:100'],
+            'descripcion_trabajo' => ['sometimes', 'required', 'string', 'max:150'],
+            'id_estacion_servicio' => ['sometimes', 'required', 'exists:estaciones_servicio,id_estacion_servicio'],
+            'fecha_encargo' => ['sometimes', 'required', 'date'],
             'fecha_terminacion' => ['nullable', 'date'],
-            'estado' => ['required', Rule::in(['borrador', 'en_curso', 'terminado', 'cerrado', 'cancelado'])],
+            'estado' => ['sometimes', 'required', Rule::in(Trabajo::ESTADOS_FUNCIONALES)],
             'observaciones' => ['nullable', 'string'],
+            'id_responsable_ciete' => [
+                'nullable',
+                'integer',
+                Rule::exists('usuarios', 'id_usuario')->where(fn ($query) => $query->where('activo', true)),
+            ],
             'id_contrato' => [
-                Rule::requiredIf(fn () => $this->esCliente(1)),
+                Rule::requiredIf(fn () => $this->esContexto('moeve')),
                 'nullable',
                 'integer',
             ],
             'categoria' => ['nullable', 'string', 'max:100'],
             'id_tipo_documento' => [
-                Rule::requiredIf(fn () => $this->esCliente(2)),
+                Rule::requiredIf(fn () => $this->esContexto('repsol')),
                 'nullable',
                 'integer',
             ],
             'id_tipo_trabajo' => [
-                Rule::requiredIf(fn () => $this->esCliente(2)),
+                Rule::requiredIf(fn () => $this->esContexto('repsol')),
                 'nullable',
                 'integer',
             ],
@@ -59,7 +67,7 @@ class UpdateTrabajoRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $user = $this->user();
             $selectedContextId = (int) ($this->input('id_contexto') ?: 0);
-            $accessibleContextIds = $user?->getAccessibleContextIds() ?? [];
+            $accessibleContextIds = $user?->getActiveContextIds() ?? [];
 
             if ($selectedContextId > 0 && ! in_array($selectedContextId, $accessibleContextIds, true)) {
                 $validator->errors()->add('id_contexto', 'El contexto seleccionado no está disponible para tu usuario.');
@@ -85,7 +93,7 @@ class UpdateTrabajoRequest extends FormRequest
         });
     }
 
-    private function esCliente(int $idContexto): bool
+    private function esContexto(string $workspaceKey): bool
     {
         if (! $this->id_estacion_servicio) {
             return false;
@@ -93,6 +101,6 @@ class UpdateTrabajoRequest extends FormRequest
 
         $estacion = EstacionServicio::withoutGlobalScopes()->find($this->id_estacion_servicio);
 
-        return $estacion && (int) $estacion->id_contexto === $idContexto;
+        return $estacion && ContextGuard::workspaceKeyForContextId((int) $estacion->id_contexto) === $workspaceKey;
     }
 }

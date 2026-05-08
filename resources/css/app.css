@@ -70,6 +70,7 @@
 
     --color-client-repsol: var(--theme-client-repsol);
     --color-client-moeve: var(--theme-client-moeve);
+    --color-client-others: var(--theme-client-others);
     --color-client-bp: var(--theme-client-bp);
     --color-client-galp: var(--theme-client-galp);
 }
@@ -132,15 +133,120 @@
     @apply rounded-xl border border-border bg-surface p-6 shadow-sm;
 }
 
+@utility ciete-page {
+    @apply mx-auto w-full space-y-6 py-4 lg:py-6;
+}
+
+@utility ciete-page-wide {
+    @apply max-w-7xl;
+}
+
+@utility ciete-page-full {
+    @apply max-w-full;
+}
+
+@utility ciete-page-reading {
+    @apply max-w-5xl;
+}
+
+@utility ciete-page-form {
+    @apply max-w-6xl;
+}
+
+@utility ciete-page-header {
+    @apply flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5 shadow-sm lg:p-6 xl:flex-row xl:items-end xl:justify-between;
+}
+
+@utility ciete-filter-bar {
+    @apply rounded-2xl border border-border bg-surface p-4 shadow-sm;
+}
+
+@utility ciete-filter-row {
+    @apply flex flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-center;
+}
+
+@utility ciete-filter-group {
+    @apply flex flex-col gap-2 sm:flex-row sm:items-center;
+}
+
+@utility ciete-table-card {
+    @apply overflow-hidden rounded-2xl border border-border bg-surface shadow-sm;
+}
+
+@utility ciete-table-scroll {
+    @apply overflow-x-auto overscroll-x-contain;
+}
+
+@utility ciete-form-actions {
+    @apply flex flex-col-reverse gap-3 rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6;
+}
+
+@utility ciete-table-hint {
+    @apply px-4 py-2 text-xs text-text-hint sm:px-5;
+}
+
 @layer base {
     :root {
         --ciete-red: var(--color-primary);
         --ciete-red-dark: var(--color-primary-hover);
         --ciete-slate: var(--color-text-main);
+        --app-shell-header-height: 4.5rem;
+        --workspace-context-accent: var(--color-client-moeve);
+        --workspace-context-accent-soft: color-mix(in srgb, var(--color-client-moeve) 58%, transparent);
+        --workspace-context-accent-line: color-mix(in srgb, var(--color-client-moeve) 24%, transparent);
+    }
+
+    :root[data-workspace-context='moeve'] {
+        --workspace-context-accent: var(--color-client-moeve);
+        --workspace-context-accent-soft: color-mix(in srgb, var(--color-client-moeve) 58%, transparent);
+        --workspace-context-accent-line: color-mix(in srgb, var(--color-client-moeve) 24%, transparent);
+    }
+
+    :root[data-workspace-context='repsol'] {
+        --workspace-context-accent: var(--color-client-repsol);
+        --workspace-context-accent-soft: color-mix(in srgb, var(--color-client-repsol) 58%, transparent);
+        --workspace-context-accent-line: color-mix(in srgb, var(--color-client-repsol) 24%, transparent);
+    }
+
+    :root[data-workspace-context='otros'] {
+        --workspace-context-accent: var(--color-client-others);
+        --workspace-context-accent-soft: color-mix(in srgb, var(--color-client-others) 54%, transparent);
+        --workspace-context-accent-line: color-mix(in srgb, var(--color-client-others) 22%, transparent);
     }
 
     html,
     body {
         @apply bg-page text-text-main font-sans;
+    }
+
+    html,
+    body,
+    #app {
+        min-height: 100%;
+    }
+
+    html,
+    body {
+        overflow-x: hidden;
+    }
+
+    html.theme-switching,
+    html.theme-switching body,
+    html.theme-switching body *,
+    html.theme-switching body *::before,
+    html.theme-switching body *::after {
+        transition:
+            background-color 180ms ease,
+            border-color 180ms ease,
+            color 180ms ease,
+            fill 180ms ease,
+            stroke 180ms ease,
+            box-shadow 180ms ease;
+    }
+}
+
+@layer components {
+    .ciete-context-card {
+        position: relative;
     }
 }

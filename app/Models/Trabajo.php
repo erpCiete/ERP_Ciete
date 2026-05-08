@@ -7,11 +7,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Trabajo extends Model
 {
     use HasFactory;
     use HasContext;
+
+    public const ESTADOS_FUNCIONALES = [
+        'en_curso',
+        'terminado',
+        'pendiente_facturar',
+        'facturado',
+        'finalizado',
+        'cancelado',
+    ];
 
     protected $table = 'trabajos';
 
@@ -26,8 +36,8 @@ class Trabajo extends Model
         'id_contrato',
         'id_tarifario',
         'id_responsable_ciete',
-        'id_usuario_cierre',
         'numero_trabajo',
+        'numero_trabajo_operativo',
         'numero_estacion',
         'zona',
         'descripcion_trabajo',
@@ -39,19 +49,16 @@ class Trabajo extends Model
         'categoria',
         'responsable_cliente',
         'estado',
-        'cerrado',
         'bloqueado_cierre',
-        'fecha_cierre',
         'activo',
     ];
 
     protected function casts(): array
     {
         return [
+            'numero_trabajo' => 'integer',
             'fecha_encargo' => 'date',
             'fecha_terminacion' => 'date',
-            'fecha_cierre' => 'datetime',
-            'cerrado' => 'boolean',
             'bloqueado_cierre' => 'boolean',
         ];
     }
@@ -91,19 +98,25 @@ class Trabajo extends Model
         return $this->belongsTo(User::class, 'id_responsable_ciete', 'id_usuario');
     }
 
-    public function usuarioCierre(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'id_usuario_cierre', 'id_usuario');
-    }
-
     public function pedidos(): HasMany
     {
         return $this->hasMany(Pedido::class, 'id_trabajo', 'id_trabajo');
     }
 
+    public function primerPedido(): HasOne
+    {
+        return $this->hasOne(Pedido::class, 'id_trabajo', 'id_trabajo')
+            ->oldestOfMany('fecha_solicitud');
+    }
+
     public function facturas(): HasMany
     {
         return $this->hasMany(Factura::class, 'id_trabajo', 'id_trabajo');
+    }
+
+    public function numeroTrabajoVisible(): string
+    {
+        return (string) ($this->numero_trabajo_operativo ?: $this->numero_trabajo);
     }
 
     public function presupuestos(): HasMany
@@ -114,5 +127,15 @@ class Trabajo extends Model
     public function legalizaciones(): HasMany
     {
         return $this->hasMany(Legalizacion::class, 'id_trabajo', 'id_trabajo');
+    }
+
+    public function isFunctionallyFinalized(): bool
+    {
+        return $this->estado === 'finalizado';
+    }
+
+    public function isProtectedFinalizedState(): bool
+    {
+        return $this->isFunctionallyFinalized();
     }
 }

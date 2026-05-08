@@ -40,7 +40,7 @@ export default function Support() {
         <AuthenticatedLayout header={t('supportPage.header')}>
             <Head title={t('supportPage.headTitle')} />
 
-            <div className="mx-auto max-w-2xl space-y-5 pb-10">
+            <div className="ciete-page max-w-4xl">
                 <div>
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
                         {t('supportPage.eyebrow')}
@@ -56,18 +56,21 @@ export default function Support() {
                     </div>
                 )}
 
-                <div className="rounded-xl border border-border bg-surface p-5">
-                    <div className="mb-4 flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-2">
-                            <LifeBuoy size={16} className="text-text-muted" />
+                <div className="rounded-xl border border-border bg-surface p-5 lg:p-6">
+                    <div className="mb-5 grid gap-5 xl:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]">
+                        <div className="rounded-xl border border-border bg-surface-2 p-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface">
+                                    <LifeBuoy size={16} className="text-text-muted" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="truncate text-xs font-semibold text-text-main">{user?.nombre} {user?.apellidos}</p>
+                                    <p className="truncate text-[10px] text-text-hint">{user?.email}</p>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-xs font-semibold text-text-main">{user?.nombre} {user?.apellidos}</p>
-                            <p className="text-[10px] text-text-hint">{user?.email}</p>
-                        </div>
-                    </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-text-hint">
                                 {t('supportPage.topicLabel')}
@@ -136,13 +139,14 @@ export default function Support() {
                             <button
                                 type="submit"
                                 disabled={processing}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+                                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50 sm:w-auto"
                             >
                                 <Send size={14} />
                                 {t('supportPage.submit')}
                             </button>
                         </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 <p className="text-center text-[10px] uppercase tracking-widest text-text-hint">

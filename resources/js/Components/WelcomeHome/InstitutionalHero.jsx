@@ -1,4 +1,5 @@
 import CieteParticleLogoCanvas from '@/Components/WelcomeHome/CieteParticleLogoCanvas';
+import ContextualTitle from '@/Components/ContextualTitle';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme';
 import { motion } from 'framer-motion';
@@ -18,7 +19,7 @@ export default function InstitutionalHero({ shouldReduceMotion = false, featured
         : '';
 
     return (
-        <article className="group relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-surface px-6 py-8 shadow-sm sm:px-8 sm:py-10">
+        <article className="ciete-context-card group relative mx-auto w-full overflow-hidden rounded-2xl border border-border bg-surface px-6 py-8 shadow-sm sm:px-8 sm:py-10">
             <div className="pointer-events-none absolute inset-0 opacity-[0.35]">
                 <svg
                     aria-hidden
@@ -90,9 +91,12 @@ export default function InstitutionalHero({ shouldReduceMotion = false, featured
                         ))}
                     </div>
 
-                    <h1 className="text-3xl font-semibold tracking-tight text-(--ciete-slate) sm:text-4xl">
-                        {t('welcome.home.hero.title')}
-                    </h1>
+                    <ContextualTitle
+                        title={t('welcome.home.hero.title')}
+                        className="text-3xl tracking-tight sm:text-4xl"
+                        titleClassName="font-semibold text-(--ciete-slate)"
+                        contextClassName="text-base font-medium text-text-muted sm:text-lg"
+                    />
                     <p className="mt-3 text-base font-medium text-text-main sm:text-lg">
                         {t('welcome.home.hero.subtitle')}
                     </p>

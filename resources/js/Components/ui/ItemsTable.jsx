@@ -6,7 +6,10 @@ import { useI18n } from '@/i18n';
 
 // ─── Línea vacía por defecto ──────────────────────────────────────────────────
 export const EMPTY_ITEM = {
+    id_pedido_item:      null,
+    id_tarifario_linea:  null,
     codigo_servicio:     '',
+    numero_tarifa:       '',
     descripcion_servicio:'',
     cantidad:            1,
     precio_unitario:     0,
@@ -56,10 +59,13 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
     // ─────────────────────────────────────────────────────────────────────────
     return (
         <div className="space-y-3">
+            <p className="text-xs text-text-hint">
+                {t('help.sections.mobile.tablesNote') ?? 'En pantallas pequeñas esta tabla se desplaza horizontalmente dentro del bloque.'}
+            </p>
 
             {/* ── Tabla de líneas ───────────────────────────────────────────── */}
-            <div className="overflow-x-auto rounded-xl border border-border">
-                <table className="min-w-full divide-y divide-border text-sm">
+            <div className="overflow-x-auto rounded-xl border border-border overscroll-x-contain">
+                <table className="min-w-[760px] w-full divide-y divide-border text-sm">
                     <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                         <tr>
                             <th className="px-3 py-2 w-32">
@@ -99,9 +105,12 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
 
                         {items.map((item, index) => {
                             const errLinea = errors[`items.${index}`] ?? {};
+                            const isFacturado = Boolean(
+                                item.esta_facturado || Number(item.factura_items_count ?? 0) > 0,
+                            );
 
                             return (
-                                <tr key={index} className="group">
+                                <tr key={item.id_pedido_item ?? index} className="group">
                                     {/* Código de servicio */}
                                     <td className="px-3 py-2 align-top">
                                         <input
@@ -209,9 +218,16 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                                         <td className="px-3 py-2 align-top text-center">
                                             <button
                                                 type="button"
-                                                onClick={() => eliminarLinea(index)}
-                                                title={t('pedidos.items.removeLine') ?? 'Eliminar línea'}
-                                                className="rounded p-1 text-text-hint transition hover:bg-red-50 hover:text-(--ciete-red)"
+                                                onClick={() => {
+                                                    if (!isFacturado) eliminarLinea(index);
+                                                }}
+                                                disabled={isFacturado}
+                                                title={
+                                                    isFacturado
+                                                        ? 'Esta linea ya esta vinculada a factura y no se puede eliminar.'
+                                                        : (t('pedidos.items.removeLine') ?? 'Eliminar linea')
+                                                }
+                                                className="rounded p-1 text-text-hint transition hover:bg-red-50 hover:text-(--ciete-red) disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-text-hint"
                                             >
                                                 {/* Icono X */}
                                                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -254,9 +270,9 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                 <button
                     type="button"
                     onClick={añadirLinea}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-border
                                px-4 py-2 text-sm font-medium text-text-hint transition
-                               hover:border-(--ciete-red) hover:text-(--ciete-red)"
+                               hover:border-(--ciete-red) hover:text-(--ciete-red) sm:w-auto"
                 >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

@@ -1,5 +1,10 @@
 # BE-06 · Contrato API Base (Sprint 01)
 
+> **Documento histórico.**  
+> Este documento refleja una decisión, planificación o análisis anterior del proyecto.  
+> Puede contener nombres, estados, modelos o prioridades ya superadas.  
+> Fuente de verdad vigente: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+
 **Estado:** Done  
 **Owner:** Backend  
 **Fecha de revision:** 27/03/2026
@@ -118,4 +123,3 @@ Response OK:
 - Contrato API base documentado y alineado con el codigo actual.
 - Endpoints de auth y stubs disponibles para integracion.
 - Campo de login documentado de forma coherente con validacion actual.
-

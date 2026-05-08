@@ -3,14 +3,26 @@
 namespace App\Http\Requests\Api;
 
 use App\Rules\ValidSpanishTaxId;
+use App\Support\ContextGuard;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 
 class ClienteStoreRequest extends BaseApiRequest
 {
+    public function authorize(): bool
+    {
+        return ContextGuard::canCreateInActiveContext($this->user());
+    }
+
+    protected function authorizationFailureMessage(): string
+    {
+        return ContextGuard::CREATE_FROM_ALL_MESSAGE;
+    }
+
     public function rules(): array
     {
-        $contextId = Auth::user()?->id_contexto;
+        $user = Auth::user();
+        $activeContextIds = $user?->getActiveContextIds() ?? [];
 
         return [
             'nombre' => [
@@ -18,7 +30,7 @@ class ClienteStoreRequest extends BaseApiRequest
                 'string',
                 'max:180',
                 Rule::unique('empresas', 'nombre')->where(
-                    fn($query) => $query->where('id_contexto', $contextId)
+                    fn($query) => $query->whereIn('id_contexto', $activeContextIds)
                 ),
             ],
             'nombre_comercial' => ['nullable', 'string', 'max:180'],
@@ -29,7 +41,7 @@ class ClienteStoreRequest extends BaseApiRequest
                 'size:9',
                 new ValidSpanishTaxId(),
                 Rule::unique('empresas', 'cif')->where(
-                    fn($query) => $query->where('id_contexto', $contextId)
+                    fn($query) => $query->whereIn('id_contexto', $activeContextIds)
                 ),
             ],
             'tipo_empresa' => ['sometimes', Rule::in(['cliente', 'proveedor', 'cliente_proveedor', 'interna', 'otra'])],

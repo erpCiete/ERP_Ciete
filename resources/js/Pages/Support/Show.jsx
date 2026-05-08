@@ -68,7 +68,7 @@ export default function SupportShow({ ticket }) {
         <AuthenticatedLayout header={t('supportPage.header')}>
             <Head title={`${t('supportPage.header')} #${ticket.id_solicitud_soporte}`} />
 
-            <div className="mx-auto max-w-4xl space-y-5 pb-10">
+            <div className="ciete-page ciete-page-reading">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Link href={route('support')} className="inline-flex items-center gap-1.5 text-xs text-text-muted transition hover:text-text-main">
                         <ArrowLeft size={14} />
@@ -107,7 +107,7 @@ export default function SupportShow({ ticket }) {
                         </div>
                     </div>
 
-                    <div className="mt-4 grid gap-3 text-xs text-text-muted sm:grid-cols-3">
+                    <div className="mt-4 grid gap-3 text-xs text-text-muted lg:grid-cols-3">
                         <div className="rounded-lg bg-surface-2 px-3 py-2">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('supportPage.createdAt')}</p>
                             <p className="mt-1">{new Date(ticket.created_at).toLocaleString()}</p>
@@ -178,7 +178,7 @@ export default function SupportShow({ ticket }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50 sm:w-auto"
                                 >
                                     <Send size={14} />
                                     {t('supportPage.sendReply')}

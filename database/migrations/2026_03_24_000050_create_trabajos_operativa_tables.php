@@ -7,7 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Flujo operativo principal: trabajos, pedidos, pedido_items, facturas, factura_pedidos, cobros.
+     * Flujo operativo principal: trabajos, pedidos, pedido_items, facturas.
+     * Cobros queda disponible como modulo auxiliar/legacy, fuera del flujo vivo CIETE.
      */
     public function up(): void
     {
@@ -21,10 +22,10 @@ return new class extends Migration
             $table->unsignedBigInteger('id_contrato')->nullable();
             $table->unsignedBigInteger('id_tarifario')->nullable();
             $table->unsignedBigInteger('id_responsable_ciete')->nullable();
-            $table->unsignedBigInteger('id_usuario_cierre')->nullable();
 
             // Identificadores
             $table->unsignedInteger('numero_trabajo');
+            $table->string('numero_trabajo_operativo', 100)->nullable();
             $table->string('numero_estacion', 30)->nullable();
             $table->string('zona', 10)->nullable();
 
@@ -45,11 +46,9 @@ return new class extends Migration
             $table->string('responsable_cliente', 150)->nullable();
 
             // Estado y workflow
-            $table->enum('estado', ['borrador', 'en_curso', 'terminado', 'cerrado', 'cancelado'])
-                ->default('borrador');
-            $table->boolean('cerrado')->default(false);
+            $table->enum('estado', ['en_curso', 'terminado', 'pendiente_facturar', 'facturado', 'finalizado', 'cancelado'])
+                ->default('en_curso');
             $table->boolean('bloqueado_cierre')->default(false);
-            $table->dateTime('fecha_cierre')->nullable();
 
             $table->timestamps();
 
@@ -62,6 +61,7 @@ return new class extends Migration
             $table->index(['id_tipo_trabajo', 'id_contexto'], 'idx_trabajos_tipo_trab_contexto');
             $table->index(['id_contrato', 'id_contexto'], 'idx_trabajos_contrato_contexto');
             $table->index(['id_tarifario', 'id_contexto'], 'idx_trabajos_tarifario_contexto');
+            $table->index(['id_contexto', 'numero_trabajo_operativo'], 'idx_trabajos_contexto_numero_operativo');
             $table->index(['estado', 'id_contexto'], 'idx_trabajos_estado_contexto');
             $table->index('id_responsable_ciete', 'idx_trabajos_responsable');
             $table->index(['fecha_encargo', 'id_contexto'], 'idx_trabajos_fecha_encargo_contexto');
@@ -117,11 +117,6 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
 
-            $table->foreign('id_usuario_cierre', 'fk_trabajos_usuario_cierre')
-                ->references('id_usuario')
-                ->on('usuarios')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
         });
 
         Schema::create('pedidos', function (Blueprint $table) {
@@ -151,7 +146,7 @@ return new class extends Migration
                 'en_ejecucion',
                 'facturado_parcial',
                 'facturado',
-                'cerrado',
+                'cancelado',
                 'anulado',
             ])->default('pendiente');
 
@@ -230,8 +225,10 @@ return new class extends Migration
         Schema::create('facturas', function (Blueprint $table) {
             $table->bigIncrements('id_factura');
             $table->unsignedBigInteger('id_contexto');
-            $table->unsignedBigInteger('id_trabajo');
+            $table->unsignedBigInteger('id_trabajo')->nullable();
+            $table->unsignedBigInteger('id_contrato')->nullable();
             $table->unsignedBigInteger('id_empresa_cliente');
+            $table->unsignedBigInteger('id_empresa_facturadora')->nullable();
 
             // Identificación
             $table->string('numero_factura', 100)->nullable();
@@ -257,9 +254,6 @@ return new class extends Migration
                 'solicitada',
                 'emitida',
                 'enviada',
-                'cobrada_parcial',
-                'cobrada',
-                'vencida',
                 'anulada',
             ])->default('pendiente');
             $table->boolean('autofactura')->default(false);
@@ -273,10 +267,13 @@ return new class extends Migration
             $table->index('id_contexto', 'idx_facturas_contexto');
             $table->index(['id_factura', 'id_contexto'], 'idx_facturas_id_contexto');
             $table->index(['id_trabajo', 'id_contexto'], 'idx_facturas_trabajo_contexto');
+            $table->index(['id_contrato', 'id_contexto'], 'idx_facturas_contrato_contexto');
             $table->index(['id_empresa_cliente', 'id_contexto'], 'idx_facturas_empresa_contexto');
+            $table->index(['id_empresa_facturadora', 'id_contexto'], 'idx_facturas_empresa_facturadora_contexto');
             $table->index(['numero_factura', 'id_contexto'], 'idx_facturas_numero_contexto');
             $table->index(['estado', 'id_contexto'], 'idx_facturas_estado_contexto');
             $table->index(['fecha_emision', 'id_contexto'], 'idx_facturas_fecha_contexto');
+            $table->unique(['id_contexto', 'id_empresa_facturadora', 'numero_factura'], 'uq_facturas_ctx_facturadora_numero');
 
             $table->foreign('id_contexto', 'fk_facturas_contexto')
                 ->references('id_contexto')
@@ -288,35 +285,25 @@ return new class extends Migration
                 ->references(['id_trabajo', 'id_contexto'])
                 ->on('trabajos')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
+
+            $table->foreign(['id_contrato', 'id_contexto'], 'fk_facturas_contrato_contexto')
+                ->references(['id_contrato', 'id_contexto'])
+                ->on('contratos')
+                ->cascadeOnUpdate()
+                ->restrictOnDelete();
 
             $table->foreign(['id_empresa_cliente', 'id_contexto'], 'fk_facturas_empresa_contexto')
                 ->references(['id_empresa', 'id_contexto'])
                 ->on('empresas')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
-        });
 
-        Schema::create('factura_pedidos', function (Blueprint $table) {
-            $table->bigIncrements('id_factura_pedido');
-            $table->unsignedBigInteger('id_factura');
-            $table->unsignedBigInteger('id_pedido');
-            $table->decimal('importe_aplicado', 14, 2)->nullable();
-            $table->timestamps();
-
-            $table->unique(['id_factura', 'id_pedido'], 'uq_factura_pedido');
-
-            $table->foreign('id_factura', 'fk_factura_pedidos_factura')
-                ->references('id_factura')
-                ->on('facturas')
+            $table->foreign(['id_empresa_facturadora', 'id_contexto'], 'fk_facturas_empresa_facturadora_contexto')
+                ->references(['id_empresa', 'id_contexto'])
+                ->on('empresas')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
-            $table->foreign('id_pedido', 'fk_factura_pedidos_pedido')
-                ->references('id_pedido')
-                ->on('pedidos')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
         });
 
         Schema::create('cobros', function (Blueprint $table) {
@@ -362,7 +349,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('cobros');
-        Schema::dropIfExists('factura_pedidos');
         Schema::dropIfExists('facturas');
         Schema::dropIfExists('pedido_items');
         Schema::dropIfExists('pedidos');

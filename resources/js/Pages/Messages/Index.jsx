@@ -70,9 +70,9 @@ function ComposeModal({ users, isAdmin, onClose, t }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center" onClick={onClose}>
             <div
-                className="w-full max-w-lg rounded-2xl border border-border bg-surface p-5 shadow-xl"
+                className="w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-border bg-surface p-5 shadow-xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="mb-4 flex items-center justify-between">
@@ -159,18 +159,18 @@ function ComposeModal({ users, isAdmin, onClose, t }) {
                         </select>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-2">
+                    <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2"
+                            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 sm:w-auto"
                         >
                             {t('common.actions.cancel')}
                         </button>
                         <button
                             type="submit"
                             disabled={processing}
-                            className="rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+                            className="w-full rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50 sm:w-auto"
                         >
                             <Send size={12} className="mr-1 inline" />
                             {t('messages.send')}
@@ -195,7 +195,7 @@ export default function MessagesIndex({ messages, tab = 'inbox', unreadCount = 0
         <AuthenticatedLayout header={t('messages.header')}>
             <Head title={t('messages.headTitle')} />
 
-            <div className="mx-auto max-w-3xl space-y-5 pb-10">
+            <div className="ciete-page ciete-page-reading">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
@@ -206,7 +206,7 @@ export default function MessagesIndex({ messages, tab = 'inbox', unreadCount = 0
                     <button
                         type="button"
                         onClick={() => setShowCompose(true)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90"
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white transition hover:opacity-90 sm:w-auto"
                     >
                         <Plus size={14} />
                         {t('messages.newMessage')}
@@ -242,7 +242,7 @@ export default function MessagesIndex({ messages, tab = 'inbox', unreadCount = 0
                                             {senderName.charAt(0)}
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <div className="flex items-center justify-between gap-2">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
                                                 <p className={`truncate text-xs ${isUnread ? 'font-bold text-text-main' : 'text-text-muted'}`}>
                                                     {tab === 'sent' ? (msg.destinatario ? `${msg.destinatario.nombre} ${msg.destinatario.apellidos ?? ''}`.trim() : '—') : senderName}
                                                 </p>

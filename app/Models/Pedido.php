@@ -57,15 +57,14 @@ class Pedido extends Model
         return $this->belongsTo(Trabajo::class, 'id_trabajo', 'id_trabajo');
     }
 
+    public function tarifario(): BelongsTo
+    {
+        return $this->belongsTo(Tarifario::class, 'id_tarifario', 'id_tarifario');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(PedidoItem::class, 'id_pedido', 'id_pedido');
     }
 
-    public function facturas()
-    {
-        return $this->belongsToMany(Factura::class, 'factura_pedidos', 'id_pedido', 'id_factura')
-            ->withPivot('importe_aplicado')
-            ->withTimestamps();
-    }
 }

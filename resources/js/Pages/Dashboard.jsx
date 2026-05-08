@@ -6,7 +6,7 @@ function resolveStatusKey(status) {
     const normalized = String(status ?? '').trim().toLowerCase();
     if (['en curso', 'in progress', 'en_curso'].includes(normalized)) return 'inProgress';
     if (['aprobado', 'approved', 'terminado'].includes(normalized)) return 'approved';
-    if (['pendiente', 'pending', 'borrador'].includes(normalized)) return 'pending';
+    if (['pendiente', 'pending'].includes(normalized)) return 'pending';
     if (['por validar', 'to validate'].includes(normalized)) return 'toValidate';
     if (['urgente', 'urgent'].includes(normalized)) return 'urgent';
     if (['activo', 'active'].includes(normalized)) return 'active';
@@ -45,31 +45,31 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
         >
             <Head title={t('dashboard.headTitle')} />
 
-            <div className="mx-auto max-w-7xl space-y-6 px-6 py-8">
+            <div className="mx-auto max-w-7xl space-y-6 py-4 lg:py-6">
                 {/* BIENVENIDA */}
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('dashboard.sectionLabel')}</p>
                         <h2 className="text-xl font-semibold text-text-main">{t('dashboard.welcomeUser', { name: user.nombre_usuario })}</h2>
                     </div>
-                    <div className="flex flex-col items-end gap-2 text-right">
+                    <div className="flex w-full flex-col gap-2 text-left sm:w-auto sm:items-end sm:text-right">
                         <p className="text-[11px] text-text-hint">{t('dashboard.lastAccessToday')}</p>
-                        <Link href={route('profile.edit')} className="ciete-btn-secondary text-xs">{t('dashboard.myProfile')}</Link>
+                        <Link href={route('profile.edit')} className="ciete-btn-secondary w-full text-xs sm:w-auto">{t('dashboard.myProfile')}</Link>
                     </div>
                 </div>
 
                 {/* BOTONES DE ACCIÓN */}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     {user.can_access_direction_panel && (
-                        <Link href={route('cierre.dashboard')} className="ciete-btn-secondary">{t('nav.closurePanel')}</Link>
+                        <Link href={route('cierre.dashboard')} className="ciete-btn-secondary w-full sm:w-auto">{t('nav.closurePanel')}</Link>
                     )}
                     {user.is_admin && (
-                        <Link href={route('admin.dashboard')} className="ciete-btn-primary">{t('dashboard.adminPanel')}</Link>
+                        <Link href={route('admin.dashboard')} className="ciete-btn-primary w-full sm:w-auto">{t('dashboard.adminPanel')}</Link>
                     )}
                 </div>
 
                 {/* MÉTRICAS (Simples Cards) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="rounded-[12px] border border-border border-l-[3px] border-l-primary bg-surface p-5 shadow-sm">
                         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-text-muted">{t('dashboard.metrics.activeWorks')}</p>
                         <p className="text-4xl font-medium text-text-main">{obras.length}</p>
@@ -85,7 +85,7 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                 </div>
 
                 {/* CUADRÍCULA DE TABLAS (Aquí está la magia) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     
                     {/* COLUMNA IZQUIERDA: OBRAS */}
                     <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
@@ -100,12 +100,12 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                         ) : (
                             <div className="divide-y divide-border">
                                 {obras.map((obra, index) => (
-                                    <div key={index} className="flex items-center justify-between px-4 py-3 hover:bg-surface-2 transition-colors">
+                                    <div key={index} className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="min-w-0 flex-1">
                                             <p className="text-sm font-medium text-text-main truncate">{obra.numero_trabajo}</p>
                                             <p className="text-[10px] text-text-hint truncate">{obra.descripcion_trabajo}</p>
                                         </div>
-                                        <span className={`ml-4 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${getBadgeClass(obra.estado)}`}>
+                                        <span className={`inline-flex items-center self-start rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap sm:ml-4 ${getBadgeClass(obra.estado)}`}>
                                             {obra.estado?.toUpperCase().replace('_', ' ')}
                                         </span>
                                     </div>
@@ -127,12 +127,12 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                         ) : (
                             <div className="divide-y divide-border">
                                 {pedidos.map((pedido, index) => (
-                                    <div key={index} className="flex items-center justify-between px-4 py-3 hover:bg-surface-2 transition-colors">
-                                        <div>
+                                    <div key={index} className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
                                             <p className="text-sm font-medium text-text-main">{pedido.ref}</p>
                                             <p className="text-[10px] text-text-hint">{pedido.obra}</p>
                                         </div>
-                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${getBadgeClass(pedido.estado)}`}>
+                                        <span className={`inline-flex items-center self-start rounded-full px-2 py-0.5 text-[10px] font-bold ${getBadgeClass(pedido.estado)}`}>
                                             {formatStatus(pedido.estado)}
                                         </span>
                                     </div>
@@ -149,7 +149,9 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                         {legalizaciones.length === 0 ? (
                             <div className="px-4 py-8 text-center text-sm text-text-hint">{t('dashboard.tables.noPendingLegalizations')}</div>
                         ) : (
-                            <div className="overflow-x-auto">
+                            <>
+                                <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
+                                <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-surface-2 border-b border-border">
                                         <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-text-muted">
@@ -172,7 +174,8 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
                                         ))}
                                     </tbody>
                                 </table>
-                            </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>

@@ -1,5 +1,10 @@
 # ERP CIETE · Guía de estilos
 
+> **Documento histórico.**  
+> Este documento refleja una decisión, planificación o análisis anterior del proyecto.  
+> Puede contener nombres, estados, modelos o prioridades ya superadas.  
+> Fuente de verdad vigente: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+
 Proyecto: ERP Ciete  
 Documento: Guía de estilos UI/UX y capturas  
 Versión: 1.0 (base)  

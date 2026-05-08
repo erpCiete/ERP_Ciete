@@ -22,7 +22,7 @@ class DashboardController extends Controller
         $homeNotices = NoticeController::load();
 
         $stats = [
-            'active_works'   => Trabajo::whereIn('estado', ['borrador', 'en_curso'])->count(),
+            'active_works'   => Trabajo::where('estado', 'en_curso')->count(),
             'pending_orders' => Pedido::where('estado', 'pendiente')->count(),
             'billing'        => '—',
             'legalizaciones' => Legalizacion::whereIn('estado', ['pendiente', 'en_tramite'])->count(),

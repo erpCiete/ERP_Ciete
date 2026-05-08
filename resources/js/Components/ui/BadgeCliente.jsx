@@ -3,10 +3,23 @@ const KNOWN_CLIENTS = {
     moeve: 'Moeve',
     bp: 'BP',
     galp: 'Galp',
+    otros: 'Otros clientes',
+};
+
+const CLIENT_COLOR_VAR = {
+    repsol: '--color-client-repsol',
+    moeve: '--color-client-moeve',
+    bp: '--color-client-bp',
+    galp: '--color-client-galp',
+    otros: '--color-client-others',
 };
 
 function resolveClient(value) {
     const normalized = String(value || '').trim().toLowerCase();
+
+    if (normalized.includes('otro')) {
+        return 'otros';
+    }
 
     for (const client of Object.keys(KNOWN_CLIENTS)) {
         if (normalized.includes(client)) {
@@ -30,7 +43,7 @@ export default function BadgeCliente({ cliente, label }) {
         );
     }
 
-    const color = `var(--color-client-${resolvedClient})`;
+    const color = `var(${CLIENT_COLOR_VAR[resolvedClient] ?? '--color-client-others'})`;
 
     return (
         <span
