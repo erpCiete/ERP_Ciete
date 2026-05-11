@@ -49,4 +49,14 @@ class Tarifario extends Model
     {
         return $this->hasMany(TarifarioLinea::class, 'id_tarifario', 'id_tarifario');
     }
+
+    public function trabajos(): HasMany
+    {
+        return $this->hasMany(Trabajo::class, 'id_tarifario', 'id_tarifario');
+    }
+
+    public function pedidos(): HasMany
+    {
+        return $this->hasMany(Pedido::class, 'id_tarifario', 'id_tarifario');
+    }
 }

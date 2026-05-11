@@ -72,18 +72,13 @@ export function useFacturas() {
     const irACrear   = () => router.visit(route('facturas.create'));
     const irAEditar  = (id) => router.visit(route('facturas.edit', id));
 
-    /**
-     * Eliminar factura con confirmación nativa y recarga de datos de Inertia
-     */
     const eliminarFactura = (id, onSuccess) => {
-        if (confirm('¿Estás seguro de que deseas eliminar esta factura?')) {
-            router.delete(route('facturas.destroy', id), {
-                onSuccess: () => {
-                    if (onSuccess) onSuccess();
-                },
-                preserveScroll: true,
-            });
-        }
+        router.delete(route('facturas.destroy', id), {
+            onSuccess: () => {
+                if (onSuccess) onSuccess();
+            },
+            preserveScroll: true,
+        });
     };
 
     return {

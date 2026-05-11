@@ -1,5 +1,10 @@
 # Sprint 1 FRONT - Tutorial de mantenimiento de tema (claro/oscuro)
 
+> **Documento histórico.**  
+> Este documento refleja una decisión, planificación o análisis anterior del proyecto.  
+> Puede contener nombres, estados, modelos o prioridades ya superadas.  
+> Fuente de verdad vigente: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+
 ## Objetivo
 Este documento define como crear nuevas paginas y componentes sin romper el sistema global de tema claro/oscuro del ERP.
 

@@ -67,33 +67,7 @@ export function buildTopNavbarItems(t, user) {
         return [];
     }
 
-    return filterItems([
-        makeItem({
-            id: 'home',
-            key: 'nav.home',
-            label: t('nav.home'),
-            routeName: 'index',
-            activePatterns: ['index'],
-        }),
-        user.can_access_direction_panel
-            ? makeItem({
-                  id: 'direction',
-                  key: 'nav.closurePanel',
-                  label: t('nav.closurePanel'),
-                  routeName: 'cierre.dashboard',
-                  activePatterns: ['cierre.dashboard'],
-              })
-            : null,
-        user.is_admin
-            ? makeItem({
-                  id: 'admin',
-                  key: 'nav.adminPanel',
-                  label: t('nav.adminPanel'),
-                  routeName: 'admin.dashboard',
-                  activePatterns: ['admin.dashboard'],
-              })
-            : null,
-    ]);
+    return [];
 }
 
 export function buildSidebarSections(t, user) {
@@ -105,7 +79,11 @@ export function buildSidebarSections(t, user) {
     const canCreateWorks = hasPermission(user, 'trabajos.crear');
     const canViewOrders = hasPermission(user, 'pedidos.ver');
     const canViewInvoices = hasPermission(user, 'facturas.ver');
-    const canManageImports = hasPermission(user, 'importaciones.ejecutar');
+    const canViewStations = hasPermission(user, 'estaciones.ver');
+    const canViewMasters = user.is_director;
+    const canManageImports = hasPermission(user, 'importaciones.ver');
+    const canViewAudit = hasPermission(user, 'auditoria.ver');
+    const isExcelMode = user.interface_mode === 'ciete_excel';
     const worksLabel = user.is_execution_moeve
         ? t('nav.worksMoeve')
         : user.is_execution_repsol
@@ -124,7 +102,17 @@ export function buildSidebarSections(t, user) {
           ? t('nav.ordersRepsol')
           : t('nav.orders');
 
-    const sections = [];
+    const sections = [
+        section('general', t('nav.groups.general'), [
+            makeItem({
+                id: 'home',
+                key: 'nav.home',
+                label: t('nav.home'),
+                routeName: 'index',
+                activePatterns: ['index'],
+            }),
+        ]),
+    ];
 
     if (user.is_admin) {
         sections.push(
@@ -136,6 +124,15 @@ export function buildSidebarSections(t, user) {
                     routeName: 'admin.dashboard',
                     activePatterns: ['admin.dashboard'],
                 }),
+                canViewAudit
+                    ? makeItem({
+                          id: 'audit',
+                          key: 'nav.audit',
+                          label: t('nav.audit'),
+                          routeName: 'registro.actividad.index',
+                          activePatterns: ['registro.actividad.*', 'admin.audit'],
+                      })
+                    : null,
             ])
         );
 
@@ -147,25 +144,6 @@ export function buildSidebarSections(t, user) {
                     label: t('nav.directionPanel'),
                     routeName: 'cierre.dashboard',
                     activePatterns: ['cierre.dashboard'],
-                }),
-            ])
-        );
-
-        sections.push(
-            section('masters', t('nav.groups.masters'), [
-                makeItem({
-                    id: 'clients',
-                    key: 'nav.clients',
-                    label: t('nav.clients'),
-                    routeName: 'clientes.index',
-                    activePatterns: ['clientes.*'],
-                }),
-                makeItem({
-                    id: 'stations',
-                    key: 'nav.stations',
-                    label: t('nav.stations'),
-                    routeName: 'estaciones.index',
-                    activePatterns: ['estaciones.*'],
                 }),
             ])
         );
@@ -225,6 +203,24 @@ export function buildSidebarSections(t, user) {
                     routeName: 'cierre.dashboard',
                     activePatterns: ['cierre.dashboard'],
                 }),
+                canViewAudit
+                    ? makeItem({
+                          id: 'audit',
+                          key: 'nav.audit',
+                          label: t('nav.audit'),
+                          routeName: 'registro.actividad.index',
+                          activePatterns: ['registro.actividad.*', 'admin.audit'],
+                      })
+                    : null,
+                canViewMasters
+                    ? makeItem({
+                          id: 'master-data',
+                          key: 'nav.masterData',
+                          label: t('nav.masterData'),
+                          routeName: 'maestros.index',
+                          activePatterns: ['maestros.*'],
+                      })
+                    : null,
             ])
         );
 
@@ -277,13 +273,22 @@ export function buildSidebarSections(t, user) {
                           activePatterns: ['trabajos.index', 'trabajos.edit'],
                       })
                     : null,
-                canCreateWorks
+                canCreateWorks && !isExcelMode
                     ? makeItem({
                           id: 'create-work',
                           key: 'nav.createWork',
                           label: createWorkLabel,
                           routeName: 'trabajos.create',
                           activePatterns: ['trabajos.create'],
+                      })
+                    : null,
+                canViewStations
+                    ? makeItem({
+                          id: 'stations',
+                          key: 'nav.stations',
+                          label: t('nav.stations'),
+                          routeName: 'estaciones.index',
+                          activePatterns: ['estaciones.*'],
                       })
                     : null,
                 canViewOrders
@@ -293,6 +298,15 @@ export function buildSidebarSections(t, user) {
                           label: ordersLabel,
                           routeName: 'pedidos.index',
                           activePatterns: ['pedidos.*'],
+                      })
+                    : null,
+                canViewInvoices
+                    ? makeItem({
+                          id: 'invoices',
+                          key: 'nav.invoices',
+                          label: t('nav.invoices'),
+                          routeName: 'facturas.index',
+                          activePatterns: ['facturas.*'],
                       })
                     : null,
             ])
@@ -318,8 +332,33 @@ export function buildSidebarSections(t, user) {
                           activePatterns: ['facturas.*'],
                       })
                     : null,
+                canViewAudit
+                    ? makeItem({
+                          id: 'audit',
+                          key: 'nav.audit',
+                          label: t('nav.audit'),
+                          routeName: 'admin.audit',
+                          activePatterns: ['admin.audit'],
+                      })
+                    : null,
             ])
         );
+    }
+
+    if (!user.is_admin && !user.can_access_direction_panel && !user.is_accounting && canViewAudit) {
+        const generalSection = sections.find((sectionItem) => sectionItem?.id === 'general');
+
+        if (generalSection) {
+            generalSection.items.push(
+                makeItem({
+                    id: 'audit',
+                    key: 'nav.audit',
+                    label: t('nav.audit'),
+                    routeName: 'admin.audit',
+                    activePatterns: ['admin.audit'],
+                }),
+            );
+        }
     }
 
     return sections.filter(Boolean);

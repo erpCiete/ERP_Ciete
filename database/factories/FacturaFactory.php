@@ -36,9 +36,9 @@ class FacturaFactory extends Factory
             'numero_factura'      => $this->faker->unique()->bothify('F-####-???'),
             'serie'               => $this->faker->optional()->randomElement(['M', 'A', 'B']),
             
-            // 5. Lógica MOEVE: numero_ccp obligatorio, orden_factura anulado
+            // 5. Logica MOEVE: numero_ccp obligatorio; orden_factura queda como ordinal tecnico.
             'numero_factura_ccp'  => $this->faker->unique()->bothify('CCP-####-????'),
-            'orden_factura'       => null,
+            'orden_factura'       => 1,
             'sociedad'            => 'MOEVE S.A.',
             'autofactura'         => false,
             
@@ -56,7 +56,7 @@ class FacturaFactory extends Factory
             
             // 8. Estados y Extras
             'estado'              => $this->faker->randomElement([
-                'pendiente', 'emitida', 'cobrada_parcial', 'cobrada', 'vencida', 'anulada'
+                'pendiente', 'solicitada', 'emitida', 'enviada', 'anulada'
             ]),
             'observaciones'       => $this->faker->optional()->sentence(),
         ];
@@ -86,13 +86,13 @@ class FacturaFactory extends Factory
         ]);
     }
 
-    /** 
-     * Estado: Factura Cobrada 
+    /**
+     * Estado: Factura Enviada
      */
-    public function cobrada(): static
+    public function enviada(): static
     {
         return $this->state(fn () => [
-            'estado'            => 'cobrada',
+            'estado'            => 'enviada',
             'fecha_emision'     => now()->subDays(30)->toDateString(),
             'fecha_vencimiento' => now()->subDays(1)->toDateString(),
         ]);
@@ -100,7 +100,7 @@ class FacturaFactory extends Factory
 
     /** 
      * ── ESTADO CRÍTICO: Contexto REPSOL (2) ──
-     * Intercambia la lógica: anula el CCP y hace obligatorio el orden_factura y autofactura.
+     * Intercambia la lógica: anula el CCP y usa orden_factura como posición de factura dentro del trabajo.
      */
     public function repsol(): static
     {

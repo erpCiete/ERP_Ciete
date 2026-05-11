@@ -1,5 +1,9 @@
 # Capturas de diseño
 
+> **Documento vivo.**  
+> Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
+> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+
 Esta carpeta centraliza las capturas de pantallas, flujos y propuestas visuales del ERP.
 
 ## Convención

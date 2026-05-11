@@ -40,7 +40,7 @@ class PedidoFactory extends Factory
             'unidades_solicitadas' => $this->faker->randomFloat(2, 0, $unidades),
             
             // Estados y Flags
-            'estado' => $this->faker->randomElement(['pendiente', 'solicitado', 'recibido', 'cerrado', 'facturado', 'anulado']),
+            'estado' => $this->faker->randomElement(['pendiente', 'solicitado', 'recibido', 'facturado_parcial', 'facturado', 'cancelado', 'anulado']),
             'pedido_completo' => $this->faker->boolean(30), // 30% de probabilidad de estar completo
             'tiene_mas_de_1_item' => $this->faker->boolean(80), // Lo habitual es que tengan más de un item
             'facturado_completo' => false, // Por defecto false al crearse
@@ -61,7 +61,7 @@ class PedidoFactory extends Factory
     }
 
     /**
-     * Estado para pedidos ya facturados y cerrados
+     * Estado para pedidos ya facturados
      */
     public function completado(): static
     {

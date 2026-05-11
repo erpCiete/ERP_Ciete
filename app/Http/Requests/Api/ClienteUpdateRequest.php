@@ -11,7 +11,8 @@ class ClienteUpdateRequest extends BaseApiRequest
 {
     public function rules(): array
     {
-        $contextId = Auth::user()?->id_contexto;
+        $user = Auth::user();
+        $activeContextIds = $user?->getActiveContextIds() ?? [];
         $cliente = $this->route('cliente');
         $clienteId = $cliente instanceof Empresa ? $cliente->id_empresa : $cliente;
 
@@ -23,7 +24,7 @@ class ClienteUpdateRequest extends BaseApiRequest
                 'max:180',
                 Rule::unique('empresas', 'nombre')
                     ->ignore($clienteId, 'id_empresa')
-                    ->where(fn($query) => $query->where('id_contexto', $contextId)),
+                    ->where(fn($query) => $query->whereIn('id_contexto', $activeContextIds)),
             ],
             'nombre_comercial' => ['nullable', 'string', 'max:180'],
             'razon_social' => ['nullable', 'string', 'max:220'],
@@ -34,7 +35,7 @@ class ClienteUpdateRequest extends BaseApiRequest
                 new ValidSpanishTaxId(),
                 Rule::unique('empresas', 'cif')
                     ->ignore($clienteId, 'id_empresa')
-                    ->where(fn($query) => $query->where('id_contexto', $contextId)),
+                    ->where(fn($query) => $query->whereIn('id_contexto', $activeContextIds)),
             ],
             'tipo_empresa' => ['sometimes', Rule::in(['cliente', 'proveedor', 'cliente_proveedor', 'interna', 'otra'])],
             'web' => ['nullable', 'url', 'max:255'],

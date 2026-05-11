@@ -22,7 +22,7 @@ export default function MessagesShow({ message }) {
         <AuthenticatedLayout header={t('messages.header')}>
             <Head title={message.asunto} />
 
-            <div className="mx-auto max-w-3xl space-y-5 pb-10">
+            <div className="ciete-page ciete-page-reading">
                 <Link
                     href={route('messages.index')}
                     className="inline-flex items-center gap-1.5 text-xs text-text-muted transition hover:text-text-main"
@@ -69,12 +69,12 @@ export default function MessagesShow({ message }) {
                     </div>
 
                     {isRecipient && (
-                        <div className="flex gap-2 border-t border-border px-5 py-3">
+                        <div className="flex flex-col gap-2 border-t border-border px-5 py-3 sm:flex-row sm:flex-wrap">
                             {!message.leido_at && (
                                 <button
                                     type="button"
                                     onClick={() => router.post(route('messages.read', message.id_mensaje), {}, { preserveScroll: true })}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-surface-2"
+                                    className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-surface-2 sm:w-auto"
                                 >
                                     <CheckCheck size={12} />
                                     {t('messages.markRead')}
@@ -84,7 +84,7 @@ export default function MessagesShow({ message }) {
                                 <button
                                     type="button"
                                     onClick={() => router.post(route('messages.archive', message.id_mensaje), {}, { preserveScroll: true, onSuccess: () => router.visit(route('messages.index')) })}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-surface-2"
+                                    className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-text-main transition hover:bg-surface-2 sm:w-auto"
                                 >
                                     <Archive size={12} />
                                     {t('messages.archiveAction')}

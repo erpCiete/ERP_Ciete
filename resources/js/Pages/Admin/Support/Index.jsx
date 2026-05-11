@@ -73,7 +73,7 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
         <AuthenticatedLayout header={t('supportAdmin.header')}>
             <Head title={t('supportAdmin.headTitle')} />
 
-            <div className="mx-auto max-w-7xl space-y-5 pb-10">
+            <div className="ciete-page ciete-page-wide">
                 <div>
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-text-hint">
                         {t('supportAdmin.eyebrow')}
@@ -87,7 +87,7 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
                     </div>
                 )}
 
-                <div className="grid gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+                <div className="grid gap-3 rounded-xl border border-border bg-surface p-4 xl:grid-cols-[minmax(0,1fr)_180px_180px]">
                     <div>
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-widest text-text-hint">
                             {t('supportAdmin.search')}
@@ -144,7 +144,9 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
                 </div>
 
                 <div className="overflow-hidden rounded-xl border border-border bg-surface">
-                    <table className="w-full">
+                    <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
+                    <div className="ciete-table-scroll">
+                    <table className="min-w-[1080px] w-full">
                         <thead className="border-b border-border">
                             <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-text-hint">
                                 <th className="px-4 py-3">{t('supportAdmin.cols.ticket')}</th>
@@ -194,6 +196,7 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
                             )}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </AuthenticatedLayout>

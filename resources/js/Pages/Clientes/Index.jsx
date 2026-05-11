@@ -1,17 +1,29 @@
 import BadgeCliente from '@/Components/ui/BadgeCliente';
 import BadgeEstado from '@/Components/ui/BadgeEstado';
+import ClientesExcelView from '@/Components/ui/ClientesExcelView';
+import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import { useClientes } from '@/Hooks/useClientes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
-import { Head, router } from '@inertiajs/react';
+import { useTheme } from '@/theme';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useDeferredValue, useEffect, useState } from 'react';
 
 const CONTEXT_OPTIONS = ['repsol', 'moeve', 'bp', 'galp', 'otros'];
+const hasPermission = (user, permission, aliases = []) =>
+    Boolean(user?.permission_slugs?.some((slug) => slug === permission || aliases.includes(slug)));
 
-export default function ClientesIndex() {
+export default function ClientesIndex({ canCreate = true }) {
     const { t } = useI18n();
+    const { visualStyle } = useTheme();
     const { getClientes, deleteCliente, loading } = useClientes();
+    const { auth } = usePage().props;
+
+    const isCieteExcel  = visualStyle === 'ciete_excel';
+    const activeContext = auth?.user?.active_context;
+    const canEditClientes = hasPermission(auth?.user, 'clientes.editar');
+    const canDeleteClientes = hasPermission(auth?.user, 'clientes.eliminar');
 
     const [search, setSearch] = useState('');
     const [contextFilter, setContextFilter] = useState('');
@@ -73,28 +85,52 @@ export default function ClientesIndex() {
                 message={t('clientes.deleteMessage')}
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={handleDelete}
-                confirmLabel={t('common.actions.delete')}
+                confirmLabel={t('clientes.deactivateAction')}
             />
 
-            <div className="space-y-6">
-                <section className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm md:flex-row md:items-end md:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">{t('nav.groups.masters')}</p>
-                        <h1 className="mt-2 text-2xl font-semibold text-text-main">{t('clientes.title')}</h1>
-                        <p className="mt-2 max-w-2xl text-sm text-text-muted">{t('clientes.description')}</p>
-                    </div>
-
-                    <button
+            <div className={`ciete-page ${isCieteExcel ? 'ciete-page-full' : 'ciete-page-wide'}`}>
+                <ContextualPageHeader
+                    eyebrow={t('nav.groups.masters')}
+                    title={t('clientes.title')}
+                    description={t('clientes.description')}
+                    backHref={route('maestros.index')}
+                    actions={canCreate ? <button
                         type="button"
                         onClick={() => router.visit(route('clientes.create'))}
-                        className="inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark)"
+                        className="inline-flex w-full items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) sm:w-auto"
                     >
-                        {t('clientes.create')}
-                    </button>
-                </section>
+                        + {t('clientes.create')}
+                    </button> : null}
+                />
 
-                <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                {activeContext?.is_all && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                        No puedes crear registros desde TODOS. Selecciona primero un contexto real: MOEVE, REPSOL u OTROS CLIENTES.
+                    </div>
+                )}
+
+                {/* ── Vista Excel ──────────────────────────────────────────── */}
+                {isCieteExcel ? (
+                    <ClientesExcelView
+                        rows={rows}
+                        status={status}
+                        loading={loading}
+                        search={search} setSearch={setSearch}
+                        contextFilter={contextFilter} setContextFilter={setContextFilter}
+                        hasFilters={hasFilters}
+                        onClearFilters={() => { setSearch(''); setContextFilter(''); }}
+                        onDelete={setDeleteTarget}
+                        onReload={loadClientes}
+                        total={total}
+                        canCreate={canCreate}
+                        canEdit={canEditClientes}
+                        canDelete={canDeleteClientes}
+                    />
+                ) : (
+                <>
+
+                <section className="ciete-filter-bar">
+                    <div className="ciete-filter-row">
                         <input
                             type="search"
                             value={search}
@@ -133,9 +169,10 @@ export default function ClientesIndex() {
                     </div>
                 </section>
 
-                <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-border text-sm">
+                <section className="ciete-table-card">
+                    <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
+                    <div className="ciete-table-scroll">
+                        <table className="min-w-[980px] w-full divide-y divide-border text-sm">
                             <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                                 <tr>
                                     <th className="px-5 py-3">{t('clientes.columns.name')}</th>
@@ -186,9 +223,9 @@ export default function ClientesIndex() {
                                 {status === 'ready' && rows.map((cliente) => (
                                     <tr key={cliente.id} className="hover:bg-surface-2/60">
                                         <td className="px-5 py-4 align-top">
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="font-semibold text-text-main">{cliente.razon_social || cliente.nombre}</p>
-                                                <p className="text-xs text-text-muted">{cliente.nombre}</p>
+                                                <p className="truncate text-xs text-text-muted">{cliente.nombre}</p>
                                             </div>
                                         </td>
                                         <td className="px-5 py-4 align-top">
@@ -201,24 +238,28 @@ export default function ClientesIndex() {
                                             />
                                         </td>
                                         <td className="px-5 py-4 align-top text-text-muted">{cliente.cif || 'N/A'}</td>
-                                        <td className="px-5 py-4 align-top text-text-muted">{cliente.web || 'N/A'}</td>
+                                        <td className="px-5 py-4 align-top text-text-muted break-all">{cliente.web || 'N/A'}</td>
                                         <td className="px-5 py-4 align-top">
-                                            <div className="flex justify-end gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => router.visit(route('clientes.edit', cliente.id))}
-                                                    className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
-                                                >
-                                                    {t('common.actions.edit')}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setDeleteTarget(cliente)}
-                                                    disabled={loading}
-                                                    className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark) disabled:opacity-50"
-                                                >
-                                                    {t('common.actions.delete')}
-                                                </button>
+                                            <div className="flex flex-wrap justify-end gap-3">
+                                                {canEditClientes && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => router.visit(route('clientes.edit', cliente.id))}
+                                                        className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
+                                                    >
+                                                        {t('common.actions.edit')}
+                                                    </button>
+                                                )}
+                                                {canDeleteClientes && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDeleteTarget(cliente)}
+                                                        disabled={loading}
+                                                        className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark) disabled:opacity-50"
+                                                    >
+                                                        {t('clientes.deactivateAction')}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -227,6 +268,8 @@ export default function ClientesIndex() {
                         </table>
                     </div>
                 </section>
+            </>
+            )}
             </div>
         </AuthenticatedLayout>
     );

@@ -2,19 +2,55 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Api\StoreTrabajoRequest;
+use App\Http\Requests\Api\UpdateTrabajoRequest;
+use App\Http\Resources\Api\TrabajoResource;
+use App\Models\ContextoCliente;
+use App\Models\AuditLog;
+use App\Models\Contrato;
+use App\Models\EstacionServicio;
+use App\Models\TipoDocumento;
+use App\Models\TipoTrabajo;
 use App\Models\Trabajo;
+use App\Models\User;
+use App\Services\AuditLogger;
+use App\Support\ContextGuard;
+use App\Support\TrabajoPermission;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
-use App\Models\ContextoCliente;
-use App\Http\Requests\Api\StoreTrabajoRequest;
-use App\Http\Requests\Api\UpdateTrabajoRequest;
-use App\Http\Resources\Api\TrabajoResource;
 
 class TrabajoController extends Controller
 {
+    private const AUDIT_FIELDS = [
+        'id_trabajo',
+        'id_contexto',
+        'id_estacion_servicio',
+        'id_tipo_trabajo',
+        'id_tipo_documento',
+        'id_contrato',
+        'numero_trabajo',
+        'numero_trabajo_operativo',
+        'numero_aviso',
+        'descripcion_trabajo',
+        'fecha_encargo',
+        'fecha_inicio',
+        'fecha_fin',
+        'fecha_terminacion',
+        'observaciones',
+        'id_responsable_ciete',
+        'estado',
+    ];
+
+    public function __construct(private readonly AuditLogger $auditLogger)
+    {
+    }
+
     /**
      * Muestra el listado principal de Obras (Trabajos).
      */
@@ -22,13 +58,18 @@ class TrabajoController extends Controller
     {
         // El trait HasContext filtra automáticamente según el usuario activo.
         $query = Trabajo::query()
-            ->with(['empresa', 'estacion', 'contrato', 'tipoDocumento', 'tipoTrabajo']);
+            ->with(['empresa', 'estacion', 'contrato', 'tarifario', 'tipoDocumento', 'tipoTrabajo', 'responsableCiete', 'primerPedido'])
+            ->withSum('pedidos as importe_pedido_total', 'importe_pedido')
+            ->withSum('pedidos as importe_solicitado_total', 'importe_solicitado')
+            ->withSum('pedidos as importe_facturado_total', 'importe_facturado')
+            ->withCount('pedidos');
 
         // Implementación de búsqueda genérica básica (si se envía parámetro)
         if ($request->filled('search')) {
             $searchTerm = '%' . $request->input('search') . '%';
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('numero_trabajo', 'like', $searchTerm)
+                ->orWhere('numero_trabajo_operativo', 'like', $searchTerm)
                 ->orWhere('numero_aviso', 'like', $searchTerm)
                 ->orWhere('descripcion_trabajo', 'like', $searchTerm);
             });
@@ -38,53 +79,160 @@ class TrabajoController extends Controller
             $query->where('estado', $request->input('estado'));
         }
 
-        $trabajos = $query->latest('fecha_encargo')->paginate(20)->withQueryString();
+        $query->when($request->filled('fecha_desde'), fn ($q) => $q->where('fecha_encargo', '>=', $request->input('fecha_desde')));
+        $query->when($request->filled('fecha_hasta'), fn ($q) => $q->where('fecha_encargo', '<=', $request->input('fecha_hasta')));
+        $query->when($request->filled('id_responsable_ciete'), fn ($q) => $q->where('id_responsable_ciete', $request->input('id_responsable_ciete')));
+        $query->when($request->filled('id_estacion_servicio'), fn ($q) => $q->where('id_estacion_servicio', $request->input('id_estacion_servicio')));
+
+        // Filtros por municipio/provincia de la estación (texto parcial)
+        $query->when($request->filled('municipio'), function ($q) use ($request) {
+            $q->whereHas('estacion', fn ($es) => $es->where('poblacion', 'like', '%' . $request->input('municipio') . '%'));
+        });
+        $query->when($request->filled('provincia'), function ($q) use ($request) {
+            $q->whereHas('estacion', fn ($es) => $es->where('provincia', 'like', '%' . $request->input('provincia') . '%'));
+        });
+        // Filtro por código de estación (texto parcial)
+        $query->when($request->filled('codigo_estacion'), function ($q) use ($request) {
+            $q->whereHas('estacion', fn ($es) => $es->where('codigo_estacion', 'like', '%' . $request->input('codigo_estacion') . '%'));
+        });
+
+        $query->orderByRaw("CASE estado WHEN 'en_curso' THEN 1 WHEN 'terminado' THEN 2 WHEN 'pendiente_facturar' THEN 3 WHEN 'facturado' THEN 4 WHEN 'finalizado' THEN 5 WHEN 'cancelado' THEN 99 ELSE 90 END")
+              ->orderBy('fecha_encargo', 'desc');
+
+        $trabajos = $query->paginate(20)->withQueryString();
+
+        $responsables = User::query()
+            ->where('activo', true)
+            ->orderBy('nombre')
+            ->get(['id_usuario', 'nombre', 'apellidos'])
+            ->map(fn (User $u): array => [
+                'id'     => $u->id_usuario,
+                'nombre' => trim($u->nombre . ' ' . ($u->apellidos ?? '')),
+            ])
+            ->values()
+            ->all();
+
+        $canCreate = TrabajoPermission::canCreate($request->user());
+        $canCreateInContext = $canCreate
+            && ContextGuard::canCreateInActiveContext($request->user());
 
         return Inertia::render('Trabajos/Index', [
             // Pasamos por el Resource para que actúe el firewall de contexto (Tarea B03-03)
-            'trabajos'    => TrabajoResource::collection($trabajos),
-            'contextoIds' => $request->user()->getAccessibleContextIds(),
-            'filters'     => $request->only(['search', 'estado']),
+            'trabajos'     => TrabajoResource::collection($trabajos),
+            'contextoIds'  => $request->user()->getActiveContextIds(),
+            'filters'      => $request->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'id_responsable_ciete', 'id_estacion_servicio', 'municipio', 'provincia', 'codigo_estacion']),
+            'canCreate'    => $canCreate,
+            'responsables' => $responsables,
+            'creationCatalogs' => $canCreateInContext
+                ? $this->buildExcelCreationCatalogs($request->user()->getActiveContextIds())
+                : [
+                    'estaciones' => [],
+                    'contratos' => [],
+                    'tiposDocumento' => [],
+                    'tiposTrabajo' => [],
+                ],
         ]);
     }
 
     /**
      * Muestra el formulario para crear una nueva Obra.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
-        $accessibleContextIds = $request->user()->getAccessibleContextIds();
+        if (! TrabajoPermission::canCreate($request->user())) {
+            abort(403, 'No tienes permiso para crear trabajos.');
+        }
+
+        if (! ContextGuard::canCreateInActiveContext($request->user())) {
+            return redirect()
+                ->route('trabajos.index')
+                ->with('warning', ContextGuard::CREATE_FROM_ALL_MESSAGE);
+        }
+
+        $accessibleContextIds = $request->user()->getActiveContextIds();
         $clientContexts = ContextoCliente::query()
             ->whereIn('id_contexto', $accessibleContextIds)
-            ->whereIn('codigo', ['MOEVE', 'REPSOL'])
             ->where('activo', true)
             ->orderBy('id_contexto')
             ->get(['id_contexto', 'nombre', 'codigo']);
 
         return Inertia::render('Trabajos/Form', [
-            'trabajo'     => null,
+            'trabajo' => null,
             'contextoIds' => $accessibleContextIds,
             'clientContexts' => $clientContexts,
-            // @TODO: Aquí se inyectarían catálogos (empresas, contratos) si no se cargan vía API independiente.
+            ...$this->buildFormCatalogs($accessibleContextIds),
         ]);
     }
 
     /**
      * Procesa y persiste una nueva Obra.
      */
-    public function store(StoreTrabajoRequest $request): RedirectResponse
+    public function store(StoreTrabajoRequest $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validated();
 
-        // Si el Request no lo inyecta por defecto, asignamos el contexto del usuario creador
         if (!isset($validated['id_contexto'])) {
-            $validated['id_contexto'] = $request->user()->id_contexto;
+            $validated['id_contexto'] = ContextGuard::activeContextIdForCreate($request->user());
         }
 
-        Trabajo::create($validated);
+        if (! isset($validated['id_empresa_cliente']) && isset($validated['id_estacion_servicio'])) {
+            $estacion = EstacionServicio::withoutGlobalScopes()
+                ->findOrFail($validated['id_estacion_servicio']);
+
+            $validated['id_empresa_cliente'] = $estacion->id_empresa_cliente;
+        }
+
+        $validated = $this->prepareTrabajoStateData($validated);
+
+        $trabajo = Trabajo::create($validated);
+
+        $snapshot = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
+        $this->auditLogger->log([
+            'user' => $request->user(),
+            'accion' => 'crear',
+            'modulo' => 'trabajos',
+            'tabla' => 'trabajos',
+            'entity_type' => Trabajo::class,
+            'entity_id' => $trabajo->id_trabajo,
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'id_trabajo',
+            'valor_nuevo' => $trabajo->id_trabajo,
+            'datos_nuevos' => $snapshot,
+            'descripcion' => 'Alta de trabajo.',
+            'id_contexto' => $trabajo->id_contexto,
+        ], $request);
+
+        if ($request->expectsJson()) {
+            $this->loadTrabajoForResponse($trabajo);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Trabajo creado correctamente.',
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ], 201);
+        }
 
         return redirect()->route('trabajos.index')
             ->with('success', 'Obra registrada correctamente.');
+    }
+
+    public function show(Request $request, Trabajo $trabajo): JsonResponse
+    {
+        $activeContextIds = array_map('intval', $request->user()->getActiveContextIds());
+
+        if (! in_array((int) $trabajo->id_contexto, $activeContextIds, true)) {
+            return response()->json([
+                'message' => 'Este trabajo no pertenece al contexto activo de tu usuario.',
+            ], 403);
+        }
+
+        $this->loadTrabajoForResponse($trabajo);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detalle de trabajo obtenido.',
+            'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+        ]);
     }
 
     /**
@@ -94,18 +242,18 @@ class TrabajoController extends Controller
     {
         // Eager loading para el recurso individual
         $trabajo->load(['empresa', 'estacion', 'contrato', 'tipoDocumento', 'tipoTrabajo']);
-        $accessibleContextIds = $request->user()->getAccessibleContextIds();
+        $accessibleContextIds = $request->user()->getActiveContextIds();
         $clientContexts = ContextoCliente::query()
             ->whereIn('id_contexto', $accessibleContextIds)
-            ->whereIn('codigo', ['MOEVE', 'REPSOL'])
             ->where('activo', true)
             ->orderBy('id_contexto')
             ->get(['id_contexto', 'nombre', 'codigo']);
 
         return Inertia::render('Trabajos/Form', [
-            'trabajo'     => new TrabajoResource($trabajo),
+            'trabajo' => new TrabajoResource($trabajo),
             'contextoIds' => $accessibleContextIds,
             'clientContexts' => $clientContexts,
+            ...$this->buildFormCatalogs($accessibleContextIds),
         ]);
     }
 
@@ -115,11 +263,35 @@ class TrabajoController extends Controller
     public function update(UpdateTrabajoRequest $request, Trabajo $trabajo): RedirectResponse
     {
         // Protección crítica de negocio: Bloqueo de Trabajos Cerrados
-        if ($trabajo->cerrado && !$request->user()->hasRole('admin')) {
-            abort(403, 'Acción denegada. Esta obra está cerrada y bloqueada para modificaciones.');
+        if (TrabajoPermission::isClosed($trabajo) && ! TrabajoPermission::canEditClosed($request->user())) {
+            abort(403, 'Acción denegada. Esta obra está finalizada y bloqueada para modificaciones.');
         }
 
-        $trabajo->update($request->validated());
+        $before = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
+
+        $trabajo->update($this->prepareTrabajoStateData($request->validated(), $trabajo));
+        $trabajo->refresh();
+
+        $after = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
+        $firstChange = $this->auditLogger->resolveFirstChange($before, $after);
+        $statusChanged = ($before['estado'] ?? null) !== ($after['estado'] ?? null);
+
+        $this->auditLogger->log([
+            'user' => $request->user(),
+            'accion' => $statusChanged ? 'cambiar_estado' : 'actualizar',
+            'modulo' => 'trabajos',
+            'tabla' => 'trabajos',
+            'entity_type' => Trabajo::class,
+            'entity_id' => $trabajo->id_trabajo,
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => $firstChange['campo'],
+            'valor_anterior' => $firstChange['valor_anterior'],
+            'valor_nuevo' => $firstChange['valor_nuevo'],
+            'datos_anteriores' => $before,
+            'datos_nuevos' => $after,
+            'descripcion' => $this->auditLogger->buildChangedFieldsDescription($before, $after, 'Actualización de trabajo'),
+            'id_contexto' => $trabajo->id_contexto,
+        ], $request);
 
         return redirect()->route('trabajos.index')
             ->with('success', 'Obra actualizada correctamente.');
@@ -128,16 +300,449 @@ class TrabajoController extends Controller
     /**
      * Elimina una Obra (SoftDelete o HardDelete según el modelo).
      */
-    public function destroy(Request $request, Trabajo $trabajo): RedirectResponse
+    public function destroy(Request $request, Trabajo $trabajo): JsonResponse|RedirectResponse
     {
-        // Protección crítica de negocio
-        if ($trabajo->cerrado && !$request->user()->hasRole('admin')) {
-            abort(403, 'Acción denegada. No se pueden eliminar obras que ya han sido cerradas.');
+        $user = $request->user();
+
+        if (! TrabajoPermission::canDelete($user, $trabajo)) {
+            abort(403, 'No tienes permiso para cancelar este trabajo.');
         }
 
-        $trabajo->delete();
+        $activeContextIds = array_map('intval', $user->getActiveContextIds());
+        if (! in_array((int) $trabajo->id_contexto, $activeContextIds, true)) {
+            abort(403, 'Este trabajo no pertenece al contexto activo de tu usuario.');
+        }
+
+        $before = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
+
+        $trabajo->estado = 'cancelado';
+        $trabajo->save();
+        $trabajo->refresh();
+
+        $after = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
+
+        $this->auditLogger->log([
+            'user' => $user,
+            'accion' => 'cambiar_estado',
+            'modulo' => 'trabajos',
+            'tabla' => 'trabajos',
+            'entity_type' => Trabajo::class,
+            'entity_id' => $trabajo->id_trabajo,
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'estado',
+            'valor_anterior' => $before['estado'] ?? null,
+            'valor_nuevo' => $after['estado'] ?? null,
+            'datos_anteriores' => $before,
+            'datos_nuevos' => $after,
+            'descripcion' => 'Trabajo cancelado desde accion de eliminacion restringida.',
+            'id_contexto' => $trabajo->id_contexto,
+        ], $request);
+
+        if ($request->expectsJson()) {
+            $this->loadTrabajoForResponse($trabajo);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Trabajo cancelado correctamente. No se ha borrado el historico.',
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
 
         return redirect()->route('trabajos.index')
-            ->with('success', 'Obra eliminada del sistema.');
+            ->with('success', 'Trabajo cancelado correctamente. No se ha borrado el historico.');
+    }
+
+    /**
+     * Actualiza un campo individual de forma optimista (control de concurrencia).
+     * Valida permisos, valor por campo y updated_at para detectar conflictos.
+     */
+    public function patchField(Request $request, Trabajo $trabajo): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Usuario no autenticado.',
+            ], 401);
+        }
+
+        if (! TrabajoPermission::canEdit($user, $trabajo)) {
+            return response()->json([
+                'message' => 'No tienes permiso para editar este trabajo.',
+            ], 403);
+        }
+
+        $activeContextIds = array_map('intval', $user->getActiveContextIds());
+        if (! in_array((int) $trabajo->id_contexto, $activeContextIds, true)) {
+            return response()->json([
+                'message' => 'Este trabajo no pertenece al contexto activo de tu usuario.',
+            ], 403);
+        }
+
+        $fieldMap = [
+            'estado' => 'estado',
+            'observaciones' => 'observaciones',
+            'fecha_terminacion' => 'fecha_terminacion',
+            'id_responsable_ciete' => 'id_responsable_ciete',
+            'descripcion' => 'descripcion_trabajo',
+            'descripcion_trabajo' => 'descripcion_trabajo',
+            'numero_trabajo' => 'numero_trabajo',
+            'numero_trabajo_operativo' => 'numero_trabajo_operativo',
+            'categoria' => 'categoria',
+            'codigo_estacion' => 'codigo_estacion',
+            'nombre_estacion' => 'nombre_estacion',
+            'municipio' => 'municipio',
+            'provincia' => 'provincia',
+        ];
+
+        $campo = $fieldMap[$request->input('campo')] ?? $request->input('campo');
+        $stationFieldMap = [
+            'codigo_estacion' => 'codigo_estacion',
+            'nombre_estacion' => 'nombre',
+            'municipio' => 'poblacion',
+            'provincia' => 'provincia',
+        ];
+        $isStationField = array_key_exists($campo, $stationFieldMap);
+
+        if (
+            in_array($campo, ['observaciones', 'fecha_terminacion', 'id_responsable_ciete', 'descripcion_trabajo', 'numero_trabajo_operativo', 'categoria', 'municipio', 'provincia'], true)
+            && $request->input('valor') === ''
+        ) {
+            $request->merge(['valor' => null]);
+        }
+
+        // Reglas de validación por campo
+        $valorRules = match ($campo) {
+            'estado'               => ['required', 'string', Rule::in(Trabajo::ESTADOS_FUNCIONALES)],
+            'observaciones'        => ['nullable', 'string', 'max:5000'],
+            'fecha_terminacion'    => ['nullable', 'date'],
+            'id_responsable_ciete' => [
+                'nullable',
+                'integer',
+                Rule::exists('usuarios', 'id_usuario')->where(fn ($query) => $query->where('activo', true)),
+            ],
+            'descripcion_trabajo'   => ['nullable', 'string', 'max:1000'],
+            'numero_trabajo'        => ['required', 'integer'],
+            'numero_trabajo_operativo' => ['nullable', 'string', 'max:100'],
+            'categoria'             => ['nullable', 'string', 'max:120'],
+            'codigo_estacion'       => ['required', 'string', 'max:80'],
+            'nombre_estacion'       => ['required', 'string', 'max:180'],
+            'municipio'             => ['nullable', 'string', 'max:120'],
+            'provincia'             => ['nullable', 'string', 'max:120'],
+            default                => ['prohibited'],
+        };
+
+        $validated = $request->validate([
+            'campo'      => ['required', 'string', Rule::in(array_keys($fieldMap))],
+            'valor'      => $valorRules,
+            'updated_at' => ['required', 'string'],
+        ]);
+
+        // Detección de conflicto — comparar en formato Y-m-d H:i:s (idéntico al que emite TrabajoResource)
+        if ($isStationField && ! $trabajo->relationLoaded('estacion')) {
+            $trabajo->load('estacion');
+        }
+
+        $serverTs = $trabajo->updated_at?->format('Y-m-d H:i:s') ?? '';
+        $clientTs = $this->normalizePatchTimestamp($validated['updated_at']) ?? $validated['updated_at'];
+
+        if ($serverTs !== $clientTs) {
+            // Obtener el último usuario que modificó el registro desde el log de auditoría
+            $lastAudit = AuditLog::where('tabla', 'trabajos')
+                ->where('registro_id', $trabajo->id_trabajo)
+                ->where(function ($query) use ($campo): void {
+                    $query->where('campo', $campo)
+                        ->orWhereNull('campo');
+                })
+                ->orderByDesc('created_at')
+                ->with('usuario')
+                ->first();
+
+            $usuarioMod = null;
+            if ($lastAudit?->usuario) {
+                $usuarioMod = trim(
+                    ($lastAudit->usuario->nombre ?? '') . ' ' . ($lastAudit->usuario->apellidos ?? '')
+                ) ?: null;
+            }
+
+            return response()->json([
+                'conflict'             => true,
+                'message'              => 'Este campo fue modificado por otro usuario.',
+                'campo'                => $campo,
+                'valor_actual'         => $this->formatPatchValue($isStationField ? $trabajo->estacion?->{$stationFieldMap[$campo]} : $trabajo->{$campo}),
+                'valor_intentado'      => $this->formatPatchValue($request->input('valor')),
+                'updated_at_actual'    => $serverTs,
+                'usuario_modificacion' => $usuarioMod,
+                'current_value'        => $this->formatPatchValue($isStationField ? $trabajo->estacion?->{$stationFieldMap[$campo]} : $trabajo->{$campo}),
+                'current_updated_at'   => $serverTs,
+            ], 409);
+        }
+
+        $valorAnterior = $this->formatPatchValue($isStationField ? $trabajo->estacion?->{$stationFieldMap[$campo]} : $trabajo->{$campo});
+        $valorNuevo    = $validated['valor'];
+
+        if ($isStationField && ! $trabajo->estacion) {
+            return response()->json([
+                'message' => 'Este trabajo no tiene estacion asociada.',
+            ], 422);
+        }
+
+        if ($isStationField) {
+            $stationColumn = $stationFieldMap[$campo];
+            $trabajo->estacion->{$stationColumn} = $valorNuevo;
+
+            if (! $trabajo->estacion->isDirty($stationColumn)) {
+                $this->loadTrabajoForResponse($trabajo);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'El campo no tenia cambios pendientes.',
+                    'campo' => $campo,
+                    'valor' => $this->formatPatchValue($trabajo->estacion->{$stationColumn}),
+                    'updated_at' => $serverTs,
+                    'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+                ]);
+            }
+
+            $trabajo->estacion->save();
+            $trabajo->touch();
+            $trabajo->refresh();
+            $this->loadTrabajoForResponse($trabajo);
+
+            $auditDescriptions = [
+                'codigo_estacion' => sprintf('El usuario modifico el codigo de estacion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+                'nombre_estacion' => sprintf('El usuario modifico el nombre de estacion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+                'municipio' => sprintf('El usuario modifico el municipio de la estacion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+                'provincia' => sprintf('El usuario modifico la provincia de la estacion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            ];
+
+            $this->auditLogger->log([
+                'user'           => $user,
+                'accion'         => 'actualizar',
+                'modulo'         => 'trabajos',
+                'tabla'          => 'estaciones_servicio',
+                'entity_type'    => EstacionServicio::class,
+                'entity_id'      => $trabajo->estacion->id_estacion_servicio,
+                'registro_id'    => $trabajo->estacion->id_estacion_servicio,
+                'campo'          => $campo,
+                'valor_anterior' => $valorAnterior,
+                'valor_nuevo'    => $this->formatPatchValue($trabajo->estacion->{$stationColumn}),
+                'id_contexto'    => $trabajo->id_contexto,
+                'descripcion'    => $auditDescriptions[$campo],
+            ], $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Campo actualizado correctamente.',
+                'campo' => $campo,
+                'valor' => $this->formatPatchValue($trabajo->estacion->{$stationColumn}),
+                'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
+
+        $trabajo->{$campo} = $valorNuevo;
+
+        if (
+            $campo === 'estado'
+            && $valorNuevo === 'terminado'
+            && ! $trabajo->fecha_terminacion
+        ) {
+            $trabajo->fecha_terminacion = Carbon::today();
+        }
+
+        if (! $trabajo->isDirty($campo) && ! $trabajo->isDirty('fecha_terminacion')) {
+            $this->loadTrabajoForResponse($trabajo);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'El campo no tenía cambios pendientes.',
+                'campo' => $campo,
+                'valor' => $this->formatPatchValue($trabajo->{$campo}),
+                'updated_at' => $serverTs,
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
+
+        $trabajo->save();
+        $trabajo->refresh();
+
+        $auditDescriptions = [
+            'estado' => sprintf('El usuario modifico el estado del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'observaciones' => sprintf('El usuario modifico las observaciones del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'fecha_terminacion' => sprintf('El usuario modifico la fecha de terminacion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'id_responsable_ciete' => sprintf('El usuario modifico el responsable CIETE del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'descripcion_trabajo' => sprintf('El usuario modifico la descripcion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'numero_trabajo' => sprintf('El usuario modifico el numero del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'numero_trabajo_operativo' => sprintf('El usuario modifico el numero operativo CIETE del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'categoria' => sprintf('El usuario modifico la categoria del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+        ];
+
+        $this->auditLogger->log([
+            'user'           => $user,
+            'accion'         => $campo === 'estado' ? 'cambiar_estado' : 'actualizar',
+            'modulo'         => 'trabajos',
+            'tabla'          => 'trabajos',
+            'entity_type'    => Trabajo::class,
+            'entity_id'      => $trabajo->id_trabajo,
+            'registro_id'    => $trabajo->id_trabajo,
+            'campo'          => $campo,
+            'valor_anterior' => $valorAnterior,
+            'valor_nuevo'    => $this->formatPatchValue($trabajo->{$campo}),
+            'id_contexto'    => $trabajo->id_contexto,
+            'descripcion'    => $auditDescriptions[$campo] ?? sprintf('El usuario modifico el campo %s del trabajo %s.', $campo, $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+        ], $request);
+
+        $this->loadTrabajoForResponse($trabajo);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Campo actualizado correctamente.',
+            'campo' => $campo,
+            'valor' => $this->formatPatchValue($trabajo->{$campo}),
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+            'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+        ]);
+    }
+
+    private function loadTrabajoForResponse(Trabajo $trabajo): void
+    {
+        $trabajo->load(['empresa', 'estacion', 'contrato', 'tarifario', 'tipoDocumento', 'tipoTrabajo', 'responsableCiete', 'primerPedido']);
+
+        // Compute aggregate sums so TrabajoResource can render importe totals without loading all pedidos.
+        if (! isset($trabajo->importe_pedido_total)) {
+            $sums = \App\Models\Pedido::query()
+                ->where('id_trabajo', $trabajo->id_trabajo)
+                ->selectRaw('SUM(importe_pedido) as importe_pedido_total, SUM(importe_solicitado) as importe_solicitado_total, SUM(importe_facturado) as importe_facturado_total')
+                ->first();
+            $trabajo->importe_pedido_total     = $sums?->importe_pedido_total;
+            $trabajo->importe_solicitado_total  = $sums?->importe_solicitado_total;
+            $trabajo->importe_facturado_total   = $sums?->importe_facturado_total;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function prepareTrabajoStateData(array $data, ?Trabajo $trabajo = null): array
+    {
+        $estado = $data['estado'] ?? null;
+
+        if (! $estado && $trabajo === null) {
+            $data['estado'] = 'en_curso';
+            $estado = 'en_curso';
+        }
+
+        if (
+            $estado === 'terminado'
+            && empty($data['fecha_terminacion'])
+            && ! $trabajo?->fecha_terminacion
+        ) {
+            $data['fecha_terminacion'] = Carbon::today()->toDateString();
+        }
+
+        return $data;
+    }
+
+    private function normalizePatchTimestamp(?string $timestamp): ?string
+    {
+        if (! $timestamp) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($timestamp)->format('Y-m-d H:i:s');
+        } catch (\Throwable) {
+            return trim($timestamp);
+        }
+    }
+
+    private function formatPatchValue(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<int, int|string> $accessibleContextIds
+     * @return array<string, array<int, array<string, int|string|null>>>
+     */
+    private function buildFormCatalogs(array $accessibleContextIds): array
+    {
+        return [
+            'contratos' => Contrato::query()
+                ->whereIn('id_contexto', $accessibleContextIds)
+                ->where('activo', true)
+                ->orderBy('nombre')
+                ->get(['id_contrato', 'id_contexto', 'nombre', 'codigo_contrato'])
+                ->map(fn (Contrato $contrato): array => [
+                    'id' => $contrato->id_contrato,
+                    'id_contexto' => $contrato->id_contexto,
+                    'nombre' => $contrato->nombre,
+                    'codigo' => $contrato->codigo_contrato,
+                ])
+                ->values()
+                ->all(),
+            'tiposDocumento' => TipoDocumento::query()
+                ->whereIn('id_contexto', $accessibleContextIds)
+                ->where('activo', true)
+                ->orderBy('nombre')
+                ->get(['id_tipo_documento', 'id_contexto', 'nombre', 'codigo'])
+                ->map(fn (TipoDocumento $tipo): array => [
+                    'id' => $tipo->id_tipo_documento,
+                    'id_contexto' => $tipo->id_contexto,
+                    'nombre' => $tipo->nombre,
+                    'codigo' => $tipo->codigo,
+                ])
+                ->values()
+                ->all(),
+            'tiposTrabajo' => TipoTrabajo::query()
+                ->whereIn('id_contexto', $accessibleContextIds)
+                ->where('activo', true)
+                ->orderBy('nombre')
+                ->get(['id_tipo_trabajo', 'id_contexto', 'id_tipo_documento', 'nombre', 'codigo'])
+                ->map(fn (TipoTrabajo $tipo): array => [
+                    'id' => $tipo->id_tipo_trabajo,
+                    'id_contexto' => $tipo->id_contexto,
+                    'id_tipo_documento' => $tipo->id_tipo_documento,
+                    'nombre' => $tipo->nombre,
+                    'codigo' => $tipo->codigo,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @param array<int, int|string> $contextIds
+     * @return array<string, array<int, array<string, int|string|null>>>
+     */
+    private function buildExcelCreationCatalogs(array $contextIds): array
+    {
+        $normalizedContextIds = array_map('intval', $contextIds);
+
+        return [
+            'estaciones' => EstacionServicio::query()
+                ->whereIn('id_contexto', $normalizedContextIds)
+                ->orderBy('codigo_estacion')
+                ->orderBy('nombre')
+                ->limit(500)
+                ->get(['id_estacion_servicio', 'id_contexto', 'codigo_estacion', 'nombre', 'poblacion', 'provincia'])
+                ->map(fn (EstacionServicio $estacion): array => [
+                    'id' => $estacion->id_estacion_servicio,
+                    'id_contexto' => $estacion->id_contexto,
+                    'codigo' => $estacion->codigo_estacion,
+                    'nombre' => $estacion->nombre,
+                    'municipio' => $estacion->poblacion,
+                    'provincia' => $estacion->provincia,
+                ])
+                ->values()
+                ->all(),
+            ...$this->buildFormCatalogs($normalizedContextIds),
+        ];
     }
 }

@@ -6,6 +6,7 @@ use App\Traits\HasContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Empresa extends Model
@@ -55,5 +56,21 @@ class Empresa extends Model
     public function scopeActivas(Builder $query): Builder
     {
         return $query->where('activo', true);
+    }
+
+    /**
+     * Contratos para los que esta empresa está autorizada como facturadora.
+     */
+    public function contratosPermitidos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Contrato::class,
+            'contrato_empresas_facturadoras',
+            'id_empresa',
+            'id_contrato'
+        )
+            ->withPivot(['id_contexto', 'activo', 'observaciones'])
+            ->withTimestamps()
+            ->wherePivot('activo', true);
     }
 }

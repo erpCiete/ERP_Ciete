@@ -23,7 +23,7 @@ export default function TrabajosColumnas({ isMoeve = false, isRepsol = false, tr
 
     return (
         <td className="px-3 py-4 align-top">
-            <div className="grid min-w-[220px] gap-2">
+            <div className="grid min-w-0 max-w-full gap-2">
                 {contextClient && (
                     <div>
                         <BadgeCliente cliente={contextClient} />

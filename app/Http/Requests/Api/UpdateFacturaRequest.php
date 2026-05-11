@@ -3,142 +3,153 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\Factura;
+use App\Models\PedidoItem;
+use App\Models\Trabajo;
+use App\Support\ContextGuard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateFacturaRequest extends BaseApiRequest
 {
-    /**
-     * Prepara los datos para validación, sanitizando cadenas y arrays,
-     * pero respetando la naturaleza parcial de las peticiones PATCH.
-     */
     protected function prepareForValidation(): void
     {
         $normalized = [];
 
-        // 0. TRADUCTOR FRONTEND -> BACKEND
         if ($this->has('factura_ccp')) {
             $normalized['numero_factura_ccp'] = $this->input('factura_ccp');
         }
 
-        // Si viene el trabajo pero no la empresa, intentar deducirla
-        if ($this->has('id_trabajo') && !$this->has('id_empresa_cliente')) {
-            $trabajo = \App\Models\Trabajo::find($this->input('id_trabajo'));
+        $items = $this->normalizeItemsInput();
+
+        if ($items !== null) {
+            $normalized['items'] = $items;
+        }
+
+        $trabajoId = $this->input('id_trabajo');
+        $derivedTrabajoId = null;
+
+        if ($items !== null && $items !== []) {
+            $derivedTrabajoId = $this->inferTrabajoIdFromItems($items);
+
+            if (($trabajoId === null || $trabajoId === '') && $derivedTrabajoId !== null) {
+                $normalized['id_trabajo'] = $derivedTrabajoId;
+            }
+        }
+
+        if (($this->has('id_trabajo') || array_key_exists('id_trabajo', $normalized)) && ! $this->has('id_empresa_cliente')) {
+            $headerTrabajoId = $derivedTrabajoId ?? $trabajoId;
+            $trabajo = $headerTrabajoId ? Trabajo::query()->withoutGlobalScopes()->find($headerTrabajoId) : null;
+
             if ($trabajo) {
                 $normalized['id_empresa_cliente'] = $trabajo->id_empresa_cliente;
             }
         }
 
-        // Igualar importe a base_imponible si solo nos envían la base
-        if ($this->has('base_imponible') && !$this->has('importe')) {
+        if ($this->has('base_imponible') && ! $this->has('importe')) {
             $normalized['importe'] = $this->input('base_imponible');
         }
 
-        // Casteo estricto
         if ($this->has('autofactura')) {
             $normalized['autofactura'] = filter_var($this->input('autofactura'), FILTER_VALIDATE_BOOLEAN);
         }
 
-        // Limpieza de cadenas
-        $stringFields = ['numero_factura', 'numero_factura_ccp', 'serie', 'sociedad', 'observaciones'];
-        foreach ($stringFields as $field) {
-            if ($this->has($field)) {
-                $normalized[$field] = $this->normalizeNullableString($this->input($field));
+        if ($this->has('id_empresa_facturadora')) {
+            $normalized['id_empresa_facturadora'] = $this->input('id_empresa_facturadora') ?: null;
+        }
+
+        foreach (['numero_factura', 'numero_factura_ccp', 'serie', 'sociedad', 'observaciones'] as $field) {
+            if ($this->has($field) || array_key_exists($field, $normalized)) {
+                $normalized[$field] = $this->normalizeNullableString($normalized[$field] ?? $this->input($field));
             }
         }
 
-        if (!empty($normalized)) {
+        if ($normalized !== []) {
             $this->merge($normalized);
-        }
-
-        // Limpieza pivote
-        if ($this->has('pedidos') && is_array($this->input('pedidos'))) {
-            $pedidos = collect($this->input('pedidos'))->map(function ($pedido) {
-                return [
-                    'id_pedido' => $pedido['id_pedido'] ?? null,
-                    'importe_aplicado' => isset($pedido['importe_aplicado']) ? (float) $pedido['importe_aplicado'] : 0,
-                ];
-            })->values()->all();
-
-            $this->merge(['pedidos' => $pedidos]);
         }
     }
 
-    /**
-     * Reglas de validación.
-     */
     public function rules(): array
     {
-        $contextId = Auth::user()?->id_contexto;
-        
-        // Obtener el ID de la factura que se está editando
+        $user = Auth::user();
+        $accessibleContextIds = $user?->getActiveContextIds() ?? [];
         $factura = $this->route('factura');
         $facturaId = $factura instanceof Factura ? $factura->id_factura : $factura;
-
-        // CRÍTICO: En un PATCH, el id_trabajo puede no venir en el payload. 
-        // Si no viene, usamos el id_trabajo del modelo existente para las validaciones condicionales.
-        $trabajoId = $this->input('id_trabajo', $factura instanceof Factura ? $factura->id_trabajo : null);
+        $targetContextId = $this->resolveTargetContextId($accessibleContextIds, $factura);
+        $items = $this->input('items', []);
+        $trabajoId = is_array($items) && $items !== []
+            ? ($this->inferTrabajoIdFromItems($items) ?? $this->input('id_trabajo', $factura instanceof Factura ? $factura->id_trabajo : null))
+            : $this->input('id_trabajo', $factura instanceof Factura ? $factura->id_trabajo : null);
 
         $rules = [
-            // Relaciones (Siempre aisladas por contexto)
             'id_trabajo' => [
                 'sometimes',
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('trabajos', 'id_trabajo')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'id_empresa_cliente' => [
                 'sometimes',
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('empresas', 'id_empresa')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
             ],
-
-            // Datos Base Generales
+            'id_contrato' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('contratos', 'id_contrato')
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+            ],
+            'id_empresa_facturadora' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('empresas', 'id_empresa')
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+            ],
             'numero_factura' => [
                 'sometimes',
-                'required',
+                'nullable',
                 'string',
                 'max:100',
-                Rule::unique('facturas', 'numero_factura')
-                    ->ignore($facturaId, 'id_factura') // Ignora el registro actual
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
             ],
             'serie' => ['nullable', 'string', 'max:50'],
             'fecha_solicitud' => ['nullable', 'date'],
             'fecha_emision' => ['nullable', 'date'],
             'fecha_vencimiento' => ['nullable', 'date'],
-
-            // Importes
             'importe' => ['sometimes', 'required', 'numeric', 'min:0'],
             'base_imponible' => ['sometimes', 'required', 'numeric', 'min:0'],
             'iva' => ['sometimes', 'required', 'numeric', 'min:0'],
             'retencion' => ['sometimes', 'required', 'numeric', 'min:0'],
             'total' => ['sometimes', 'required', 'numeric', 'min:0'],
-
-            // Estados y Flags
-            'estado' => ['sometimes', 'required', 'string', 'max:50'],
+            'estado' => ['sometimes', 'required', Rule::in(Factura::ESTADOS_FUNCIONALES)],
             'autofactura' => ['sometimes', 'boolean'],
             'sociedad' => ['nullable', 'string', 'max:100'],
             'observaciones' => ['nullable', 'string'],
-
-            // Array pivot para pedidos
-            'pedidos' => ['nullable', 'array'],
-            'pedidos.*.id_pedido' => [
-                'required_with:pedidos', 
-                'integer', 
-                Rule::exists('pedidos', 'id_pedido')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId))
+            'items' => ['nullable', 'array'],
+            'items.*.id_factura_item' => [
+                'nullable',
+                'integer',
+                'distinct',
+                Rule::exists('factura_items', 'id_factura_item')
+                    ->where(fn ($query) => $query->where('id_factura', $facturaId)),
             ],
-            'pedidos.*.importe_aplicado' => ['required_with:pedidos', 'numeric', 'min:0'],
+            'items.*.id_pedido_item' => [
+                'required_with:items',
+                'integer',
+                'distinct',
+                Rule::exists('pedido_items', 'id_pedido_item')
+                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
+            ],
+            'items.*.unidades_facturadas' => ['nullable', 'numeric', 'min:0'],
+            'items.*.importe_facturado' => ['required_with:items', 'numeric', 'min:0'],
+            'items.*.observaciones' => ['nullable', 'string'],
         ];
 
-        // ── REGLA DE NEGOCIO CRÍTICA: CONDICIONALES POR CLIENTE (Con Ignore) ──
-        
-        if ($contextId === 1) {
-            // MOEVE
+        if (ContextGuard::isMoeveContextId($targetContextId ? (int) $targetContextId : null)) {
             $rules['numero_factura_ccp'] = [
                 'sometimes',
                 'required',
@@ -146,12 +157,10 @@ class UpdateFacturaRequest extends BaseApiRequest
                 'max:100',
                 Rule::unique('facturas', 'numero_factura_ccp')
                     ->ignore($facturaId, 'id_factura')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->where(fn ($query) => $query->where('id_contexto', $targetContextId)),
             ];
             $rules['orden_factura'] = ['nullable', 'integer', 'min:1'];
-            
-        } elseif ($contextId === 2) {
-            // REPSOL
+        } elseif (ContextGuard::isRepsolContextId($targetContextId ? (int) $targetContextId : null)) {
             $rules['orden_factura'] = [
                 'sometimes',
                 'required',
@@ -159,17 +168,130 @@ class UpdateFacturaRequest extends BaseApiRequest
                 'min:1',
                 Rule::unique('facturas', 'orden_factura')
                     ->ignore($facturaId, 'id_factura')
-                    ->where(fn ($query) => $query->where('id_trabajo', $trabajoId) // Utiliza el ID recuperado inteligentemente
-                                                 ->where('id_contexto', $contextId)),
+                    ->where(fn ($query) => $query->where('id_trabajo', $trabajoId)
+                        ->where('id_contexto', $targetContextId)),
             ];
             $rules['numero_factura_ccp'] = ['nullable', 'string', 'max:100'];
-            
         } else {
-            // Otros contextos (fallback)
             $rules['orden_factura'] = ['nullable', 'integer', 'min:1'];
             $rules['numero_factura_ccp'] = ['nullable', 'string', 'max:100'];
         }
 
         return $rules;
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $user = Auth::user();
+            $accessibleContextIds = $user?->getActiveContextIds() ?? [];
+            $factura = $this->route('factura');
+            $facturaId = $factura instanceof Factura ? $factura->id_factura : $factura;
+            $targetContextId = $this->resolveTargetContextId($accessibleContextIds, $factura);
+
+            $estado = (string) $this->input(
+                'estado',
+                $factura instanceof Factura ? $factura->estado : 'pendiente'
+            );
+            $numeroFactura = $this->has('numero_factura')
+                ? $this->normalizeNullableString($this->input('numero_factura'))
+                : $this->normalizeNullableString($factura instanceof Factura ? $factura->numero_factura : null);
+
+            if (in_array($estado, ['emitida', 'enviada'], true) && $numeroFactura === null) {
+                $validator->errors()->add('numero_factura', 'El numero de factura es obligatorio para facturas emitidas o enviadas.');
+            }
+
+            if ($numeroFactura === null) {
+                return;
+            }
+
+            $empresaFacturadoraId = $this->has('id_empresa_facturadora')
+                ? $this->input('id_empresa_facturadora')
+                : ($factura instanceof Factura ? $factura->id_empresa_facturadora : null);
+
+            if ($targetContextId === null || ! $empresaFacturadoraId) {
+                return;
+            }
+
+            $exists = Factura::query()
+                ->withoutGlobalScopes()
+                ->where('id_contexto', $targetContextId)
+                ->where('id_empresa_facturadora', (int) $empresaFacturadoraId)
+                ->where('numero_factura', $numeroFactura)
+                ->when($facturaId, fn ($query) => $query->where('id_factura', '!=', $facturaId))
+                ->exists();
+
+            if ($exists) {
+                $validator->errors()->add('numero_factura', 'Ya existe una factura con ese numero para el contexto y sociedad facturadora seleccionados.');
+            }
+        });
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function normalizeItemsInput(): ?array
+    {
+        if (! $this->has('items') || ! is_array($this->input('items'))) {
+            return null;
+        }
+
+        return collect($this->input('items'))->map(function ($item) {
+            return [
+                'id_factura_item' => $item['id_factura_item'] ?? null,
+                'id_pedido_item' => $item['id_pedido_item'] ?? null,
+                'unidades_facturadas' => isset($item['unidades_facturadas']) && $item['unidades_facturadas'] !== ''
+                    ? (float) $item['unidades_facturadas']
+                    : null,
+                'importe_facturado' => isset($item['importe_facturado']) && $item['importe_facturado'] !== ''
+                    ? (float) $item['importe_facturado']
+                    : 0,
+                'observaciones' => $this->normalizeNullableString($item['observaciones'] ?? null),
+            ];
+        })->values()->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    private function inferTrabajoIdFromItems(array $items): ?int
+    {
+        $firstItemId = collect($items)->pluck('id_pedido_item')->filter()->first();
+
+        if (! $firstItemId) {
+            return null;
+        }
+
+        $pedidoItem = PedidoItem::query()
+            ->withoutGlobalScopes()
+            ->with('pedido')
+            ->find($firstItemId);
+
+        return $pedidoItem?->pedido?->id_trabajo ? (int) $pedidoItem->pedido->id_trabajo : null;
+    }
+
+    private function resolveTargetContextId(array $accessibleContextIds, mixed $factura): ?int
+    {
+        $firstItemId = collect($this->input('items', []))->pluck('id_pedido_item')->filter()->first();
+
+        if ($firstItemId) {
+            return PedidoItem::query()
+                ->withoutGlobalScopes()
+                ->whereIn('id_contexto', $accessibleContextIds)
+                ->where('id_pedido_item', $firstItemId)
+                ->value('id_contexto');
+        }
+
+        $trabajoId = $this->input('id_trabajo');
+
+        if ($trabajoId) {
+            return Trabajo::query()
+                ->withoutGlobalScopes()
+                ->whereIn('id_contexto', $accessibleContextIds)
+                ->where('id_trabajo', $trabajoId)
+                ->value('id_contexto');
+        }
+
+        return $factura instanceof Factura ? (int) $factura->id_contexto : null;
     }
 }

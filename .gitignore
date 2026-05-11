@@ -56,6 +56,18 @@ Thumbs.db
 # Documentos originales Abaco (excels, PDFs, reuniones)
 # Son archivos fuente que NO deben subir al repositorio (pesados, binarios).
 /docs/Abaco/
+/docs/Abaco/excelsactualizados/**/*.xlsx
+/docs/Abaco/excelsactualizados/**/*.xls
+/docs/Abaco/excelsactualizados/**/*.docx
+
+# Seeders privados y caches locales de carga real CIETE
+/database/seeders/private/*
+!/database/seeders/private/.gitkeep
+!/database/seeders/private/README.md
+/storage/app/ciete/private-imports/
+/storage/app/ciete/generated-seeders/
+/storage/app/ciete/import-cache/
+/storage/app/local-patches/
 
 # Sprint documentation safety
 /docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md

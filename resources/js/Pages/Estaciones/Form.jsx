@@ -1,4 +1,5 @@
 import InputError from '@/Components/InputError';
+import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import { useClientes } from '@/Hooks/useClientes';
 import { useEstaciones } from '@/Hooks/useEstaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
     pais: 'Espana',
     observaciones: '',
     activo: true,
+    fecha_baja: '',
 };
 
 const ESTACION_FIELDS = [
@@ -96,12 +98,24 @@ function normalizeEstacion(estacion) {
         estado: estacion?.estado ?? '',
         direccion: estacion?.direccion ?? '',
         codigo_postal: estacion?.codigo_postal ?? '',
-        poblacion: estacion?.poblacion ?? '',
+        poblacion: estacion?.municipio ?? estacion?.poblacion ?? '',
         provincia: estacion?.provincia ?? '',
         pais: estacion?.pais ?? 'Espana',
         observaciones: estacion?.observaciones ?? '',
         activo: estacion?.activo ?? true,
+        fecha_baja: estacion?.fecha_baja ?? '',
     };
+}
+
+function FormField({ label, error, children, help = '' }) {
+    return (
+        <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-text-main">{label}</span>
+            {children}
+            {help && <p className="mt-2 text-xs text-text-muted">{help}</p>}
+            <InputError message={error} className="mt-2" />
+        </label>
+    );
 }
 
 export default function EstacionesForm({ estacionId = null }) {
@@ -236,7 +250,7 @@ export default function EstacionesForm({ estacionId = null }) {
                 header={<h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">{pageTitle}</h2>}
             >
                 <Head title={pageTitle} />
-                <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm text-text-muted">
+                <div className="rounded-2xl border border-border bg-surface p-6 text-text-muted shadow-sm">
                     {t('estaciones.loading')}
                 </div>
             </AuthenticatedLayout>
@@ -249,11 +263,11 @@ export default function EstacionesForm({ estacionId = null }) {
                 header={<h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">{pageTitle}</h2>}
             >
                 <Head title={pageTitle} />
-                <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm text-text-muted">
+                <div className="rounded-2xl border border-border bg-surface p-6 text-text-muted shadow-sm">
                     <p>{t('estaciones.loadError')}</p>
                     <button
                         type="button"
-                        onClick={() => router.visit(route('estaciones.index'))}
+                        onClick={() => router.visit(route('maestros.index'))}
                         className="mt-4 text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
                     >
                         {t('common.actions.back')}
@@ -269,185 +283,236 @@ export default function EstacionesForm({ estacionId = null }) {
         >
             <Head title={pageTitle} />
 
-            <div className="mx-auto max-w-4xl space-y-6">
-                <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">{t('nav.groups.masters')}</p>
-                    <h1 className="mt-2 text-2xl font-semibold text-text-main">{pageTitle}</h1>
-                    <p className="mt-2 text-sm text-text-muted">
-                        {isEditing ? t('estaciones.editDescription') : t('estaciones.createDescription')}
-                    </p>
-                </section>
+            <div className="ciete-page max-w-4xl">
+                <ContextualPageHeader
+                    eyebrow={t('nav.groups.masters')}
+                    title={pageTitle}
+                    description={isEditing ? t('estaciones.editDescription') : t('estaciones.createDescription')}
+                    backHref={route('maestros.index')}
+                />
 
                 <form onSubmit={handleSubmit} noValidate className="space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-sm">
-                    <div className="grid gap-5 md:grid-cols-2">
-                        <label className="block md:col-span-2">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.client')}</span>
-                            <select
-                                value={form.id_empresa_cliente}
-                                required
-                                onBlur={() => markFieldTouched('id_empresa_cliente')}
-                                onChange={(event) => updateField('id_empresa_cliente', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('id_empresa_cliente'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                    <section className="space-y-5">
+                        <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-text-hint">
+                                {t('estaciones.sections.primary')}
+                            </h3>
+                        </div>
+
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div className="md:col-span-2">
+                                <FormField
+                                    label={t('estaciones.fields.client')}
+                                    error={getFieldError('id_empresa_cliente')}
+                                >
+                                    <select
+                                        value={form.id_empresa_cliente}
+                                        required
+                                        onBlur={() => markFieldTouched('id_empresa_cliente')}
+                                        onChange={(event) => updateField('id_empresa_cliente', event.target.value)}
+                                        aria-invalid={Boolean(getFieldError('id_empresa_cliente'))}
+                                        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                    >
+                                        <option value="">{t('estaciones.clientPlaceholder')}</option>
+                                        {clientes.map((cliente) => (
+                                            <option key={cliente.id} value={cliente.id}>
+                                                {cliente.razon_social || cliente.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </FormField>
+                            </div>
+
+                            <FormField
+                                label={t('estaciones.fields.stationCode')}
+                                help={t('estaciones.fields.stationCodeHelp')}
+                                error={getFieldError('codigo_estacion')}
                             >
-                                <option value="">{t('estaciones.clientPlaceholder')}</option>
-                                {clientes.map((cliente) => (
-                                    <option key={cliente.id} value={cliente.id}>
-                                        {cliente.razon_social || cliente.nombre}
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError message={getFieldError('id_empresa_cliente')} className="mt-2" />
-                        </label>
+                                <input
+                                    type="text"
+                                    value={form.codigo_estacion}
+                                    required
+                                    maxLength={80}
+                                    onBlur={() => markFieldTouched('codigo_estacion')}
+                                    onChange={(event) => updateField('codigo_estacion', event.target.value)}
+                                    aria-invalid={Boolean(getFieldError('codigo_estacion'))}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm font-mono text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
 
-                        <label className="block md:col-span-2">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.name')}</span>
-                            <input
-                                type="text"
-                                value={form.nombre}
-                                required
-                                maxLength={180}
-                                onBlur={() => markFieldTouched('nombre')}
-                                onChange={(event) => updateField('nombre', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('nombre'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('nombre')} className="mt-2" />
-                        </label>
+                            <FormField
+                                label={t('estaciones.fields.name')}
+                                error={getFieldError('nombre')}
+                            >
+                                <input
+                                    type="text"
+                                    value={form.nombre}
+                                    required
+                                    maxLength={180}
+                                    onBlur={() => markFieldTouched('nombre')}
+                                    onChange={(event) => updateField('nombre', event.target.value)}
+                                    aria-invalid={Boolean(getFieldError('nombre'))}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
 
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.stationCode')}</span>
-                            <input
-                                type="text"
-                                value={form.codigo_estacion}
-                                required
-                                maxLength={80}
-                                onBlur={() => markFieldTouched('codigo_estacion')}
-                                onChange={(event) => updateField('codigo_estacion', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('codigo_estacion'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('codigo_estacion')} className="mt-2" />
-                        </label>
+                            <FormField
+                                label={t('estaciones.fields.city')}
+                                error={getFieldError('poblacion')}
+                            >
+                                <input
+                                    type="text"
+                                    value={form.poblacion}
+                                    maxLength={120}
+                                    onBlur={() => markFieldTouched('poblacion')}
+                                    onChange={(event) => updateField('poblacion', event.target.value)}
+                                    aria-invalid={Boolean(getFieldError('poblacion'))}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
 
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.status')}</span>
-                            <input
-                                type="text"
-                                value={form.estado}
-                                maxLength={50}
-                                onBlur={() => markFieldTouched('estado')}
-                                onChange={(event) => updateField('estado', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('estado'))}
-                                placeholder={t('estaciones.fields.statusPlaceholder')}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('estado')} className="mt-2" />
-                        </label>
+                            <FormField
+                                label={t('estaciones.fields.province')}
+                                error={getFieldError('provincia')}
+                            >
+                                <input
+                                    type="text"
+                                    value={form.provincia}
+                                    maxLength={120}
+                                    onBlur={() => markFieldTouched('provincia')}
+                                    onChange={(event) => updateField('provincia', event.target.value)}
+                                    aria-invalid={Boolean(getFieldError('provincia'))}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
+                        </div>
+                    </section>
 
-                        <label className="block md:col-span-2">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.address')}</span>
-                            <input
-                                type="text"
-                                value={form.direccion}
-                                maxLength={255}
-                                onBlur={() => markFieldTouched('direccion')}
-                                onChange={(event) => updateField('direccion', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('direccion'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('direccion')} className="mt-2" />
-                        </label>
+                    <section className="space-y-5 border-t border-border pt-6">
+                        <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-text-hint">
+                                {t('estaciones.sections.secondary')}
+                            </h3>
+                        </div>
 
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.postalCode')}</span>
-                            <input
-                                type="text"
-                                value={form.codigo_postal}
-                                inputMode="numeric"
-                                maxLength={5}
-                                onBlur={() => markFieldTouched('codigo_postal')}
-                                onChange={(event) => updateField('codigo_postal', normalizePostalCode(event.target.value))}
-                                aria-invalid={Boolean(getFieldError('codigo_postal'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('codigo_postal')} className="mt-2" />
-                        </label>
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div className="md:col-span-2">
+                                <FormField
+                                    label={t('estaciones.fields.address')}
+                                    help={t('estaciones.fields.addressHelp')}
+                                    error={getFieldError('direccion')}
+                                >
+                                    <input
+                                        type="text"
+                                        value={form.direccion}
+                                        maxLength={255}
+                                        onBlur={() => markFieldTouched('direccion')}
+                                        onChange={(event) => updateField('direccion', event.target.value)}
+                                        aria-invalid={Boolean(getFieldError('direccion'))}
+                                        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                    />
+                                </FormField>
+                            </div>
 
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.city')}</span>
-                            <input
-                                type="text"
-                                value={form.poblacion}
-                                maxLength={120}
-                                onBlur={() => markFieldTouched('poblacion')}
-                                onChange={(event) => updateField('poblacion', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('poblacion'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('poblacion')} className="mt-2" />
-                        </label>
+                            <FormField
+                                label={t('estaciones.fields.postalCode')}
+                                error={getFieldError('codigo_postal')}
+                            >
+                                <input
+                                    type="text"
+                                    value={form.codigo_postal}
+                                    inputMode="numeric"
+                                    maxLength={5}
+                                    onBlur={() => markFieldTouched('codigo_postal')}
+                                    onChange={(event) => updateField('codigo_postal', normalizePostalCode(event.target.value))}
+                                    aria-invalid={Boolean(getFieldError('codigo_postal'))}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
 
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.province')}</span>
-                            <input
-                                type="text"
-                                value={form.provincia}
-                                maxLength={120}
-                                onBlur={() => markFieldTouched('provincia')}
-                                onChange={(event) => updateField('provincia', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('provincia'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('provincia')} className="mt-2" />
-                        </label>
+                            <FormField
+                                label={t('estaciones.fields.country')}
+                                error={getFieldError('pais')}
+                            >
+                                <input
+                                    type="text"
+                                    value={form.pais}
+                                    maxLength={120}
+                                    onBlur={() => markFieldTouched('pais')}
+                                    onChange={(event) => updateField('pais', event.target.value)}
+                                    aria-invalid={Boolean(getFieldError('pais'))}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
 
-                        <label className="block">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.country')}</span>
-                            <input
-                                type="text"
-                                value={form.pais}
-                                maxLength={120}
-                                onBlur={() => markFieldTouched('pais')}
-                                onChange={(event) => updateField('pais', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('pais'))}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('pais')} className="mt-2" />
-                        </label>
+                            <FormField
+                                label={t('estaciones.fields.status')}
+                                error={getFieldError('estado')}
+                            >
+                                <input
+                                    type="text"
+                                    value={form.estado}
+                                    maxLength={50}
+                                    onBlur={() => markFieldTouched('estado')}
+                                    onChange={(event) => updateField('estado', event.target.value)}
+                                    aria-invalid={Boolean(getFieldError('estado'))}
+                                    placeholder={t('estaciones.fields.statusPlaceholder')}
+                                    className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                />
+                            </FormField>
 
-                        <label className="block md:col-span-2">
-                            <span className="mb-1.5 block text-sm font-medium text-text-main">{t('estaciones.fields.notes')}</span>
-                            <textarea
-                                value={form.observaciones}
-                                onBlur={() => markFieldTouched('observaciones')}
-                                onChange={(event) => updateField('observaciones', event.target.value)}
-                                aria-invalid={Boolean(getFieldError('observaciones'))}
-                                rows={4}
-                                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
-                            />
-                            <InputError message={getFieldError('observaciones')} className="mt-2" />
-                        </label>
+                            <div className="md:col-span-2">
+                                <FormField
+                                    label={t('estaciones.fields.notes')}
+                                    error={getFieldError('observaciones')}
+                                >
+                                    <textarea
+                                        value={form.observaciones}
+                                        onBlur={() => markFieldTouched('observaciones')}
+                                        onChange={(event) => updateField('observaciones', event.target.value)}
+                                        aria-invalid={Boolean(getFieldError('observaciones'))}
+                                        rows={4}
+                                        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red)"
+                                    />
+                                </FormField>
+                            </div>
+                        </div>
+                    </section>
 
-                        <label className="flex items-center gap-3 md:col-span-2">
+                    <section className="space-y-4 border-t border-border pt-6">
+                        <div>
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-text-hint">
+                                {t('estaciones.sections.lifecycle')}
+                            </h3>
+                        </div>
+
+                        <label className="flex items-start gap-3">
                             <input
                                 type="checkbox"
                                 checked={form.activo}
                                 onBlur={() => markFieldTouched('activo')}
                                 onChange={(event) => updateField('activo', event.target.checked)}
-                                className="rounded-sm border-border text-(--ciete-red) focus:ring-(--ciete-red)"
+                                className="mt-0.5 rounded-sm border-border text-(--ciete-red) focus:ring-(--ciete-red)"
                             />
-                            <span className="text-sm font-medium text-text-main">{t('estaciones.fields.active')}</span>
+                            <div>
+                                <span className="text-sm font-medium text-text-main">{t('estaciones.fields.active')}</span>
+                                <p className="mt-1 text-xs text-text-muted">{t('estaciones.fields.activeHelp')}</p>
+                                {!form.activo && form.fecha_baja && (
+                                    <p className="mt-2 text-xs font-medium text-text-muted">
+                                        {t('estaciones.fields.deactivatedOn', { date: form.fecha_baja })}
+                                    </p>
+                                )}
+                            </div>
                         </label>
-                    </div>
+                    </section>
 
                     {submitError && <p className="text-sm text-primary">{submitError}</p>}
 
-                    <div className="flex items-center justify-between border-t border-border pt-4">
+                    <div className="ciete-form-actions border-0 border-t bg-transparent px-0 py-4 shadow-none sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => router.visit(route('estaciones.index'))}
-                            className="text-sm font-medium text-text-muted transition hover:text-text-main"
+                            onClick={() => router.visit(route('maestros.index'))}
+                            className="inline-flex w-full items-center justify-center text-sm font-medium text-text-muted transition hover:text-text-main sm:w-auto"
                         >
                             {t('common.actions.cancel')}
                         </button>
@@ -455,7 +520,7 @@ export default function EstacionesForm({ estacionId = null }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-60"
+                            className="inline-flex w-full items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-60 sm:w-auto"
                         >
                             {loading ? t('estaciones.saving') : t('common.actions.save')}
                         </button>

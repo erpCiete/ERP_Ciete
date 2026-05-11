@@ -70,9 +70,16 @@ async function bootstrapApp() {
             const initialLocale = props?.initialPage?.props?.locale?.current ?? bootstrapLocale;
             const supportedLocales =
                 props?.initialPage?.props?.locale?.supported ?? bootstrapLocales;
+            const initialVisualStyle =
+                props?.initialPage?.props?.auth?.user?.interface_mode;
+            const initialWorkspaceContext =
+                props?.initialPage?.props?.auth?.user?.active_context?.workspace_key;
 
             root.render(
-                <ThemeProvider>
+                <ThemeProvider
+                    initialVisualStyle={initialVisualStyle}
+                    initialWorkspaceContext={initialWorkspaceContext}
+                >
                     <I18nProvider initialLocale={initialLocale} supportedLocales={supportedLocales}>
                         <App {...props} />
                     </I18nProvider>

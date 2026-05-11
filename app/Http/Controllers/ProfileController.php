@@ -49,4 +49,18 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit');
     }
+
+    /**
+     * Update the user's interface preference.
+     */
+    public function updatePreferences(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'interface_mode' => ['required', 'string', 'in:ciete_excel,ciete_moderno'],
+        ]);
+
+        $request->user()->update(['interface_mode' => $validated['interface_mode']]);
+
+        return Redirect::back();
+    }
 }

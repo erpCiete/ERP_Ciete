@@ -2,10 +2,21 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Support\ContextGuard;
 use Illuminate\Validation\Rule;
 
 class StoreImportacionRequest extends BaseApiRequest
 {
+    public function authorize(): bool
+    {
+        return ContextGuard::canCreateInActiveContext($this->user());
+    }
+
+    protected function authorizationFailureMessage(): string
+    {
+        return ContextGuard::CREATE_FROM_ALL_MESSAGE;
+    }
+
     /**
      * Reglas de validación para la subida del Excel.
      */

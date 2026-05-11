@@ -3,13 +3,34 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\EstacionServicio;
+use App\Models\Trabajo;
+use App\Support\ContextGuard;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreTrabajoRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return ContextGuard::canCreateInActiveContext($this->user());
+    }
+
+    protected function failedAuthorization(): void
+    {
+        if ($this->expectsJson()) {
+            throw new HttpResponseException(response()->json([
+                'success' => false,
+                'message' => ContextGuard::CREATE_FROM_ALL_MESSAGE,
+                'error_code' => 'AUTHORIZATION_ERROR',
+                'errors' => [],
+            ], 403));
+        }
+
+        throw new AuthorizationException(ContextGuard::CREATE_FROM_ALL_MESSAGE);
+    }
 
     protected function prepareForValidation(): void
     {
@@ -18,31 +39,41 @@ class StoreTrabajoRequest extends FormRequest
                 'fecha_terminacion' => $this->input('fecha_terminado'),
             ]);
         }
+
+        if (! $this->filled('estado')) {
+            $this->merge(['estado' => 'en_curso']);
+        }
     }
 
     public function rules(): array
     {
         return [
             'id_contexto'           => ['nullable', 'integer'],
-            'numero_trabajo'       => ['required', 'string', 'max:50'],
+            'numero_trabajo'       => ['required', 'integer'],
+            'numero_trabajo_operativo' => ['nullable', 'string', 'max:100'],
             'descripcion_trabajo'  => ['required', 'string', 'max:150'], // Sincronizado con React
             'id_estacion_servicio' => ['required', 'exists:estaciones_servicio,id_estacion_servicio'],
             'fecha_encargo'        => ['required', 'date'],
             'fecha_terminacion'    => ['nullable', 'date'],
-            'estado'               => ['required', Rule::in(['borrador', 'en_curso', 'terminado', 'cerrado', 'cancelado'])],
+            'estado'               => ['required', Rule::in(Trabajo::ESTADOS_FUNCIONALES)],
             'observaciones'        => ['nullable', 'string'],
+            'id_responsable_ciete' => [
+                'nullable',
+                'integer',
+                Rule::exists('usuarios', 'id_usuario')->where(fn ($query) => $query->where('activo', true)),
+            ],
 
-            // VALIDACIÓN INTELIGENTE: Solo pide estos campos si la estación es del cliente correcto
+            // Validacion contextual: OTROS CLIENTES no hereda obligatorios especificos de MOEVE/REPSOL.
             'id_contrato' => [
-                Rule::requiredIf(fn () => $this->esCliente(1)), // 1 = MOEVE
+                Rule::requiredIf(fn () => $this->esContexto('moeve')),
                 'nullable', 'integer'
             ],
             'id_tipo_documento' => [
-                Rule::requiredIf(fn () => $this->esCliente(2)), // 2 = REPSOL
+                Rule::requiredIf(fn () => $this->esContexto('repsol')),
                 'nullable', 'integer'
             ],
             'id_tipo_trabajo' => [
-                Rule::requiredIf(fn () => $this->esCliente(2)),
+                Rule::requiredIf(fn () => $this->esContexto('repsol')),
                 'nullable', 'integer'
             ],
         ];
@@ -53,7 +84,7 @@ class StoreTrabajoRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $user = $this->user();
             $selectedContextId = (int) ($this->input('id_contexto') ?: 0);
-            $accessibleContextIds = $user?->getAccessibleContextIds() ?? [];
+            $accessibleContextIds = $user?->getActiveContextIds() ?? [];
 
             if ($selectedContextId > 0 && ! in_array($selectedContextId, $accessibleContextIds, true)) {
                 $validator->errors()->add('id_contexto', 'El contexto seleccionado no está disponible para tu usuario.');
@@ -79,10 +110,10 @@ class StoreTrabajoRequest extends FormRequest
         });
     }
 
-    private function esCliente($idContexto): bool
+    private function esContexto(string $workspaceKey): bool
     {
         if (!$this->id_estacion_servicio) return false;
         $estacion = EstacionServicio::withoutGlobalScopes()->find($this->id_estacion_servicio);
-        return $estacion && $estacion->id_contexto == $idContexto;
+        return $estacion && ContextGuard::workspaceKeyForContextId((int) $estacion->id_contexto) === $workspaceKey;
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\MensajeInterno;
+use App\Models\ContextoCliente;
+use App\Support\ContextGuard;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -50,9 +52,83 @@ class HandleInertiaRequests extends Middleware
         if ($user) {
             $user->loadMissing([
                 'contexto:id_contexto,nombre,codigo',
+                'contextos:id_contexto,nombre,codigo',
                 'roles:id_rol,slug,nombre',
             ]);
         }
+
+        $workspaceKeyResolver = static fn (?string $code, ?string $name = null): string => ContextGuard::workspaceKey($code, $name);
+
+        $availableContexts = collect();
+        $activeContextSelection = null;
+        $activeContext = null;
+        $canUseAllContexts = false;
+
+        if ($user) {
+            $availableContextIds = collect($user->getAccessibleContextIds())
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+            $availableContexts = ContextoCliente::query()
+                ->select('id_contexto', 'nombre', 'codigo')
+                ->whereIn('id_contexto', $availableContextIds)
+                ->orderBy('nombre')
+                ->get();
+
+            $activeContextSelection = $user->getActiveContextSelection();
+            $user->setActiveContextSelection($activeContextSelection);
+            $canUseAllContexts = count($availableContextIds) > 1;
+
+            if (is_int($activeContextSelection)) {
+                $activeContext = $availableContexts->firstWhere('id_contexto', $activeContextSelection);
+            }
+
+            if (! $activeContext && $availableContexts->isNotEmpty()) {
+                $activeContext = $availableContexts->first();
+                $activeContextSelection = (int) $activeContext->id_contexto;
+            }
+        }
+
+        $availableContextsPayload = $availableContexts
+            ->map(function ($contexto) use ($workspaceKeyResolver): array {
+                return [
+                    'id_contexto' => (int) $contexto->id_contexto,
+                    'value' => (int) $contexto->id_contexto,
+                    'codigo' => $contexto->codigo,
+                    'nombre' => ContextGuard::displayName($contexto->codigo, $contexto->nombre),
+                    'workspace_key' => $workspaceKeyResolver($contexto->codigo, $contexto->nombre),
+                ];
+            })
+            ->values();
+
+        if ($canUseAllContexts) {
+            $availableContextsPayload->prepend([
+                'id_contexto' => null,
+                'value' => 'all',
+                'codigo' => 'TODOS',
+                'nombre' => 'Todos',
+                'workspace_key' => 'todos',
+            ]);
+        }
+
+        $activeContextPayload = $activeContextSelection === \App\Models\User::ACTIVE_CONTEXT_ALL
+            ? [
+                'id_contexto' => null,
+                'value' => 'all',
+                'codigo' => 'TODOS',
+                'nombre' => 'Todos',
+                'workspace_key' => 'todos',
+                'is_all' => true,
+            ]
+            : [
+                'id_contexto' => $activeContext?->id_contexto ? (int) $activeContext->id_contexto : null,
+                'value' => $activeContext?->id_contexto ? (int) $activeContext->id_contexto : null,
+                'codigo' => $activeContext?->codigo,
+                'nombre' => ContextGuard::displayName($activeContext?->codigo, $activeContext?->nombre),
+                'workspace_key' => $workspaceKeyResolver($activeContext?->codigo, $activeContext?->nombre),
+                'is_all' => false,
+            ];
 
         $roleSlugs = $user
             ? $user->roles->pluck('slug')->map(fn (string $slug): string => $slug)->values()->all()
@@ -80,14 +156,16 @@ class HandleInertiaRequests extends Middleware
                     'avatar_url' => $selectedAvatar ? asset($selectedAvatar['file']) : null,
                     'activo' => $user->activo,
                     'is_admin' => $user->is_admin,
-                    'is_director' => in_array('director', $roleSlugs, true),
+                    'is_director' => in_array('director', $roleSlugs, true)
+                        || in_array('direccion', $roleSlugs, true),
                     'is_execution' => in_array('ejecucion', $roleSlugs, true),
                     'is_execution_moeve' => in_array('ejecucion_moeve', $roleSlugs, true),
                     'is_execution_repsol' => in_array('ejecucion_repsol', $roleSlugs, true),
                     'is_accounting' => in_array('contable', $roleSlugs, true),
                     'can_manage_support' => $user->canManageSupport(),
                     'can_access_direction_panel' => in_array('admin', $roleSlugs, true)
-                        || in_array('director', $roleSlugs, true),
+                        || in_array('director', $roleSlugs, true)
+                        || in_array('direccion', $roleSlugs, true),
                     'primary_role_slug' => $primaryRole?->slug,
                     'primary_role_name' => $primaryRole?->nombre,
                     'roles' => $user->roles->map(fn($role) => [
@@ -102,10 +180,11 @@ class HandleInertiaRequests extends Middleware
                         'nombre' => $user->contexto->nombre,
                         'codigo' => $user->contexto->codigo,
                     ] : null,
+                    'active_context' => $activeContextPayload,
+                    'available_contexts' => $availableContextsPayload->values()->all(),
+                    'can_use_all_contexts' => $canUseAllContexts,
+                    'interface_mode' => $user->interface_mode ?? 'ciete_moderno',
                 ] : null,
-                'session' => [
-                    'id' => $request->session()->getId(),
-                ],
             ],
             'locale' => [
                 'current' => $currentLocale,

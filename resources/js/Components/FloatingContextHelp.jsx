@@ -107,7 +107,7 @@ export default function FloatingContextHelp() {
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
-                className={`group inline-flex h-14 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold shadow-lg transition ${
+                className={`group inline-flex h-12 min-w-12 items-center justify-center gap-2 rounded-full border px-3 text-sm font-semibold shadow-lg transition sm:h-14 sm:px-4 ${
                     open
                         ? 'border-primary/25 bg-surface text-text-main'
                         : 'border-primary/15 bg-primary text-white hover:bg-primary-hover'

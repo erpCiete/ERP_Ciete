@@ -1,5 +1,4 @@
 <?php
-
 namespace Database\Seeders;
 
 use App\Models\Role;
@@ -9,9 +8,6 @@ use Illuminate\Support\Facades\Hash;
 
 class UsuariosInicialesSeeder extends Seeder
 {
-    /**
-     * Credenciales iniciales documentadas para validación funcional.
-     */
     public function run(): void
     {
         $usuarios = [
@@ -22,12 +18,13 @@ class UsuariosInicialesSeeder extends Seeder
                 'email' => 'admin@ciete.es',
                 'password' => 'Admin1234!',
                 'id_contexto' => 3,
-                'id_contacto_empresa' => 1,
+                'id_contacto_empresa' => null,
                 'rol' => 'admin',
                 'contextos' => [1, 2, 3],
+                'interface_mode' => 'ciete_moderno',
             ],
             [
-                'nombre' => 'César',
+                'nombre' => 'Cesar',
                 'apellidos' => 'CIETE',
                 'nombre_usuario' => 'cesar',
                 'email' => 'cesar@ciete.es',
@@ -36,10 +33,11 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'director',
                 'contextos' => [1, 2, 3],
+                'interface_mode' => 'ciete_excel',
             ],
             [
                 'nombre' => 'Usuario',
-                'apellidos' => 'Ejecución',
+                'apellidos' => 'Ejecucion',
                 'nombre_usuario' => 'usuario',
                 'email' => 'usuario@ciete.es',
                 'password' => 'Usuario1234!',
@@ -47,9 +45,10 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'ejecucion',
                 'contextos' => [1, 2, 3],
+                'interface_mode' => 'ciete_excel',
             ],
             [
-                'nombre' => 'Ejecución',
+                'nombre' => 'Ejecucion',
                 'apellidos' => 'Moeve',
                 'nombre_usuario' => 'moeve',
                 'email' => 'moeve@ciete.es',
@@ -58,9 +57,10 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'ejecucion_moeve',
                 'contextos' => [1],
+                'interface_mode' => 'ciete_excel',
             ],
             [
-                'nombre' => 'Ejecución',
+                'nombre' => 'Ejecucion',
                 'apellidos' => 'Repsol',
                 'nombre_usuario' => 'repsol',
                 'email' => 'repsol@ciete.es',
@@ -69,6 +69,7 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'ejecucion_repsol',
                 'contextos' => [2],
+                'interface_mode' => 'ciete_excel',
             ],
             [
                 'nombre' => 'Usuario',
@@ -80,6 +81,7 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'contable',
                 'contextos' => [1, 2, 3],
+                'interface_mode' => 'ciete_moderno',
             ],
         ];
 
@@ -98,6 +100,7 @@ class UsuariosInicialesSeeder extends Seeder
                     'email_verificado_at' => now(),
                     'password' => Hash::make($item['password']),
                     'activo' => true,
+                    'interface_mode' => $item['interface_mode'],
                 ]
             );
 

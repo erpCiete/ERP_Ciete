@@ -8,6 +8,7 @@ use App\Models\ImportacionFila;
 use App\Models\Trabajo;
 use App\Models\EstacionServicio;
 use App\Services\ExcelParserService;
+use App\Support\ContextGuard;
 use Throwable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,7 +16,7 @@ use Inertia\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage; 
+use Illuminate\Support\Facades\Storage;
 
 class ImportacionController extends Controller
 {
@@ -24,20 +25,238 @@ class ImportacionController extends Controller
      */
     public function index(Request $request): Response
     {
-        $importaciones = Importacion::query()
+        $filters = [
+            'contexto' => trim((string) $request->input('contexto', '')),
+            'archivo' => trim((string) $request->input('archivo', '')),
+            'estado' => trim((string) $request->input('estado', '')),
+            'detalle' => $request->integer('detalle') ?: null,
+            'hoja' => trim((string) $request->input('hoja', '')),
+            'severidad' => trim((string) $request->input('severidad', '')),
+            'clasificacion' => trim((string) $request->input('clasificacion', '')),
+            'tipo' => trim((string) $request->input('tipo', '')),
+            'resultado' => trim((string) $request->input('resultado', '')),
+        ];
+
+        $importacionesQuery = Importacion::query()
+            ->with(['contexto:id_contexto,codigo,nombre', 'usuario:id_usuario,email,nombre']);
+
+        $this->applyImportacionFilters($importacionesQuery, $filters);
+
+        $importaciones = $importacionesQuery
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
+
+        $selectedImportId = $filters['detalle'] ?: ($importaciones->items()[0]->id_importacion ?? null);
+        $selectedImport = $selectedImportId
+            ? Importacion::query()->with('contexto:id_contexto,codigo,nombre')->find($selectedImportId)
+            : null;
+
+        $detailQuery = ImportacionFila::query()
+            ->with('importacion.contexto:id_contexto,codigo,nombre')
+            ->whereIn('id_importacion', (clone $importacionesQuery)->select('id_importacion'));
+
+        if ($selectedImportId !== null) {
+            $detailQuery->where('id_importacion', $selectedImportId);
+        }
+
+        $this->applyDetalleFilters($detailQuery, $filters);
+
+        $detalleFilas = (clone $detailQuery)
+            ->orderByDesc('id_importacion_fila')
+            ->paginate(50, ['*'], 'detalle_page')
+            ->withQueryString();
 
         return Inertia::render('Importaciones/Index', [
             'importaciones' => $importaciones,
+            'resumen' => $this->buildImportSummary(clone $importacionesQuery),
+            'detalleImportacion' => $selectedImport,
+            'detalleFilas' => $detalleFilas,
+            'agrupaciones' => [
+                'avisosPorArchivo' => $this->groupIssuesByFile(clone $detailQuery, 'warning'),
+                'avisosPorHoja' => $this->groupIssuesBySheet(clone $detailQuery, 'warning'),
+                'avisosPorTipo' => $this->groupIssuesByType(clone $detailQuery),
+                'ignoradasPorArchivo' => $this->groupResultsByFile(clone $detailQuery, 'ignored'),
+                'ignoradasPorHoja' => $this->groupResultsBySheet(clone $detailQuery, 'ignored'),
+                'columnasPendientes' => $this->extractUnknownColumns(clone $detailQuery),
+            ],
+            'filtros' => $filters,
         ]);
+    }
+
+    private function applyImportacionFilters($query, array $filters): void
+    {
+        if ($filters['contexto'] !== '') {
+            $contexto = mb_strtoupper($filters['contexto'], 'UTF-8');
+            $query->whereHas('contexto', function ($contextQuery) use ($contexto): void {
+                $contextQuery
+                    ->where('codigo', $contexto)
+                    ->orWhere('nombre', 'like', '%' . $contexto . '%');
+            });
+        }
+
+        if ($filters['archivo'] !== '') {
+            $query->where('archivo_original', 'like', '%' . $filters['archivo'] . '%');
+        }
+
+        if ($filters['estado'] !== '') {
+            $query->where('estado', $filters['estado']);
+        }
+    }
+
+    private function applyDetalleFilters($query, array $filters): void
+    {
+        if ($filters['hoja'] !== '') {
+            $query->where('hoja_origen', 'like', '%' . $filters['hoja'] . '%');
+        }
+
+        if ($filters['severidad'] !== '') {
+            $query->where('severidad', $filters['severidad']);
+        }
+
+        if ($filters['clasificacion'] !== '') {
+            $query->where('clasificacion', $filters['clasificacion']);
+        }
+
+        if ($filters['tipo'] !== '') {
+            $query->where('tipo_fila', $filters['tipo']);
+        }
+
+        if ($filters['resultado'] !== '') {
+            $query->where('resultado', $filters['resultado']);
+        }
+    }
+
+    private function buildImportSummary($query): array
+    {
+        return [
+            'importaciones' => (clone $query)->count(),
+            'filas_leidas' => (int) ((clone $query)->sum('total_filas') ?? 0),
+            'filas_importadas' => (int) ((clone $query)->sum('filas_importadas') ?? 0),
+            'filas_ignoradas' => (int) ((clone $query)->sum('filas_ignoradas') ?? 0),
+            'filas_con_aviso' => (int) ((clone $query)->sum('filas_con_aviso') ?? 0),
+            'filas_con_error' => (int) ((clone $query)->sum('filas_con_error') ?? 0),
+        ];
+    }
+
+    private function groupIssuesByFile($query, string $severity): array
+    {
+        return (clone $query)
+            ->select('archivo_origen', DB::raw('count(*) as total'))
+            ->where('severidad', $severity)
+            ->groupBy('archivo_origen')
+            ->orderByDesc('total')
+            ->limit(12)
+            ->get()
+            ->map(fn ($row) => [
+                'archivo' => $row->archivo_origen,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    private function groupIssuesBySheet($query, string $severity): array
+    {
+        return (clone $query)
+            ->select('archivo_origen', 'hoja_origen', DB::raw('count(*) as total'))
+            ->where('severidad', $severity)
+            ->groupBy('archivo_origen', 'hoja_origen')
+            ->orderByDesc('total')
+            ->limit(15)
+            ->get()
+            ->map(fn ($row) => [
+                'archivo' => $row->archivo_origen,
+                'hoja' => $row->hoja_origen,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    private function groupIssuesByType($query): array
+    {
+        return (clone $query)
+            ->select('codigo', 'clasificacion', DB::raw('count(*) as total'))
+            ->groupBy('codigo', 'clasificacion')
+            ->orderByDesc('total')
+            ->limit(15)
+            ->get()
+            ->map(fn ($row) => [
+                'codigo' => $row->codigo,
+                'clasificacion' => $row->clasificacion,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    private function groupResultsByFile($query, string $result): array
+    {
+        return (clone $query)
+            ->select('archivo_origen', DB::raw('count(*) as total'))
+            ->where('resultado', $result)
+            ->groupBy('archivo_origen')
+            ->orderByDesc('total')
+            ->limit(12)
+            ->get()
+            ->map(fn ($row) => [
+                'archivo' => $row->archivo_origen,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    private function groupResultsBySheet($query, string $result): array
+    {
+        return (clone $query)
+            ->select('archivo_origen', 'hoja_origen', DB::raw('count(*) as total'))
+            ->where('resultado', $result)
+            ->groupBy('archivo_origen', 'hoja_origen')
+            ->orderByDesc('total')
+            ->limit(15)
+            ->get()
+            ->map(fn ($row) => [
+                'archivo' => $row->archivo_origen,
+                'hoja' => $row->hoja_origen,
+                'total' => (int) $row->total,
+            ])
+            ->all();
+    }
+
+    private function extractUnknownColumns($query): array
+    {
+        $rows = (clone $query)
+            ->where('codigo', 'unknown_columns')
+            ->orderByDesc('id_importacion_fila')
+            ->limit(40)
+            ->get(['archivo_origen', 'hoja_origen', 'clasificacion', 'decision_sugerida', 'datos_json']);
+
+        return $rows
+            ->flatMap(function (ImportacionFila $row): array {
+                $columns = $row->datos_json['columns'] ?? [];
+
+                return array_map(fn ($column) => [
+                    'archivo' => $row->archivo_origen,
+                    'hoja' => $row->hoja_origen,
+                    'columna' => (string) $column,
+                    'clasificacion' => $row->clasificacion,
+                    'decision' => $row->decision_sugerida,
+                ], $columns);
+            })
+            ->unique(fn (array $row) => $row['archivo'] . '|' . $row['hoja'] . '|' . $row['columna'])
+            ->values()
+            ->all();
     }
 
     /**
      * Muestra el formulario para subir un Excel.
      */
-    public function create(): Response
+    public function create(Request $request): Response|RedirectResponse
     {
+        if (! ContextGuard::canCreateInActiveContext($request->user())) {
+            return redirect()
+                ->route('importaciones.index')
+                ->with('error', ContextGuard::CREATE_FROM_ALL_MESSAGE);
+        }
+
         return Inertia::render('Importaciones/Form');
     }
 
@@ -73,7 +292,7 @@ class ImportacionController extends Controller
 
             // 3. Crear cabecera de la importación usando el 'tipo' validado en el Request
             $importacion = Importacion::create([
-                'id_contexto'         => $request->user()->id_contexto,
+                'id_contexto'         => ContextGuard::activeContextIdForCreate($request->user()),
                 'id_usuario'          => $request->user()->id_usuario ?? $request->user()->id,
                 'tipo'                => $request->input('tipo', 'trabajos'), // Dinámico y validado
                 'archivo_original'    => $file->getClientOriginalName(),
@@ -81,8 +300,8 @@ class ImportacionController extends Controller
                 'filas_importadas'    => 0,
                 'filas_con_error'     => 0,
                 'filas_duplicadas'    => 0,
-                'estado'              => 'pendiente',
-                'version_importacion' => '1.0',
+                'estado'              => 'subido',
+                'version_importacion' => 1,
                 'started_at'          => now(),
             ]);
 
@@ -99,7 +318,7 @@ class ImportacionController extends Controller
                     'updated_at'     => $now,
                 ];
             }
-            
+
             // 5. Insertar en "Chunks" (Trozos) para evitar saturar la base de datos si suben miles de filas
             foreach (array_chunk($filasToInsert, 500) as $chunk) {
                 ImportacionFila::insert($chunk);
@@ -140,7 +359,7 @@ class ImportacionController extends Controller
     {
         $importacion = Importacion::with('filas')->findOrFail($id);
 
-        if ($importacion->id_contexto !== $request->user()->id_contexto) {
+        if (! ContextGuard::canOperateContext($request->user(), (int) $importacion->id_contexto)) {
             abort(403);
         }
 
@@ -158,7 +377,7 @@ class ImportacionController extends Controller
             $existeTrabajo = Trabajo::where('numero_trabajo', $datos['numero_trabajo'])
                 ->where('id_contexto', $importacion->id_contexto) // Blindado por contexto
                 ->exists();
-                
+
             if ($existeTrabajo) {
                 $errores[] = "El Nº Trabajo '{$datos['numero_trabajo']}' ya existe.";
             }
@@ -185,7 +404,7 @@ class ImportacionController extends Controller
     {
         $importacion = Importacion::with('filas')->findOrFail($id);
 
-        if ($importacion->id_contexto !== $request->user()->id_contexto) {
+        if (! ContextGuard::canOperateContext($request->user(), (int) $importacion->id_contexto)) {
             abort(403);
         }
 
@@ -224,21 +443,20 @@ class ImportacionController extends Controller
                     // Crear Trabajo
                     $trabajo = Trabajo::create([
                         'id_contexto'          => $importacion->id_contexto,
-                        'id_empresa_cliente'   => $estacion->id_empresa_cliente, 
+                        'id_empresa_cliente'   => $estacion->id_empresa_cliente,
                         'id_estacion_servicio' => $estacion->id_estacion_servicio,
                         'numero_trabajo'       => $datos['numero_trabajo'],
                         'descripcion_trabajo'  => $datos['descripcion_trabajo'],
                         'fecha_encargo'        => $datos['fecha_encargo'],
                         'observaciones'        => $datos['observaciones'],
-                        'estado'               => 'borrador', // Mejor iniciar en borrador por seguridad
-                        'cerrado'              => false,
+                        'estado'               => 'en_curso',
                         'id_tipo_trabajo'      => 1, // Fallback genérico
                         'id_tipo_documento'    => $importacion->id_contexto === 2 ? 1 : null,
                     ]);
 
                     // Actualizar trazabilidad en la fila
                     $fila->update([
-                        'estado'                => 'procesado',
+                        'estado'                => 'importado',
                         'mensaje_error'         => null,
                         'id_registro_destino'   => $trabajo->id_trabajo ?? $trabajo->id,
                         'tipo_registro_destino' => Trabajo::class,

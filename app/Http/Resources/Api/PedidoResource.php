@@ -16,17 +16,40 @@ class PedidoResource extends JsonResource
     {
         // Mapeo seguro de las líneas de pedido (solo si se incluyeron en la consulta con eager loading)
         $items = $this->whenLoaded('items', function () {
-            return $this->items->sortBy('orden')->values()->map(function ($item) {
+            return $this->items->sortBy('id_pedido_item')->values()->map(function ($item) {
+                $facturaItemsCount = $item->factura_items_count;
+
+                if ($facturaItemsCount === null) {
+                    $facturaItemsCount = $item->relationLoaded('facturaItems')
+                        ? $item->facturaItems->count()
+                        : (int) $item->facturaItems()->count();
+                }
+
                 return [
-                    'id_pedido_item' => $item->id_pedido_item ?? $item->id ?? null,
-                    'orden' => $item->orden,
-                    'concepto_libre' => $item->concepto_libre,
+                    'id_pedido_item' => $item->id_pedido_item,
+                    'id_contexto' => $item->id_contexto,
+                    'id_pedido' => $item->id_pedido,
+                    'id_tarifario_linea' => $item->id_tarifario_linea,
+                    'codigo_servicio' => $item->codigo_servicio,
+                    'numero_tarifa' => $item->numero_tarifa,
+                    'descripcion_servicio' => $item->descripcion_servicio,
                     'cantidad' => isset($item->cantidad) ? (float) $item->cantidad : 0.0,
                     'precio_unitario' => isset($item->precio_unitario) ? (float) $item->precio_unitario : 0.0,
-                    'iva_porcentaje' => isset($item->iva_porcentaje) ? (float) $item->iva_porcentaje : 21.0,
                     'total_linea' => isset($item->total_linea) ? (float) $item->total_linea : 0.0,
+                    'factura_items_count' => (int) $facturaItemsCount,
+                    'esta_facturado' => (int) $facturaItemsCount > 0,
+                    'created_at' => $item->created_at,
+                    'updated_at' => $item->updated_at,
                 ];
             });
+        });
+        $trabajo = $this->whenLoaded('trabajo', function () {
+            return [
+                'id_trabajo' => $this->trabajo?->id_trabajo,
+                'numero_trabajo' => $this->trabajo?->numero_trabajo,
+                'descripcion_trabajo' => $this->trabajo?->descripcion_trabajo,
+                'codigo_estacion' => $this->trabajo?->estacion?->codigo_estacion,
+            ];
         });
 
         return [
@@ -65,6 +88,7 @@ class PedidoResource extends JsonResource
             
             // Relaciones anidadas
             'items' => $items,
+            'trabajo' => $trabajo,
         ];
     }
 }

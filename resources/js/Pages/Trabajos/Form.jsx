@@ -1,20 +1,22 @@
 import InputError from '@/Components/InputError';
+import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import BadgeCliente from '@/Components/ui/BadgeCliente';
 import { useEstaciones } from '@/Hooks/useEstaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
 import { isBlank } from '@/validation/formRules';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 
 const EMPTY_FORM = {
     id_contexto: '',
     numero_trabajo: '',
+    numero_trabajo_operativo: '',
     descripcion_trabajo: '',
     id_estacion_servicio: '',
     fecha_encargo: new Date().toISOString().split('T')[0],
     fecha_terminado: '',
-    estado: 'borrador',
+    estado: 'en_curso',
     observaciones: '',
     id_contrato: '',
     categoria: '',
@@ -34,6 +36,11 @@ const CLIENT_THEME = {
         label: 'Repsol',
         tone: 'var(--color-client-repsol)',
     },
+    otros: {
+        key: 'otros',
+        label: 'OTROS CLIENTES',
+        tone: 'var(--ciete-slate)',
+    },
 };
 
 function normalizeTrabajo(trabajo) {
@@ -44,11 +51,12 @@ function normalizeTrabajo(trabajo) {
     return {
         id_contexto: item.id_contexto ? String(item.id_contexto) : '',
         numero_trabajo: item.numero_trabajo ?? '',
+        numero_trabajo_operativo: item.numero_trabajo_operativo ?? '',
         descripcion_trabajo: item.descripcion_trabajo ?? '',
         id_estacion_servicio: item.id_estacion_servicio ? String(item.id_estacion_servicio) : '',
         fecha_encargo: item.fecha_encargo ?? new Date().toISOString().split('T')[0],
         fecha_terminado: item.fecha_terminado ?? '',
-        estado: item.estado ?? 'borrador',
+        estado: item.estado ?? 'en_curso',
         observaciones: item.observaciones ?? '',
         id_contrato: item.id_contrato ? String(item.id_contrato) : '',
         categoria: item.categoria ?? '',
@@ -63,6 +71,7 @@ function resolveClientKey(context) {
 
     if (value.includes('moeve')) return 'moeve';
     if (value.includes('repsol')) return 'repsol';
+    if (context) return 'otros';
 
     return null;
 }
@@ -110,6 +119,8 @@ export default function TrabajosForm({
 }) {
     const { t } = useI18n();
     const { estaciones } = useEstaciones();
+    const { props } = usePage();
+    const isAllContext = props.auth?.user?.active_context?.is_all ?? false;
 
     const isEditing = trabajo !== null;
     const pageTitle = isEditing ? t('trabajos.edit') : t('trabajos.create');
@@ -155,11 +166,63 @@ export default function TrabajosForm({
 
         return (estaciones || []).filter((item) => String(item.id_contexto) === String(selectedContext.id_contexto));
     }, [allowClientSelection, estaciones, selectedContext]);
+    const filteredContratos = useMemo(() => {
+        if (!selectedContext) {
+            return [];
+        }
+
+        return (contratos || []).filter((item) => String(item.id_contexto) === String(selectedContext.id_contexto));
+    }, [contratos, selectedContext]);
+    const filteredTiposDocumento = useMemo(() => {
+        if (!selectedContext) {
+            return [];
+        }
+
+        return (tiposDocumento || []).filter((item) => String(item.id_contexto) === String(selectedContext.id_contexto));
+    }, [tiposDocumento, selectedContext]);
+    const filteredTiposTrabajo = useMemo(() => {
+        if (!selectedContext) {
+            return [];
+        }
+
+        return (tiposTrabajo || []).filter((item) => {
+            if (String(item.id_contexto) !== String(selectedContext.id_contexto)) {
+                return false;
+            }
+
+            if (!form.id_tipo_documento) {
+                return true;
+            }
+
+            return String(item.id_tipo_documento) === String(form.id_tipo_documento);
+        });
+    }, [form.id_tipo_documento, selectedContext, tiposTrabajo]);
     const localErrors = useMemo(
         () => validateForm(form, filteredEstaciones, t, selectedClientKey, allowClientSelection),
         [form, filteredEstaciones, t, selectedClientKey, allowClientSelection],
     );
     const hasOperationalClientAccess = availableClientContexts.length > 0;
+
+    useEffect(() => {
+        if (form.id_contrato && !filteredContratos.some((item) => String(item.id) === String(form.id_contrato))) {
+            setForm((prev) => ({ ...prev, id_contrato: '' }));
+        }
+    }, [filteredContratos, form.id_contrato]);
+
+    useEffect(() => {
+        if (
+            form.id_tipo_documento &&
+            !filteredTiposDocumento.some((item) => String(item.id) === String(form.id_tipo_documento))
+        ) {
+            setForm((prev) => ({ ...prev, id_tipo_documento: '', id_tipo_trabajo: '' }));
+        }
+    }, [filteredTiposDocumento, form.id_tipo_documento]);
+
+    useEffect(() => {
+        if (form.id_tipo_trabajo && !filteredTiposTrabajo.some((item) => String(item.id) === String(form.id_tipo_trabajo))) {
+            setForm((prev) => ({ ...prev, id_tipo_trabajo: '' }));
+        }
+    }, [filteredTiposTrabajo, form.id_tipo_trabajo]);
 
     const updateField = (field, value) => {
         setTouched((prev) => ({ ...prev, [field]: true }));
@@ -169,6 +232,21 @@ export default function TrabajosForm({
             return next;
         });
         setForm((prev) => ({ ...prev, [field]: value }));
+    };
+
+    const handleTipoDocumentoChange = (value) => {
+        setTouched((prev) => ({ ...prev, id_tipo_documento: true, id_tipo_trabajo: true }));
+        setServerErrors((prev) => {
+            const next = { ...prev };
+            delete next.id_tipo_documento;
+            delete next.id_tipo_trabajo;
+            return next;
+        });
+        setForm((prev) => ({
+            ...prev,
+            id_tipo_documento: value,
+            id_tipo_trabajo: '',
+        }));
     };
 
     const selectClient = (contextId) => {
@@ -217,6 +295,7 @@ export default function TrabajosForm({
         const payload = {
             id_contexto: Number(form.id_contexto),
             numero_trabajo: form.numero_trabajo,
+            numero_trabajo_operativo: form.numero_trabajo_operativo || null,
             descripcion_trabajo: form.descripcion_trabajo,
             id_estacion_servicio: Number(form.id_estacion_servicio),
             fecha_encargo: form.fecha_encargo,
@@ -250,30 +329,12 @@ export default function TrabajosForm({
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-(--ciete-slate)">{pageTitle}</h2>}>
             <Head title={pageTitle} />
 
-            <div className="mx-auto max-w-5xl space-y-6">
-                <section
-                    className="rounded-2xl border border-border bg-surface p-6 shadow-sm"
-                    style={
-                        activeTheme
-                            ? {
-                                  boxShadow: `inset 3px 0 0 ${activeTheme.tone}`,
-                              }
-                            : undefined
-                    }
-                >
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">{t('nav.groups.operations')}</p>
-                    <h1 className="mt-2 text-2xl font-semibold text-text-main">{pageTitle}</h1>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {selectedClientKey ? (
-                            <>
-                                <BadgeCliente cliente={selectedClientKey} label={activeTheme?.label} />
-                                <p className="text-sm text-text-muted">{t('trabajos.clientSelector.contextReady')}</p>
-                            </>
-                        ) : (
-                            <p className="text-sm text-text-muted">{t('trabajos.clientSelector.intro')}</p>
-                        )}
-                    </div>
-                </section>
+            <div className="ciete-page ciete-page-form">
+                <ContextualPageHeader
+                    eyebrow={t('nav.groups.operations')}
+                    title={pageTitle}
+                    description={selectedClientKey ? t('trabajos.clientSelector.contextReady') : t('trabajos.clientSelector.intro')}
+                />
 
                 {!hasOperationalClientAccess && (
                     <section className="rounded-2xl border border-state-pending-dot/20 bg-state-pending-bg p-5 shadow-sm">
@@ -284,6 +345,13 @@ export default function TrabajosForm({
 
                 {hasOperationalClientAccess && (
                     <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                        {!isEditing && isAllContext && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                <p className="text-sm font-medium text-amber-800">
+                                    No es posible crear registros mientras el contexto activo es Todos. Selecciona un contexto específico en la barra superior.
+                                </p>
+                            </div>
+                        )}
                         <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
                             <div className="flex flex-col gap-4">
                                 <div>
@@ -310,12 +378,12 @@ export default function TrabajosForm({
                                                     style={
                                                         isSelected
                                                             ? {
-                                                                  boxShadow: `inset 0 0 0 1px ${theme?.tone}, inset 3px 0 0 ${theme?.tone}`,
+                                                                  boxShadow: `inset 0 0 0 1px ${theme?.tone}`,
                                                               }
                                                             : undefined
                                                     }
                                                 >
-                                                    <div className="flex items-center justify-between gap-3">
+                                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                                         <div>
                                                             <p className="text-sm font-semibold text-text-main">{theme?.label ?? context.nombre}</p>
                                                             <p className="mt-1 text-xs text-text-muted">{t(`trabajos.clientSelector.${context.clientKey}.summary`)}</p>
@@ -353,10 +421,7 @@ export default function TrabajosForm({
 
                         {selectedClientKey && (
                             <>
-                                <section
-                                    className="rounded-2xl border border-border bg-surface p-6 shadow-sm"
-                                    style={{ boxShadow: `inset 3px 0 0 ${activeTheme?.tone}` }}
-                                >
+                                <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
                                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                                         <div>
                                             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">
@@ -372,15 +437,31 @@ export default function TrabajosForm({
                                     <div className="mt-5 grid gap-5 md:grid-cols-2">
                                         <div>
                                             <label className="mb-1.5 block text-sm font-medium text-text-main">
-                                                {t('trabajos.fields.numero')} <span className="text-state-blocked-dot">*</span>
+                                                {t('trabajos.fields.numero')} interno <span className="text-state-blocked-dot">*</span>
                                             </label>
                                             <input
-                                                type="text"
+                                                type="number"
+                                                min="0"
+                                                step="1"
                                                 value={form.numero_trabajo}
                                                 onChange={(event) => updateField('numero_trabajo', event.target.value)}
                                                 className={inputClass('numero_trabajo')}
                                             />
                                             <InputError message={getError('numero_trabajo')} className="mt-1.5" />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1.5 block text-sm font-medium text-text-main">
+                                                Numero operativo CIETE
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={form.numero_trabajo_operativo}
+                                                onChange={(event) => updateField('numero_trabajo_operativo', event.target.value)}
+                                                className={inputClass('numero_trabajo_operativo')}
+                                                placeholder="Codigo real del Excel"
+                                            />
+                                            <InputError message={getError('numero_trabajo_operativo')} className="mt-1.5" />
                                         </div>
 
                                         <div>
@@ -392,10 +473,11 @@ export default function TrabajosForm({
                                                 onChange={(event) => updateField('estado', event.target.value)}
                                                 className={inputClass('estado')}
                                             >
-                                                <option value="borrador">{t('trabajos.status.borrador')}</option>
                                                 <option value="en_curso">{t('trabajos.status.enCurso')}</option>
                                                 <option value="terminado">{t('trabajos.status.terminado')}</option>
-                                                <option value="cerrado">{t('trabajos.status.cerrado')}</option>
+                                                <option value="pendiente_facturar">{t('trabajos.status.pendienteFacturar')}</option>
+                                                <option value="facturado">{t('trabajos.status.facturado')}</option>
+                                                <option value="finalizado">{t('trabajos.status.finalizado')}</option>
                                                 <option value="cancelado">{t('trabajos.status.cancelado')}</option>
                                             </select>
                                             <InputError message={getError('estado')} className="mt-1.5" />
@@ -417,6 +499,11 @@ export default function TrabajosForm({
                                                     </option>
                                                 ))}
                                             </select>
+                                            {filteredEstaciones.length === 0 && (
+                                                <p className="mt-1 text-xs text-amber-600">
+                                                    {t('trabajos.clientSelector.noStationsAvailable')}
+                                                </p>
+                                            )}
                                             <InputError message={getError('id_estacion_servicio')} className="mt-1.5" />
                                         </div>
 
@@ -465,10 +552,7 @@ export default function TrabajosForm({
                                 </fieldset>
 
                                 {selectedClientKey === 'moeve' && (
-                                    <fieldset
-                                        className="rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-5"
-                                        style={{ boxShadow: `inset 3px 0 0 ${activeTheme?.tone}` }}
-                                    >
+                                    <fieldset className="rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-5">
                                         <legend className="px-1 text-sm font-semibold text-text-main">{t('trabajos.clientSelector.moeve.section')}</legend>
                                         <p className="text-sm text-text-muted">{t('trabajos.clientSelector.moeve.helper')}</p>
                                         <div className="grid gap-5 md:grid-cols-2">
@@ -476,26 +560,23 @@ export default function TrabajosForm({
                                                 <label className="mb-1.5 block text-sm font-medium text-text-main">
                                                     {t('trabajos.fields.contrato')} <span className="text-state-blocked-dot">*</span>
                                                 </label>
-                                                {contratos.length > 0 ? (
+                                                {filteredContratos.length > 0 ? (
                                                     <select
                                                         value={form.id_contrato}
                                                         onChange={(event) => updateField('id_contrato', event.target.value)}
                                                         className={inputClass('id_contrato')}
                                                     >
                                                         <option value="">{t('trabajos.clientSelector.moeve.contractPlaceholder')}</option>
-                                                        {contratos.map((contrato) => (
+                                                        {filteredContratos.map((contrato) => (
                                                             <option key={contrato.id} value={contrato.id}>
                                                                 {contrato.nombre ?? contrato.codigo}
                                                             </option>
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <input
-                                                        type="text"
-                                                        value={form.id_contrato}
-                                                        onChange={(event) => updateField('id_contrato', event.target.value)}
-                                                        className={inputClass('id_contrato')}
-                                                    />
+                                                    <select value="" disabled className={inputClass('id_contrato')}>
+                                                        <option value="">{t('trabajos.clientSelector.moeve.noContractsAvailable')}</option>
+                                                    </select>
                                                 )}
                                                 <InputError message={getError('id_contrato')} className="mt-1.5" />
                                             </div>
@@ -516,10 +597,7 @@ export default function TrabajosForm({
                                 )}
 
                                 {selectedClientKey === 'repsol' && (
-                                    <fieldset
-                                        className="rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-5"
-                                        style={{ boxShadow: `inset 3px 0 0 ${activeTheme?.tone}` }}
-                                    >
+                                    <fieldset className="rounded-2xl border border-border bg-surface p-6 shadow-sm space-y-5">
                                         <legend className="px-1 text-sm font-semibold text-text-main">{t('trabajos.clientSelector.repsol.section')}</legend>
                                         <p className="text-sm text-text-muted">{t('trabajos.clientSelector.repsol.helper')}</p>
                                         <div className="grid gap-5 md:grid-cols-2">
@@ -527,26 +605,23 @@ export default function TrabajosForm({
                                                 <label className="mb-1.5 block text-sm font-medium text-text-main">
                                                     {t('trabajos.fields.tipoDocumento')} <span className="text-state-blocked-dot">*</span>
                                                 </label>
-                                                {tiposDocumento.length > 0 ? (
+                                                {filteredTiposDocumento.length > 0 ? (
                                                     <select
                                                         value={form.id_tipo_documento}
-                                                        onChange={(event) => updateField('id_tipo_documento', event.target.value)}
+                                                        onChange={(event) => handleTipoDocumentoChange(event.target.value)}
                                                         className={inputClass('id_tipo_documento')}
                                                     >
                                                         <option value="">{t('trabajos.clientSelector.repsol.documentPlaceholder')}</option>
-                                                        {tiposDocumento.map((tipo) => (
+                                                        {filteredTiposDocumento.map((tipo) => (
                                                             <option key={tipo.id} value={tipo.id}>
                                                                 {tipo.nombre}
                                                             </option>
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <input
-                                                        type="text"
-                                                        value={form.id_tipo_documento}
-                                                        onChange={(event) => updateField('id_tipo_documento', event.target.value)}
-                                                        className={inputClass('id_tipo_documento')}
-                                                    />
+                                                    <select value="" disabled className={inputClass('id_tipo_documento')}>
+                                                        <option value="">{t('trabajos.clientSelector.repsol.noDocumentTypesAvailable')}</option>
+                                                    </select>
                                                 )}
                                                 <InputError message={getError('id_tipo_documento')} className="mt-1.5" />
                                             </div>
@@ -555,26 +630,23 @@ export default function TrabajosForm({
                                                 <label className="mb-1.5 block text-sm font-medium text-text-main">
                                                     {t('trabajos.fields.tipoTrabajo')} <span className="text-state-blocked-dot">*</span>
                                                 </label>
-                                                {tiposTrabajo.length > 0 ? (
+                                                {filteredTiposTrabajo.length > 0 ? (
                                                     <select
                                                         value={form.id_tipo_trabajo}
                                                         onChange={(event) => updateField('id_tipo_trabajo', event.target.value)}
                                                         className={inputClass('id_tipo_trabajo')}
                                                     >
                                                         <option value="">{t('trabajos.clientSelector.repsol.workTypePlaceholder')}</option>
-                                                        {tiposTrabajo.map((tipo) => (
+                                                        {filteredTiposTrabajo.map((tipo) => (
                                                             <option key={tipo.id} value={tipo.id}>
                                                                 {tipo.nombre}
                                                             </option>
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <input
-                                                        type="text"
-                                                        value={form.id_tipo_trabajo}
-                                                        onChange={(event) => updateField('id_tipo_trabajo', event.target.value)}
-                                                        className={inputClass('id_tipo_trabajo')}
-                                                    />
+                                                    <select value="" disabled className={inputClass('id_tipo_trabajo')}>
+                                                        <option value="">{t('trabajos.clientSelector.repsol.noWorkTypesAvailable')}</option>
+                                                    </select>
                                                 )}
                                                 <InputError message={getError('id_tipo_trabajo')} className="mt-1.5" />
                                             </div>
@@ -604,18 +676,18 @@ export default function TrabajosForm({
                                     />
                                 </fieldset>
 
-                                <div className="flex justify-end gap-3">
+                                <div className="ciete-form-actions border-0 bg-transparent px-0 py-0 shadow-none sm:justify-end">
                                     <button
                                         type="button"
                                         onClick={() => router.visit(route('trabajos.index'))}
-                                        className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2 text-sm font-semibold text-text-main transition hover:bg-surface-2"
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-border px-5 py-2 text-sm font-semibold text-text-main transition hover:bg-surface-2 sm:w-auto"
                                     >
                                         {t('common.actions.cancel')}
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={loading}
-                                        className="inline-flex items-center gap-2 rounded-md bg-(--ciete-red) px-5 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-60"
+                                        disabled={loading || (!isEditing && isAllContext)}
+                                        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-(--ciete-red) px-5 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-60 sm:w-auto"
                                     >
                                         {loading ? '...' : t('common.actions.save')}
                                     </button>
