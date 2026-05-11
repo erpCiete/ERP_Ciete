@@ -1,30 +1,38 @@
+import { useI18n } from '@/i18n';
+
 const ESTADOS = {
-    borrador: {
-        label: 'Borrador',
-        bg: 'var(--color-state-closed-bg)',
-        text: 'var(--color-state-closed-text)',
-        dot: 'var(--color-state-closed-dot)',
-    },
     en_curso: {
-        label: 'En curso',
+        labelKey: 'trabajos.status.enCurso',
         bg: 'var(--color-state-progress-bg)',
         text: 'var(--color-state-progress-text)',
         dot: 'var(--color-state-progress-dot)',
     },
     terminado: {
-        label: 'Terminado',
+        labelKey: 'trabajos.status.terminado',
         bg: 'var(--color-state-done-bg)',
         text: 'var(--color-state-done-text)',
         dot: 'var(--color-state-done-dot)',
     },
-    cerrado: {
-        label: 'Cerrado',
+    pendiente_facturar: {
+        labelKey: 'trabajos.status.pendienteFacturar',
+        bg: 'var(--color-state-pending-bg)',
+        text: 'var(--color-state-pending-text)',
+        dot: 'var(--color-state-pending-dot)',
+    },
+    facturado: {
+        labelKey: 'trabajos.status.facturado',
+        bg: 'var(--color-state-billed-bg)',
+        text: 'var(--color-state-billed-text)',
+        dot: 'var(--color-state-billed-dot)',
+    },
+    finalizado: {
+        labelKey: 'trabajos.status.finalizado',
         bg: 'var(--color-state-closed-bg)',
         text: 'var(--color-state-closed-text)',
         dot: 'var(--color-state-closed-dot)',
     },
     cancelado: {
-        label: 'Cancelado',
+        labelKey: 'trabajos.status.cancelado',
         bg: 'var(--color-state-blocked-bg)',
         text: 'var(--color-state-blocked-text)',
         dot: 'var(--color-state-blocked-dot)',
@@ -32,12 +40,14 @@ const ESTADOS = {
 };
 
 export default function BadgeTrabajo({ estado }) {
+    const { t } = useI18n();
     const config = ESTADOS[estado?.toLowerCase()] ?? {
         label: estado ?? '—',
         bg: 'var(--color-state-closed-bg)',
         text: 'var(--color-state-closed-text)',
         dot: 'var(--color-state-closed-dot)',
     };
+    const label = config.labelKey ? t(config.labelKey) : config.label;
 
     return (
         <span
@@ -45,7 +55,7 @@ export default function BadgeTrabajo({ estado }) {
             style={{ backgroundColor: config.bg, color: config.text }}
         >
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: config.dot }} />
-            {config.label}
+            {label}
         </span>
     );
 }

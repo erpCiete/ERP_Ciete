@@ -77,14 +77,12 @@ export function useTrabajos() {
     const irAEditar = (id) => router.visit(route('trabajos.edit', id));
 
     const eliminarTrabajo = (id, onSuccess) => {
-        if (confirm('¿Estás seguro de que deseas eliminar este trabajo?')) {
-            router.delete(route('trabajos.destroy', id), {
-                onSuccess: () => {
-                    if (onSuccess) onSuccess();
-                },
-                preserveScroll: true,
-            });
-        }
+        router.delete(route('trabajos.destroy', id), {
+            onSuccess: () => {
+                if (onSuccess) onSuccess();
+            },
+            preserveScroll: true,
+        });
     };
 
     return {

@@ -27,9 +27,10 @@ class UserFactory extends Factory
     public function definition(): array
     {
         $contexto = ContextoCliente::query()->firstOrCreate(
-            ['codigo' => 'OTRO'],
+            ['codigo' => 'OTROS'],
             [
-                'nombre' => 'OTRO',
+                'id_contexto' => 3,
+                'nombre' => 'OTROS CLIENTES',
                 'descripcion' => 'Contexto de pruebas',
                 'activo' => true,
             ]

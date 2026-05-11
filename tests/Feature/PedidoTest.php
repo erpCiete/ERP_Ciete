@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Pedido;
+use App\Models\PedidoItem;
+use App\Models\Factura;
+use App\Models\FacturaItem;
 use App\Models\Trabajo;
 use App\Models\Empresa;
 use App\Models\User;
@@ -33,9 +36,17 @@ class PedidoTest extends TestCase
             ['slug' => 'pedidos.ver'], 
             ['nombre' => 'Ver Pedidos', 'activo' => true]
         );
-        $permisoGestionar = Permission::firstOrCreate(
-            ['slug' => 'pedidos.gestionar'], 
-            ['nombre' => 'Gestionar Pedidos', 'activo' => true]
+        $permisoCrear = Permission::firstOrCreate(
+            ['slug' => 'pedidos.crear'],
+            ['nombre' => 'Crear Pedidos', 'activo' => true]
+        );
+        $permisoEditar = Permission::firstOrCreate(
+            ['slug' => 'pedidos.editar'],
+            ['nombre' => 'Editar Pedidos', 'activo' => true]
+        );
+        $permisoEliminar = Permission::firstOrCreate(
+            ['slug' => 'pedidos.eliminar'],
+            ['nombre' => 'Eliminar Pedidos', 'activo' => true]
         );
 
         // 2. Configuración de Roles
@@ -44,8 +55,10 @@ class PedidoTest extends TestCase
             ['nombre' => 'Gestor Operativo', 'activo' => true]
         );
         $rolGestor->permissions()->sync([
-            $permisoVer->id_permiso, 
-            $permisoGestionar->id_permiso
+            $permisoVer->id_permiso,
+            $permisoCrear->id_permiso,
+            $permisoEditar->id_permiso,
+            $permisoEliminar->id_permiso,
         ]);
 
         $rolLector = Role::firstOrCreate(
@@ -182,5 +195,273 @@ class PedidoTest extends TestCase
             'codigo_servicio' => 'SRV-01',
             'total_linea' => 1500.50
         ]);
+    }
+
+    public function test_gestor_puede_ver_actualizar_y_cancelar_un_pedido_de_su_contexto(): void
+    {
+        Sanctum::actingAs($this->gestorMoeve);
+
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => 1]);
+        $trabajoMoeve = Trabajo::factory()->create(['id_contexto' => 1, 'id_empresa_cliente' => $empresaMoeve->id_empresa]);
+        $pedido = Pedido::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'numero_pedido' => 'PED-ORIGINAL-01',
+        ]);
+
+        $this->getJson("/api/v1/pedidos/{$pedido->id_pedido}")
+            ->assertOk()
+            ->assertJsonPath('data.id_pedido', $pedido->id_pedido);
+
+        $this->patchJson("/api/v1/pedidos/{$pedido->id_pedido}", [
+            'numero_pedido' => 'PED-ACTUALIZADO-01',
+            'estado' => 'solicitado',
+        ])->assertOk()
+            ->assertJsonPath('data.numero_pedido', 'PED-ACTUALIZADO-01');
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $pedido->id_pedido,
+            'numero_pedido' => 'PED-ACTUALIZADO-01',
+            'estado' => 'solicitado',
+        ]);
+
+        $this->deleteJson("/api/v1/pedidos/{$pedido->id_pedido}")
+            ->assertOk();
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $pedido->id_pedido,
+            'estado' => 'cancelado',
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'tabla' => 'pedidos',
+            'registro_id' => $pedido->id_pedido,
+            'accion' => 'cambiar_estado',
+            'campo' => 'estado',
+        ]);
+    }
+
+    public function test_gestor_no_puede_actualizar_pedido_con_estado_borrador_legacy(): void
+    {
+        Sanctum::actingAs($this->gestorMoeve);
+
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => 1]);
+        $trabajoMoeve = Trabajo::factory()->create(['id_contexto' => 1, 'id_empresa_cliente' => $empresaMoeve->id_empresa]);
+        $pedido = Pedido::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'estado' => 'pendiente',
+        ]);
+
+        $this->patchJson("/api/v1/pedidos/{$pedido->id_pedido}", [
+            'estado' => 'borrador',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['estado']);
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $pedido->id_pedido,
+            'estado' => 'pendiente',
+        ]);
+    }
+
+    public function test_actualizar_pedido_conserva_ids_actualiza_crea_y_elimina_solo_items_no_facturados(): void
+    {
+        Sanctum::actingAs($this->gestorMoeve);
+
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => 1]);
+        $trabajoMoeve = Trabajo::factory()->create(['id_contexto' => 1, 'id_empresa_cliente' => $empresaMoeve->id_empresa]);
+        $pedido = Pedido::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'numero_pedido' => 'PED-ITEMS-STABLE-01',
+        ]);
+        $itemActualizable = $this->createPedidoItem($pedido, [
+            'codigo_servicio' => 'OLD-01',
+            'descripcion_servicio' => 'Linea original',
+            'cantidad' => 1,
+            'precio_unitario' => 100,
+            'total_linea' => 100,
+        ]);
+        $itemEliminable = $this->createPedidoItem($pedido, [
+            'codigo_servicio' => 'DROP-01',
+        ]);
+
+        $this->patchJson("/api/v1/pedidos/{$pedido->id_pedido}", [
+            'items' => [
+                [
+                    'id_pedido_item' => $itemActualizable->id_pedido_item,
+                    'codigo_servicio' => 'UPD-01',
+                    'descripcion_servicio' => 'Linea actualizada',
+                    'cantidad' => 2,
+                    'precio_unitario' => 125,
+                    'total_linea' => 250,
+                ],
+                [
+                    'codigo_servicio' => 'NEW-01',
+                    'descripcion_servicio' => 'Linea nueva',
+                    'cantidad' => 3,
+                    'precio_unitario' => 50,
+                    'total_linea' => 150,
+                ],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('data.items.0.id_pedido_item', $itemActualizable->id_pedido_item)
+            ->assertJsonPath('data.items.0.codigo_servicio', 'UPD-01');
+
+        $this->assertDatabaseHas('pedido_items', [
+            'id_pedido_item' => $itemActualizable->id_pedido_item,
+            'codigo_servicio' => 'UPD-01',
+            'total_linea' => 250,
+        ]);
+        $this->assertDatabaseMissing('pedido_items', [
+            'id_pedido_item' => $itemEliminable->id_pedido_item,
+        ]);
+        $this->assertDatabaseHas('pedido_items', [
+            'id_pedido' => $pedido->id_pedido,
+            'codigo_servicio' => 'NEW-01',
+            'total_linea' => 150,
+        ]);
+        $this->assertSame(2, PedidoItem::query()->where('id_pedido', $pedido->id_pedido)->count());
+    }
+
+    public function test_actualizar_pedido_no_elimina_items_vinculados_a_factura_items(): void
+    {
+        Sanctum::actingAs($this->gestorMoeve);
+
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => 1]);
+        $trabajoMoeve = Trabajo::factory()->create(['id_contexto' => 1, 'id_empresa_cliente' => $empresaMoeve->id_empresa]);
+        $pedido = Pedido::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'numero_pedido' => 'PED-ITEMS-BILLED-01',
+        ]);
+        $itemFacturado = $this->createPedidoItem($pedido, [
+            'codigo_servicio' => 'BILLED-01',
+            'descripcion_servicio' => 'Linea facturada',
+            'total_linea' => 300,
+        ]);
+        $itemEditable = $this->createPedidoItem($pedido, [
+            'codigo_servicio' => 'EDIT-01',
+            'descripcion_servicio' => 'Linea editable',
+            'total_linea' => 100,
+        ]);
+        $factura = Factura::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'id_empresa_cliente' => $empresaMoeve->id_empresa,
+            'orden_factura' => 1,
+        ]);
+        FacturaItem::create([
+            'id_factura' => $factura->id_factura,
+            'id_pedido_item' => $itemFacturado->id_pedido_item,
+            'unidades_facturadas' => 1,
+            'importe_facturado' => 150,
+        ]);
+
+        $this->patchJson("/api/v1/pedidos/{$pedido->id_pedido}", [
+            'items' => [
+                [
+                    'id_pedido_item' => $itemEditable->id_pedido_item,
+                    'codigo_servicio' => 'EDIT-OK',
+                    'descripcion_servicio' => 'Linea editable actualizada',
+                    'cantidad' => 2,
+                    'precio_unitario' => 80,
+                    'total_linea' => 160,
+                ],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('meta.items_bloqueados.0.id_pedido_item', $itemFacturado->id_pedido_item)
+            ->assertJsonPath('data.items.0.id_pedido_item', $itemFacturado->id_pedido_item)
+            ->assertJsonPath('data.items.0.esta_facturado', true);
+
+        $this->assertDatabaseHas('pedido_items', [
+            'id_pedido_item' => $itemFacturado->id_pedido_item,
+            'codigo_servicio' => 'BILLED-01',
+        ]);
+        $this->assertDatabaseHas('pedido_items', [
+            'id_pedido_item' => $itemEditable->id_pedido_item,
+            'codigo_servicio' => 'EDIT-OK',
+            'total_linea' => 160,
+        ]);
+    }
+
+    public function test_destroy_bloquea_cancelacion_si_el_pedido_tiene_items_facturados(): void
+    {
+        Sanctum::actingAs($this->gestorMoeve);
+
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => 1]);
+        $trabajoMoeve = Trabajo::factory()->create(['id_contexto' => 1, 'id_empresa_cliente' => $empresaMoeve->id_empresa]);
+        $pedido = Pedido::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'numero_pedido' => 'PED-BLOCK-DELETE-01',
+        ]);
+        $itemFacturado = $this->createPedidoItem($pedido, [
+            'codigo_servicio' => 'LOCK-01',
+            'total_linea' => 200,
+        ]);
+        $factura = Factura::factory()->create([
+            'id_contexto' => 1,
+            'id_trabajo' => $trabajoMoeve->id_trabajo,
+            'id_empresa_cliente' => $empresaMoeve->id_empresa,
+            'orden_factura' => 1,
+        ]);
+
+        FacturaItem::create([
+            'id_factura' => $factura->id_factura,
+            'id_pedido_item' => $itemFacturado->id_pedido_item,
+            'unidades_facturadas' => 1,
+            'importe_facturado' => 200,
+        ]);
+
+        $this->deleteJson("/api/v1/pedidos/{$pedido->id_pedido}")
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'PEDIDO_ITEMS_FACTURADOS');
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $pedido->id_pedido,
+            'estado' => $pedido->estado,
+        ]);
+    }
+
+    public function test_usuario_con_multiples_contextos_ve_pedidos_de_todos_sus_contextos_accesibles(): void
+    {
+        $gestor = Role::query()->where('slug', 'gestor')->firstOrFail();
+        $multiContextUser = User::factory()->create(['id_contexto' => 3]);
+        $multiContextUser->roles()->sync([$gestor->id_rol]);
+        $multiContextUser->contextos()->sync([
+            1 => ['es_contexto_principal' => false, 'activo' => true],
+            2 => ['es_contexto_principal' => false, 'activo' => true],
+            3 => ['es_contexto_principal' => true, 'activo' => true],
+        ]);
+
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => 1]);
+        $trabajoMoeve = Trabajo::factory()->create(['id_contexto' => 1, 'id_empresa_cliente' => $empresaMoeve->id_empresa]);
+        Pedido::factory()->create(['id_contexto' => 1, 'id_trabajo' => $trabajoMoeve->id_trabajo]);
+
+        $empresaRepsol = Empresa::factory()->create(['id_contexto' => 2]);
+        $trabajoRepsol = Trabajo::factory()->create(['id_contexto' => 2, 'id_empresa_cliente' => $empresaRepsol->id_empresa]);
+        Pedido::factory()->create(['id_contexto' => 2, 'id_trabajo' => $trabajoRepsol->id_trabajo]);
+
+        Sanctum::actingAs($multiContextUser);
+        $multiContextUser->setActiveContextSelection(User::ACTIVE_CONTEXT_ALL);
+
+        $this->getJson('/api/v1/pedidos')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
+
+    private function createPedidoItem(Pedido $pedido, array $overrides = []): PedidoItem
+    {
+        return PedidoItem::create(array_merge([
+            'id_contexto' => $pedido->id_contexto,
+            'id_pedido' => $pedido->id_pedido,
+            'id_tarifario_linea' => null,
+            'codigo_servicio' => 'SRV-TEST',
+            'numero_tarifa' => null,
+            'descripcion_servicio' => 'Linea de pedido',
+            'cantidad' => 1,
+            'precio_unitario' => 100,
+            'total_linea' => 100,
+        ], $overrides));
     }
 }

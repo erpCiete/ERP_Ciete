@@ -19,16 +19,14 @@ class ClosureDashboardService
                 'estacion:id_estacion_servicio,nombre',
                 'tipoTrabajo:id_tipo_trabajo,nombre',
                 'responsableCiete:id_usuario,nombre,apellidos',
-                'usuarioCierre:id_usuario,nombre,apellidos',
                 'pedidos:id_pedido,id_trabajo,numero_pedido,importe_pedido,importe_facturado,facturado_completo,estado,updated_at',
+                'pedidos.items:id_pedido_item,id_pedido,total_linea,cantidad',
+                'pedidos.items.facturaItems:id_factura_item,id_pedido_item,importe_facturado',
                 'facturas:id_factura,id_trabajo,total,estado,updated_at',
                 'legalizaciones:id_legalizacion,id_trabajo,estado,descripcion_seleccionable,descripcion_libre,observaciones,updated_at',
             ])
             ->where(function ($query) {
-                $query->whereIn('estado', ['terminado', 'cerrado'])
-                    ->orWhere('cerrado', true)
-                    ->orWhereNotNull('fecha_cierre')
-                    ->orWhereNotNull('id_usuario_cierre')
+                $query->whereIn('estado', ['terminado', 'pendiente_facturar', 'facturado', 'finalizado', 'cancelado'])
                     ->orWhere('bloqueado_cierre', true);
             })
             ->orderByDesc('fecha_encargo')
@@ -63,12 +61,11 @@ class ClosureDashboardService
             $count = 0;
 
             foreach ($trabajos as $trabajo) {
-                if ($trabajo->cerrado) {
+                if ($trabajo->isProtectedFinalizedState()) {
                     continue;
                 }
 
                 $trabajo->update([
-                    'id_usuario_cierre' => $user->id_usuario,
                     'bloqueado_cierre' => $this->hasBlockingChecks($trabajo),
                 ]);
 
@@ -102,10 +99,11 @@ class ClosureDashboardService
     public function closeOne(Trabajo $trabajo, User $user): void
     {
         $trabajo->loadMissing([
-            'pedidos',
-            'facturas',
-            'legalizaciones',
-            'usuarioCierre:id_usuario,nombre,apellidos',
+            'pedidos:id_pedido,id_trabajo,numero_pedido,importe_pedido,importe_facturado,facturado_completo,estado,updated_at',
+            'pedidos.items:id_pedido_item,id_pedido,total_linea,cantidad',
+            'pedidos.items.facturaItems:id_factura_item,id_pedido_item,importe_facturado',
+            'facturas:id_factura,id_trabajo,total,estado,updated_at',
+            'legalizaciones:id_legalizacion,id_trabajo,estado,descripcion_seleccionable,descripcion_libre,observaciones,updated_at',
         ]);
 
         if (! $this->canBeClosed($trabajo)) {
@@ -115,24 +113,6 @@ class ClosureDashboardService
         }
 
         $this->applyClosure($trabajo, $user);
-    }
-
-    public function reopenOne(Trabajo $trabajo, User $user, ?string $reason = null): void
-    {
-        if (! $trabajo->cerrado) {
-            throw ValidationException::withMessages([
-                'message' => 'Solo se pueden reabrir obras ya cerradas.',
-            ]);
-        }
-
-        $trabajo->update([
-            'estado' => 'terminado',
-            'cerrado' => false,
-            'bloqueado_cierre' => false,
-            'fecha_cierre' => null,
-            'id_usuario_cierre' => null,
-            'observaciones' => $this->appendReopenNote($trabajo->observaciones, $user, $reason),
-        ]);
     }
 
     private function loadSelectedTrabajos(array $ids): Collection
@@ -150,7 +130,13 @@ class ClosureDashboardService
         }
 
         $trabajos = Trabajo::query()
-            ->with(['pedidos', 'facturas', 'legalizaciones', 'usuarioCierre:id_usuario,nombre,apellidos'])
+            ->with([
+                'pedidos:id_pedido,id_trabajo,numero_pedido,importe_pedido,importe_facturado,facturado_completo,estado,updated_at',
+                'pedidos.items:id_pedido_item,id_pedido,total_linea,cantidad',
+                'pedidos.items.facturaItems:id_factura_item,id_pedido_item,importe_facturado',
+                'facturas:id_factura,id_trabajo,total,estado,updated_at',
+                'legalizaciones:id_legalizacion,id_trabajo,estado,descripcion_seleccionable,descripcion_libre,observaciones,updated_at',
+            ])
             ->whereIn('id_trabajo', $uniqueIds)
             ->get();
 
@@ -164,25 +150,22 @@ class ClosureDashboardService
     private function applyClosure(Trabajo $trabajo, User $user): void
     {
         $trabajo->update([
-            'estado' => 'cerrado',
-            'cerrado' => true,
+            'estado' => 'finalizado',
             'bloqueado_cierre' => false,
-            'fecha_cierre' => now(),
-            'id_usuario_cierre' => $user->id_usuario,
         ]);
     }
 
     private function canBeClosed(Trabajo $trabajo): bool
     {
-        if ($trabajo->cerrado) {
+        if ($trabajo->isProtectedFinalizedState()) {
             return false;
         }
 
-        if (! $trabajo->id_usuario_cierre) {
+        if ($trabajo->estado === 'cancelado') {
             return false;
         }
 
-        return ! $this->hasBlockingChecks($trabajo);
+        return $this->passesFinalizationRequirements($trabajo);
     }
 
     private function hasBlockingChecks(Trabajo $trabajo): bool
@@ -204,20 +187,27 @@ class ClosureDashboardService
             && $trabajo->empresa !== null
             && $trabajo->estacion !== null;
 
-        $finishedConfirmed = in_array($trabajo->estado, ['terminado', 'cerrado'], true) || filled($trabajo->fecha_terminacion);
-        $flowReady = $trabajo->cerrado || $trabajo->id_usuario_cierre !== null || $trabajo->estado === 'terminado';
+        $finishedConfirmed = $this->isFinishedForFinalizationFlow($trabajo);
+        $flowReady = $trabajo->isProtectedFinalizedState()
+            || in_array($trabajo->estado, ['terminado', 'pendiente_facturar', 'facturado'], true);
+        $readyToFinalize = $this->passesFinalizationRequirements(
+            $trabajo,
+            $pedidoData,
+            $economyData,
+            $mandatoryFieldsComplete
+        );
 
         return [
             ['id' => 'finishedConfirmed', 'ok' => $finishedConfirmed, 'blocking' => true],
             ['id' => 'endDate', 'ok' => filled($trabajo->fecha_terminacion), 'blocking' => true],
             ['id' => 'validOrder', 'ok' => $pedidoData['exists'], 'blocking' => true],
             ['id' => 'amountReviewed', 'ok' => ! $economyData['exceeds'], 'blocking' => true],
-            ['id' => 'legalizationChecked', 'ok' => ! $legalizacionData['critical'], 'blocking' => true],
+            ['id' => 'legalizationChecked', 'ok' => ! $legalizacionData['critical'], 'blocking' => false],
             ['id' => 'mandatoryFields', 'ok' => $mandatoryFieldsComplete, 'blocking' => true],
             ['id' => 'noBlockingIncidents', 'ok' => ! $trabajo->bloqueado_cierre, 'blocking' => true],
             ['id' => 'contractTariff', 'ok' => filled($trabajo->id_contrato) && filled($trabajo->id_tarifario), 'blocking' => true],
             ['id' => 'flowReady', 'ok' => $flowReady, 'blocking' => true],
-            ['id' => 'readyToClose', 'ok' => $trabajo->id_usuario_cierre !== null || $trabajo->cerrado, 'blocking' => false],
+            ['id' => 'readyToFinalize', 'ok' => $readyToFinalize, 'blocking' => false],
         ];
     }
 
@@ -228,7 +218,11 @@ class ClosureDashboardService
         $legalizacionData = $this->extractLegalizacionData($trabajo);
         $incidencias = $this->buildIncidentLabels($trabajo, $pedidoData, $economyData, $legalizacionData);
         $responsable = $this->resolveResponsibleName($trabajo);
-        $cierreUserName = $this->formatUserName($trabajo->usuarioCierre);
+        $finalizado = $trabajo->isProtectedFinalizedState();
+        $readyToFinalize = $this->passesFinalizationRequirements($trabajo, $pedidoData, $economyData);
+        $fechaFinalizacion = $trabajo->isFunctionallyFinalized()
+            ? optional($trabajo->updated_at)->toIso8601String()
+            : null;
 
         return [
             'id' => $trabajo->id_trabajo,
@@ -248,7 +242,8 @@ class ClosureDashboardService
             'legalizacionCritica' => $legalizacionData['critical'],
             'incidenciaBloqueante' => $incidencias !== [],
             'incidencias' => $incidencias,
-            'terminadoConfirmado' => in_array($trabajo->estado, ['terminado', 'cerrado'], true) || filled($trabajo->fecha_terminacion),
+            'estado' => $trabajo->estado,
+            'terminadoConfirmado' => $this->isFinishedForFinalizationFlow($trabajo),
             'camposObligatoriosCompletos' => filled($trabajo->numero_trabajo)
                 && filled($trabajo->descripcion_trabajo)
                 && filled($trabajo->fecha_encargo)
@@ -257,21 +252,19 @@ class ClosureDashboardService
             'revisionEconomicaAprobada' => ! $economyData['exceeds'],
             'requiereContratoTarifario' => true,
             'contratoTarifarioValidado' => filled($trabajo->id_contrato) && filled($trabajo->id_tarifario),
-            'faseActual' => $trabajo->cerrado ? 'cerrado' : ($trabajo->id_usuario_cierre ? 'revision_cierre' : 'terminado'),
-            'revisionCierreMarcada' => $trabajo->id_usuario_cierre !== null || $trabajo->cerrado,
-            'cerrado' => (bool) $trabajo->cerrado,
+            'faseActual' => $finalizado ? 'finalizado' : ($readyToFinalize ? 'revision_finalizacion' : $this->functionalPhase($trabajo)),
+            'revisionFinalizacionMarcada' => $readyToFinalize || $finalizado,
+            'finalizado' => $finalizado,
+            'finalizadoLegacy' => false,
             'trazabilidad' => [
                 'marcadoTerminadoPor' => $responsable,
                 'fechaMarcadoTerminado' => optional($trabajo->fecha_terminacion)?->toDateString(),
                 'fechaFinInformadaPor' => $responsable,
                 'fechaFinInformadaAt' => optional($trabajo->fecha_terminacion)?->toDateString(),
-                'importeActualizadoPor' => $cierreUserName,
+                'importeActualizadoPor' => null,
                 'importeActualizadoAt' => $economyData['updated_at'],
-                'cerradoPor' => $trabajo->cerrado ? $cierreUserName : null,
-                'fechaCierre' => optional($trabajo->fecha_cierre)?->toIso8601String(),
-                'reabiertoPor' => null,
-                'fechaReapertura' => null,
-                'reaperturaMotivo' => $this->extractLastReopenReason($trabajo->observaciones),
+                'finalizadoPor' => null,
+                'fechaFinalizacion' => $fechaFinalizacion,
             ],
         ];
     }
@@ -291,9 +284,12 @@ class ClosureDashboardService
 
     private function extractEconomyData(Trabajo $trabajo, array $pedidoData): array
     {
+        $facturaItemsTotal = (float) $trabajo->pedidos->sum(fn ($pedido) => $pedido->items->sum(
+            fn ($item) => $item->facturaItems->sum(fn ($facturaItem) => (float) ($facturaItem->importe_facturado ?? 0))
+        ));
         $facturaTotal = (float) $trabajo->facturas->sum(fn ($factura) => (float) ($factura->total ?? 0));
         $pedidoFacturado = (float) $trabajo->pedidos->sum(fn ($pedido) => (float) ($pedido->importe_facturado ?? 0));
-        $amount = $facturaTotal > 0 ? $facturaTotal : $pedidoFacturado;
+        $amount = $facturaItemsTotal > 0 ? $facturaItemsTotal : ($facturaTotal > 0 ? $facturaTotal : $pedidoFacturado);
         $latestFactura = $trabajo->facturas->sortByDesc('updated_at')->first();
 
         return [
@@ -339,7 +335,7 @@ class ClosureDashboardService
     {
         $incidents = [];
 
-        if (in_array($trabajo->estado, ['terminado', 'cerrado'], true) && ! $trabajo->fecha_terminacion) {
+        if ($this->isFinishedForFinalizationFlow($trabajo) && ! $trabajo->fecha_terminacion) {
             $incidents[] = 'Trabajo terminado sin fecha real de finalización';
         }
 
@@ -349,10 +345,6 @@ class ClosureDashboardService
 
         if ($economyData['exceeds']) {
             $incidents[] = 'El importe ejecutado supera el pedido';
-        }
-
-        if ($legalizacionData['critical']) {
-            $incidents[] = 'La legalización sigue pendiente o en trámite';
         }
 
         if (! filled($trabajo->numero_trabajo) || ! filled($trabajo->descripcion_trabajo)) {
@@ -380,14 +372,54 @@ class ClosureDashboardService
         return trim(implode(' ', array_filter([$user->nombre, $user->apellidos])));
     }
 
-    private function appendReopenNote(?string $observaciones, User $user, ?string $reason): string
+    private function isFinishedForFinalizationFlow(Trabajo $trabajo): bool
+    {
+        return in_array($trabajo->estado, ['terminado', 'pendiente_facturar', 'facturado', 'finalizado'], true)
+            || filled($trabajo->fecha_terminacion);
+    }
+
+    private function passesFinalizationRequirements(
+        Trabajo $trabajo,
+        ?array $pedidoData = null,
+        ?array $economyData = null,
+        ?bool $mandatoryFieldsComplete = null,
+    ): bool {
+        $pedidoData ??= $this->extractPedidoData($trabajo);
+        $economyData ??= $this->extractEconomyData($trabajo, $pedidoData);
+        $mandatoryFieldsComplete ??= filled($trabajo->numero_trabajo)
+            && filled($trabajo->descripcion_trabajo)
+            && filled($trabajo->fecha_encargo)
+            && $trabajo->empresa !== null
+            && $trabajo->estacion !== null;
+
+        return $this->isFinishedForFinalizationFlow($trabajo)
+            && filled($trabajo->fecha_terminacion)
+            && $pedidoData['exists']
+            && ! $economyData['exceeds']
+            && $mandatoryFieldsComplete
+            && ! $trabajo->bloqueado_cierre
+            && filled($trabajo->id_contrato)
+            && filled($trabajo->id_tarifario);
+    }
+
+    private function functionalPhase(Trabajo $trabajo): string
+    {
+        return match ($trabajo->estado) {
+            'pendiente_facturar' => 'pendiente_facturar',
+            'facturado' => 'facturado',
+            'cancelado' => 'cancelado',
+            default => 'terminado',
+        };
+    }
+
+    private function appendClosureNote(?string $observaciones, User $user, ?string $reason): string
     {
         $message = trim((string) $reason) !== ''
             ? trim((string) $reason)
             : 'Reapertura solicitada desde el panel de dirección.';
 
         $prefix = sprintf(
-            '[reapertura-cierre %s %s] ',
+            '[cierre-ajuste %s %s] ',
             now()->format('Y-m-d H:i'),
             $this->formatUserName($user) ?: $user->email
         );
@@ -395,7 +427,7 @@ class ClosureDashboardService
         return trim(collect([trim((string) $observaciones), $prefix . $message])->filter()->implode(PHP_EOL));
     }
 
-    private function extractLastReopenReason(?string $observaciones): ?string
+    private function extractLastClosureNote(?string $observaciones): ?string
     {
         if (! $observaciones) {
             return null;
@@ -404,7 +436,7 @@ class ClosureDashboardService
         $lines = preg_split('/\r\n|\r|\n/', $observaciones) ?: [];
 
         foreach (array_reverse($lines) as $line) {
-            if (str_starts_with(trim($line), '[reapertura-cierre ')) {
+            if (str_starts_with(trim($line), '[cierre-ajuste ')) {
                 $parts = explode('] ', $line, 2);
                 return $parts[1] ?? null;
             }

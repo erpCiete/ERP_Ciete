@@ -1,5 +1,9 @@
 # Creación del proyecto base
 
+> **Documento vivo.**  
+> Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
+> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+
 ## Objetivo
 
 Dejar preparado el proyecto base sobre el que trabajará el equipo 1, usando Laravel 12 con React y Vite, para que todos puedan partir de una misma estructura técnica desde el inicio.
@@ -76,6 +80,8 @@ Con estas migraciones se crea automáticamente el usuario administrador para el 
 - email: `admin@ciete.es`
 - password: `Admin1234!`
 - role: `admin`
+
+Nota funcional vigente: `admin` es rol tecnico/soporte. No debe tratarse como rol operativo normal de CIETE. La operativa funcional corresponde a Direccion, Ejecucion, Ejecucion MOEVE, Ejecucion REPSOL y Contabilidad segun permisos.
 
 Importante: el login usa el modelo `App\Models\User` sobre la tabla `usuarios`.
 

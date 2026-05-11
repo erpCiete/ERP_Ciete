@@ -1,0 +1,1276 @@
+1. Inicio de la reunión y demo del ERP
+
+A ver, de momento, no estamos viendo la pantalla compartida, ¿no? Bueno, vamos a compartir. No, ha dado error. No, ¿cómo un error? Vamos a reiniciar el navegador.
+
+Voy a cerrar el navegador. Y antes ha dejado. Voy a cerrar el navegador.
+
+Sí, cerrar el navegador, vamos a entrar. Mejor yo con esto, todo esto va cargando. El navegador.
+
+Aquí, aquí. Los que estáis conectados, ¿estáis viendo la pantalla compartida? Sí, sí. Vale.
+
+Más o menos se ve un poco pixelado. Vale. ¿Dónde es eso que está el barco? La verdad es que... Nada, tú quédate ahí.
+
+Y ya te elija si quieres sentarte aquí o no. ¿Cómo se sube? ¿Sí? Sí, se sube muy bien. Hola.
+
+Hola. ¿Eres Pablo? Sí, buenas. Buenas.
+
+Pues donde queráis. ¿Aquí? Nos hemos puesto aquí para controlar un poco los ordenadores. Muy bien.
+
+Sí. ¿Os habéis puesto la luz y todo? Sí. No es malo que no os cansáis.
+
+A lo mejor no estamos aquí todavía. La verdad que os curáis. Estabais como clandestinos.
+
+A no hacer gasto. Eso. Vale.
+
+Vale, pues enseñamos cómo lo llevamos. Vale, un poco la idea es que... Bueno, vayamos afinando cosas, ¿no? Generalmente las ideas suelen salir mejor viendo el desarrollo. Te haces más a la idea de por dónde vamos y cuáles son las reglas que tenéis que implementar.
+
+Pues Pablo os va a contar ahora un poco hasta dónde. No está terminado, pero bueno, está avanzado. Y la idea es que o bien vayáis tomando decisiones ya o si no, las vayáis dejando ahí un poco pendientes para ir tomándolas e ir metiéndolas en los desarrollos.
+
+Bueno, lo primero es que como estamos muchas horas delante del ordenador y demás, le hemos puesto un modo oscuro. Si te desea más.
+
+Vale. Aunque no habrá el registro, porque todos los registros se harán desde un panel de administración, desde con otros usuarios. Siempre puede haber que se olvide la contraseña, entonces hacemos una recuperación de contraseña y demás.
+
+Y luego aquí, pues esto, muy simple. ¿Qué hemos querido hacer? Para poder acceder a cada usuario y demás. Esto es un dashboard inicial que hemos hecho que aquí se puede usar para avisos internos directamente, para cualquier cosa que se quiera comunicar a todos los empleados, actualizaciones que quiera hacer o información que quiera meter en un medio informático o mantenimiento o lo que sea, para avisar que esté la gente avisada y no olvidar las que se irán a dar, por ejemplo.
+
+¿Para avisos internos quieres generar cualquier usuario o administrador? Administrador, todo, desde el panel de administración. Vale. Estará aquí, controlados todos.
+
+Y si se quiere incluso destacar uno más, que destaque uno más que otros, se puede incluso marcar ahí, en inicio, y el texto cambia y se pondría ese aviso en concreto que quieres que resalte más. Entonces vamos a administración, lo vamos a quitar. Se pueden añadir más de tres.
+
+Está tres, pero se pueden poner... Vamos, y tres por tres me parecen muchísimos. Sí, no, incluso más. Están puestos de que se van a añadir más.
+
+Vale. Entonces, está esto por aquí. Tenemos un... Vamos a decir que hemos puesto aquí un acceso a vuestra web, directamente, por si quiera acceder para cualquier cosa, siempre esté a mano.
+
+2. Mensajería interna y soporte
+
+Hemos implementado un sistema de mensaje interno, ya funcional. Entonces, está aquí que se envían los mensajes. ¿Mensajes internos dentro de la aplicación? Esos.
+
+¿De los que tú lo vives o de los que lo veas? Solamente de los tuyos. Vale. ¿Y ves que está logueado? ¿Es la misma cosilla? No, pero se puede implementar si quieres.
+
+No, no, no, tampoco... No es necesario, no. Porque acá estoy con la mocha. Eso suele funcionar siempre, ¿no? Sí, a ver, por si me queréis mandar un mensaje.
+
+Aquí, como es una aplicación interna, cargaría todos los usuarios que hay. Para cuando nadie va a acceder desde afuera. Estos son los que están creados.
+
+Cuando sale el asunto, el mensaje y la prioridad. Esto está por aquí. Bueno, esto por aquí me lo dijo el grupo, el equipo de interfaz de usuario, que vendría bien para no tener que ir a inicio directamente, tener aquí como una especie de chatbot, pero parecido, que puedes hacer lo mismo.
+
+Y acceder a los mismos sitios. Por ejemplo, vamos a, por ejemplo, muy parecido a mensajes, pero es soporte. Este es el soporte del administrador.
+
+Aquí es donde le indicaré los tickets que estén abiertos. El estado que tiene, si está resuelto o no está resuelto. Cuando la última actriz queda encabida.
+
+Cuando se ha enviado el mensaje. Quién la ha mandado. Y es aquí, por lo mismo.
+
+Pones esta revisión, pendiente, resuelta, archivada. Le vas contestando a la ticket. Y lo mismo, le vas... Si la quieres actualizar, sin mandar ningún mensaje.
+
+Y esto es si con el mensaje lo quieres vender o no. Pero no lo pongo yo, porque el administrador... No, todo esto es obra, totalmente. Pero bueno, ahí está.
+
+Bueno, si no lo podemos parametrizar por usuario. Y si no se va a utilizar... Hay otros usuarios. Esta es la de administración.
+
+Luego está creada una de directamente de dirección. Que tiene unos cosas. Entonces eso.
+
+3. Manual de ayuda y visibilidad por rol
+
+Luego hemos hecho un manual. Igualmente, tenemos uno impreso. Que no lo he traído, porque no había tinta suficiente.
+
+Impriméislo. Un manual de ERP, lo que llamamos. No todo el mundo ve todo.
+
+Si la etiqueta pone aquí admin, solo lo ve el administrador. Cierre, solamente lo ve el usuario de cierre. Y luego el resto ya lo ve todo el mundo.
+
+¿Quién es el usuario de cierre? El usuario que hemos creado para César. El de dirección, para cerrar. Cuando le queda finalizar el trabajo.
+
+Finalizar el trabajo y demás. Porque tiene un panel diferente. Cada usuario tiene un panel... Vale, eso lo vamos... Tiene un panel.
+
+El panel de cierre. Entonces, vamos. Voy a acabar con el panel de administración primero.
+
+Hemos creado un modo mantenimiento. Que por si se quiere meter cualquier cosa. Se quiere actualizar la base de datos.
+
+Se quiere hacer cualquier cosa. En mi experiencia, siempre ocurre que alguien dice. Bueno, me salgo 5 minutos más tarde.
+
+Es que esos 5 minutos más tarde. Va a impedir que el resto. Que el trabajo se retome 5 minutos antes.
+
+Porque la actualización se va a tener más tarde. Entonces, activando esto. Lo que hace es que los usuarios.
+
+Si se ha avisado a tal hora. Se mete la actualización. Se activa.
+
+Y el usuario al cargar cualquier otro tipo de pantalla. Vamos a cargar otra cosa. Al hacer eso.
+
+No cargar esto. Lo que cargar es un modo mantenimiento. Que te obliga a que te desbloques.
+
+Para poder trabajar. Y que no ocurra ningún error. Y luego aquí tendríamos.
+
+Una actividad reciente. Que se abrirían todas las cosas. Haciendo un historial.
+
+Que está aquí. El tan usuario. Ha hecho este registro.
+
+Este usuario ha hecho esto. Lo completo de todo. Todo.
+
+Un historial log. De todo lo que ha ocurrido. Los usuarios activos están aquí.
+
+Y luego esto es el. Para el club de todo. Aunque luego todo el mundo tiene acceso.
+
+A casi todo. Hay dos cosas que son nuestras. Los usuarios.
+
+El administrador. Que no se puede registrar. Que crean el usuario.
+
+Aquí se crean los usuarios. Nombre a pedidos. Usuario, correo electrónico.
+
+La contraseña. El contexto. Con que va a trabajar.
+
+Y luego los roles accesos. Aquí va con el contexto. Administrador.
+
+Ejecución. Gente que vaya a trabajar. Con trabajos de Moeve.
+
+Pero también con trabajos de Repsol. Dirección. Que tendría el panel de dirección.
+
+Anuncios de los trabajos. Y luego contabilidad. Creo que dijiste.
+
+Que no se mezclaban. Así. Que solamente tuviera ciertas cosas.
+
+Entonces aquí se crearía. Lo mismo. Editarlos.
+
+Se editarían aquí y tú pondrías. El rol que tiene. Para los tipos de paneles que va a tener.
+
+En este caso el administrador. Ya de todo. Porque esto va a ser luego.
+
+En los clientes y demás. Esto es solamente para que te aparezcan. Las pantallas.
+
+Pero es que luego. Cuando vayamos a por ejemplo. Trabajos.
+
+Esto te va a generar un contexto. En el que. El contexto que tengas.
+
+Directamente esto no te va a aparecer. Si tienes un contexto que trabaja solo con Moeve. Te va a aparecer solo Moeve.
+
+El contexto se Moeve solamente. Eso es. Directamente.
+
+Esto por ejemplo. Es por el administrador. Tiene ambos contextos.
+
+Para trabajar con ambos. Entonces él tiene que seleccionar. Lo que debemos pensar inicialmente.
+
+Es que con el contexto te lo pinte. Todo entero. Pero hemos dicho bueno.
+
+Por si acaso. Hoy será más. Como siempre.
+
+Pero trabajas cada vez en uno o en otro. Obviamente. Pero tú como usuario.
+
+Hay un usuario. Como hemos dicho. El rol de ejecución.
+
+Que tiene ambos. Entonces él tiene en contexto otros. Entonces le tiene acceso a que le carguen a todos.
+
+Entonces. Él tiene la opción de que. En principio.
+
+Porque aquí. Este es un tema importante. A nivel de experiencia del usuario.
+
+Yo al principio pensaba. Si hay gente. Hay usuarios que pueden trabajar.
+
+Simultáneamente. Con datos de Moeve y Repsol. Lo que pueda hacer es.
+
+Cómo hacerlo ya es un poco el detalle. En esta sesión. Mientras yo no diga lo contrario.
+
+Voy a trabajar con cualquier cliente. Moeve, Repsol o incluso. Y otros.
+
+No está implementado en este. Pero sí en contexto. Ahora por facilidad.
+
+Solo quiero trabajar con Moeve. De forma que tú. Te simplifica la operativa.
+
+Si yo sé que durante el resto del día. O durante unas horas. Solo voy a trabajar con una compañía.
+
+Me evito tener. Que hacer ciertos filtrados adicionales. La mayoría de la gente.
+
+Va a trabajar solamente con una. Eso es lo que yo pensaba. Que en un porcentaje muy alto.
+
+De los usuarios generales. No César específicamente. Es que quién va a trabajar este.
+
+Es que trabajan varios. Núria. Cuando tenga que cambiar.
+
+Tiene que saber si vuelve a entrar. En principio. Tenemos usuario.
+
+Que solamente carga. Un solo contexto. Lo que hemos creado.
+
+El rol de Moeve. Solo te pinta. ¿Quieres cambiar a otro? Este usuario.
+
+Tiene ambos. Este usuario dirigente. Puede cargar.
+
+¿Y si un usuario que salve un contexto? No cambia nada. Solo le da pintado. Y no puede cambiar el contexto.
+
+Si el usuario está creado de esta manera. Si yo tengo un usuario. Con acceso a Repsol.
+
+Pero le pongo un contexto Moeve. Entra Moeve y no puede tocar Repsol. Por eso.
+
+Los usuarios están creados. Un poco abundante. Un poco para facilitar la operativa.
+
+Podríamos no hacerlo. La idea es. Que un usuario.
+
+Está asignado. A X clientes. Puede ser Repsol.
+
+Puede ser Moeve. O cualquier otro cliente. De alguna forma te habilita.
+
+A operar y a ver datos. De ese cliente. Y si solo tienes uno.
+
+El sistema. Normalmente si no cometemos ningún error. No te deja hacer nada.
+
+Si solo tienes acceso a un cliente. No te deja hacer nada. Ni nada.
+
+El contexto tiene sentido. Yo entiendo que es. Cuando tú tienes acceso a varios.
+
+A ti te han autorizado. A ver y a tocar. Datos de varios clientes.
+
+El contexto. Es un poco. Doble seguridad.
+
+Y también operativa. Porque si tú. Puedes acceder a varios clientes.
+
+Pero tú sabes que durante un tiempo. Vas a operar solo con uno de ellos. El contexto te permite.
+
+Si yo no puedo cambiar de contexto. Cuando he trabajado. Hoy he trabajado con un cliente.
+
+Pero mañana quiero trabajar con otro. Pero como cambio yo el contexto. Claro.
+
+Esto es lo que te va a pintar. Cada usuario puede cambiar de su contexto. Como cambia el contexto.
+
+Eso es el contexto. Y veo que eso es hecho muy bien. Pero hay más clientes.
+
+Puede crear amistades también. Yo lo que pasa es que. Quizás el contexto de clientes pequeños.
+
+No tiene mucho sentido. Que no vas a trabajar mucho tiempo. Con un cliente pequeño.
+
+No sabemos. Es verdad que de momento. Nosotros somos más gordos.
+
+El contexto y el rol. Un rol que veis todos. Y el contexto de otros.
+
+Podría tener acceso a. Y aquí hacer uno más. Que ponga otros. Otros en concreto.
+
+No va a ser tan grande. No ponerle un nombre en concreto. Y es lo mismo.
+
+Y más adelante. Si no se necesita mucho. Ya se pensará en hacer uno para él.
+
+Todo es lo que hemos ido construyendo. Es en base a. Que no sea algo que luego. Entonces.
+
+Son datos diferentes. Con el contexto diferente. Te va a pintar esto diferente.
+
+Los avisos son totalmente diferentes. Comparten. Porque comparten tabla.
+
+Comparten la tabla. Porque el 80% de los datos. De la tabla son los mismos.
+
+Pero luego hay datos concretos. Como estos. Dependiendo del contexto te los va a guardar.
+
+En un campo o en otro. Entonces es en sentido. En lo que debe el rol.
+
+Y el contexto y demás. Es para facilitar esto. Por ejemplo.
+
+Habíamos pintado según el contexto. No porque no habíamos hecho el contexto. Habíamos hecho el rol.
+
+Depende del rol te pinta una cosa u otra. Y con el rol otro. Que es con.
+
+Los usuarios de administración. O el de ejecución. Que tiene de ambos lados.
+
+Lo que habíamos hecho es que te salía. Gente que trabaja aquí. Sabrá donde tenía que meter datos.
+
+Pero por si acaso. Podemos cometer algún error. Mejor dar aquí.
+
+Y directamente que te lo bloquee. Y no puedas meter ambos datos. Vale.
+
+5. Clientes, estaciones y contexto
+
+Luego. Clientes. Le hemos dado acceso al administrador.
+
+Para poder crear nuevos clientes. El cliente. Estos son campos.
+
+Que es lo que hemos puesto nosotros. Se pueden cambiar. Esto es para añadir cliente.
+
+Y lo mismo con estaciones. En principio solo hemos puesto al administrador. Pero.
+
+Ahí hay una cosa. Que hablamos el otro día César. Que el maestro de estaciones de servicio.
+
+Va por cliente. Tiene que haber un maestro. Por cliente.
+
+De. De estaciones. Eso era una cosa.
+
+Que en principio no lo habíamos contemplado. Pero que ya está metida. Porque ahí es estación y cliente.
+
+Va ligado. Siempre que crees una. Una estación.
+
+Tiene que ir con cliente. Va ligado al cliente. Las estaciones las identificas con un nombre.
+
+No con un número. Son datos. No son datos.
+
+El código. Código. Código.
+
+Código es un código. Es un código que has creado tú. Es para ver el detalle.
+
+Cada cliente la identifica. Fundamentalmente con un número de 5 cifras. Ahí lo que nos falta todavía es.
+
+Cargar los datos de las estaciones. La primera columna. Es el código ese.
+
+Es el número más importante. No nos falta ese campo para otra cosa. Se puede implementar que sea.
+
+Como has dicho, un código de 5 cifras. 6 cifras. Porque puede ser un código de 6 cifras.
+
+De máximo 6 cifras. Y ya está. Ahí se pone.
+
+Tenemos el número de estación. Y luego ya tenemos el nombre. Nombre comercial.
+
+Nombre comercial. Y luego ya dirección. Este digamos que es el más importante.
+
+Lo podemos mover a la izquierda. Y ya está. Se van alimentando y demás.
+
+Y esto como lo que he dicho. No puede ser una estación sin cliente. Esto es lo que hemos visto otras veces.
+
+Entonces esto por aquí. Esto es solamente para mi sala. Esto es pulir.
+
+Que me digáis que usuarios son los que tienen que acceder a cada sitio. Y luego ya vamos al truco de trabajo. Hemos diferenciado entre lo que es administrador y dirección.
+
+Se supone que no creo que haya mucho que hacer a nivel de estaciones. Para que no tengas a lo mejor tú como director que entrar a crearte una estación de Sevilla. Es lo que hay en perfil de administrador.
+
+Ya veremos luego cómo lo cubrimos. De tal forma siempre podemos dar doble permiso. Y que el director tanto de la dirección como tal tengan permiso los dos para hacerlo.
+
+Sobre todo es que se ha puesto enfocado en la administración a un mantenimiento, un soporte más que implementar y guardar datos más que un truco de trabajo diario. Cuando hay que hacer cosas puntuales alguien le falla esto. A la administración le falta soporte.
+
+Y imagino que no todos los días sean administraciones ni sean clientes. Por eso al principio está hecho.
+
+6. Datos necesarios en estaciones
+
+En listas de estaciones también hay que meter también aparte el municipio y la provincia.
+
+La ubicación es alcanzar un curvar. La dirección es alcanzar lo mismo. Porque a veces también buscas por municipio o por provincia.
+
+Podemos buscar incluso que sea por municipio o por provincia. Y prescindir de ubicación. La dirección exacta... Realmente la ubicación sería como la... Bueno, la ubicación exacta así que la tenemos también en el listado.
+
+Pero si te das cuenta no está en el ajo. El listado aparte hay muchas cosas que no... Idealmente podría estar todo metido. Pero es que no... Cargamos esto para una cosa que realmente... Necesito saber la calle.
+
+Pero ya la busco yo directamente en el listado. Se puede hacer otra cosa. Que no salga aquí.
+
+Para que no haya mucho ruido visual. Pero si al tener un botón de detalles y que te salga la dirección, no ocupa nada. No ocupa mucho.
+
+Y hay que quitarlo del listado. Eso es. Que no tenga internamente... Es que el listado a veces se actualiza.
+
+Lo malo que tenemos es que en la primera versión por lo menos no hemos previsto tener una actualización automática. Tienen que ser actualizaciones manuales. Eso en principio.
+
+Eso es horrible. Nos hacen llegar el listado. Es complicado.
+
+Por eso yo quería sacarlo de la versión 1. Imagínate que yo tengo la estación número 33. Por decir una. Y esa estación de repente acepta la ciudad.
+
+Me vende el listado. No es reemplazar una por otra. Y luego con otra añadido.
+
+Que es que tú, el histórico, no puedes dejar de apuntar a esa estación. La estación no es la que se hizo para ese trabajo. No puedes hacer un borrado físico.
+
+No puede morir. Tiene que quedarse como en suspenso. Sí, pero cuando yo me mandan hacer su listado las mítiles de las estaciones que ahora mismo tienen funcionamiento ya no están.
+
+Voy a actualizar. De esas 1.500 hay 10 que han desaparecido y 10 que han aparecido. Sí, pero actualizar no equivale a que guardemos los datos.
+
+Es revisar y hacer una comparativa de los datos muertos con los datos viejos. La comparativa tiene que ser mecánica. Esto es para el trabajo que tenemos ya planeado.
+
+En ese sentido, el número clave es el número físico. Es lo que va a mandar siempre. Incluso puede cambiar de nombre en las estaciones.
+
+Si queréis tener un tipo, cada una ha cambiado. ¿Queréis tener uno para la primera versión de la actualización automática? No, a lo mejor no. Ya había previsto no meterme en ese lío para simplificar un poco.
+
+La pena es que con esto que tenemos ahora, el resto de estaciones las podemos meter manualmente cada vez. Claro, cuando lo queremos. Como hacemos ahora, en realidad.
+
+No hace falta que se actúe el servidor automático antes ni nada. Cuando metemos... Y me da igual que esté activa o desactiva. Porque si no está activa, en una estación te pone que no pone nada y que no tiene trabajo.
+
+Ahora te vamos a plantear un listado fijo de instrucciones y luego ya veremos si tenemos un servidor que abre desde aquí manualmente. Lo que me da miedo es meter una actualización automática y que genere algún problema. Y la actualización automática puede desaparecer también.
+
+No nos aporta nada. No, la necesitamos porque si está de baja... Esa sería la de baja. No, la dejamos.
+
+Incluso una de baja no puede enterrar un trabajo. Está cerrada pero resulta que ha llamado a la policía.
+
+7. Fecha de baja y códigos de estación
+
+Podríamos dejarla de baja, sabiendo que está de baja o no. No, pero eso no aporta nada. A mí no me aporta nada, eh.
+
+No te ocurra nada saber que está de baja. No, no, claro. No me aporta nada.
+
+A mí simplemente... Tenga un trabajo, porque si esa situación se reabre, se abre con otro código. No, pues no. Se va a reabrir con el mismo código.
+
+Si fuera la sede, igual. Podemos dejarlo por sacar sus futuras, pero que no se muestre visualmente para el vídeo. A nosotros no nos va a afectar nada, pero lo mejor... Es que claro, en el listado, en los listados que tenemos vuestros, sí que... O sea, es un dato que aparece.
+
+Sí. Es un dato que aparece. Pero el nuestro no.
+
+En el listado se ha sentido que el nuestro no aparece. Y no nos afecta. Vale, vale, pues... Estoy pensando que el código tiene que tener más... más... más... eh [tramo no transcrito / revisar audio] dígitos. Más acentros.
+
+Más acentros. Yo pongo GC y el código. Y puertos de pesca también.
+
+Eso es. Igual hay que dejarle 12, por ejemplo. No, pero con 6... con 6... Yo con 6 no me llega.
+
+No importa. Claro, yo sé que a ti no te aporta. Igual, 8 de 12, vamos.
+
+No es un... Pero tú... Pero un puerto de pesca es EK 18. Cuatro. Sí, pero GC... En los gasocentros tiene GC y 6 dígitos.
+
+Claro, pero es que el GC no se comparte con las estaciones de servicio. Pero bueno. No sé qué.
+
+No se comparte con las estaciones de servicio. Da igual, pero luego nos saldría en algo así. Hemos trabajado en 6 u 8. Pero tiene que existir la posibilidad de meterlo.
+
+Manual. Yo diría que con 8 nos debería llegar. Si queréis también por limpieza... O sea, aquí el problema es la limpieza de los datos.
+
+O sea, es que se te vaya el dedo y ahí le metes 7. Eh... También lo que podemos hacer es meter un código de 6, si es lo estándar, y como un prefijo o algo así. Que ahí sea un poco más libre. Tengo otra idea.
+
+Tengo otro segundo momento. Tenemos otros también exóticos en plan... Caps correlada. Sí.
+
+O sea, hay que darle un poco de posibilidad. Pero con 8 votos, pues tú. A la vida.
+
+O sea, decía yo de 10. Cuesta lo mismo 10, 8 de 10. Deja darle un poquito más de margen ahí.
+
+Para que nos dé un poco de flexibilidad a la hora de introducir cosas raras. Vale, vale. El fallo en el código es que como no comparten un número fijo, entonces, por seguridad, no tienen 5 todos, ni tienen todos 6, ni todos 7. Pero las actuales igualmente son 20 y eso.
+
+Lo que se puede mirar es, otra vez con el contexto, que depende del contexto con el que estés trabajando, porque eso no sería, de Repsol y de Moeve, o hay diferentes que tienen un diferente código. Pero Repsol y toda Repsol van a tener el mismo número de... No. Es que hay 7 con las raras.
+
+Que no se ajustan a eso. No solo una minoría, pero también. Claro, entonces no se puede trabajar sobre ello.
+
+Porque yo iba a pensar, si es de Repsol, tiene este número fijo. Si es de Moeve, tiene este número fijo. Y si es de otros en concreto, un número fijo.
+
+Pero si hay cosas raras, no se puede ir con un cálculo, digamos, de usuario que vamos a hacer un número máximo. Y encima estamos diciendo que mezclamos números con caracteres y demás. Entonces es... Podríamos dejar los 6 caracteres y meterlo en el nombre de la estación.
+
+Esa información. Mejor. Lo que vas a decir antes con la planta de pruebas.
+
+Y necesitamos un código. Entonces estamos inventando un código para la planta de pruebas. Eso es lo que te digo.
+
+Pues sí. Ahí el peligro que puedas tener es que se repita. Eso es.
+
+Dentro del mismo cliente, además. Sí, sí, sí. Se puede repetir en clientes diferentes, pero en el mismo cliente, deberíamos tenerlo controlado para que no se repita.
+
+Pues no podemos. Tenemos un código de estación y tenemos que ver cómo hacemos ahora. Vamos a poner otros 1, otros 2, otros 3, otros 4, otros 5, otros 6, otros 7. Y tenemos un... Hasta los 6 caracteres nos va para bastantes.
+
+Otro... ¿Cuántos son? Si no... 4 y te quedan otros 2. No es muy poco. O T. O T y ya está. No, pero... Necesitamos un número.
+
+Y tú, realmente, los gasocentros, tú pones G y te entran 5 números. Sí, pero son 6, ¿eh? Son 5, son 50.000. Son 6, son 5, sí, vale, vale. Eh... Puerto de Pesca es... Pesca, sí, sí.
+
+Pesca y 2 números. Sí, eso es fácil. Eh... O sea, que con 6 puedes, ¿eh? Vale.
+
+Y con la planta de pruebas, pues, ponemos un código... Claro, pero tiene que ser un código numérico y con letras. Tienes que poner pruebas, ¿eh? Pones pruebas y luego en el orden pones... Todo lo que sea. Sí, vale.
+
+Intentamos ajustarnos a 6. Y así tiene más sentido para distintos... Hay... Yo creo que esto solo lo va a tocar gente... O sea, que lo tenéis muy controlado, no hay mucho problema. Sí, vale. Porque otra cosa es que tuviera que tocar ahí todo el mundo, ¿sabes? Y todo el mundo se tuviera que saber la realidad, pero... Vale.
+
+Bueno, pues muy bien. Tiramos por 6, entonces. Bueno, pues ya os digamos lo más.
+
+Ya hemos visto todo esto aquí. Eh...
+
+8. Trabajos, numeración y vista operativa
+
+Pues el trabajo también, ¿no? Lo que hemos dicho. Tenemos aquí el campo descripción, el número del trabajo, el estado, el borrador, el curso, el terminado... El número es un ordinal, ¿no? Sí.
+
+Vale. Esto lo podemos cambiar un poquillo en este para que se vea un poquillo... Más grande, sí. Un poquito más grande porque con el color no... Vale.
+
+Yo esta... Intentaría que tuviera el mismo orden que en nuestro trabajo de control. Vale. Sí.
+
+Que sea ordinal, número de estación... A ver, ahí con el número... Moeve tiene un solo número. Repsol tiene un número por cada tipología. Muy bien.
+
+De las obras, las tiendas... Ah, pues ya he visto eso. Sí, pero eso lo que hay que hacer es... Ese es el tipo de trabajo. Eso va a haber que verlo con... Es que también sé... Eso va a haber que verlo con... Pero eso lo suyo es hacer un... Como tenemos dos... Para descripción de trabajo tenemos una categoría de trabajo y una descripción de trabajo.
+
+En categoría de trabajo tendrá que ser... Lo descripción de obras y las obras. O sea, que se pueda repetir por cada categoría. ¿No? O sea, quiero decir, porque hay un número uno de tienda, hay un número... No, pero va a haber que hacer un... Hay que unificarlo.
+
+Va a haber que unificarlo. Y que tenga un ordenado para todo eso. Le cambiamos el número... Bueno, yo entiendo que una vez que está aquí como usuario, pues suelta cositas.
+
+Sí, sí. Pues ya está. Cositas, tiendas y ya está.
+
+Sí, sí. Porque no tenemos aquí estados, podemos filtrar... O sea, el número ese... El número ese es el número básico para la base de datos. Sí, al menos es un número creado para eso.
+
+Eso es un número interno. Un número interno para la base de datos. Y ese tiene que ser común para todo el usuario.
+
+O sea, tiene que ser un código que vaya... A ver... Más que el interno yo estoy pensando en el vuestro, ¿eh? Claro, porque el interno es interno y eso yo... Eso lo es técnico, pero... Hay otro. Hay otro que es el vuestro. También este.
+
+El que asignas cuando creas el trabajo. Bueno, ahí... Realmente podemos hacer un poco lo que queráis, porque... O sea, podríamos... O sea, con... Digamos, tienes el número 1 de Moeve y luego tienes el número 1 de Repsol por cada tipología de trabajos. No.
+
+Esa es la actualidad. Es una actualidad... ¿Cómo queréis que se crea? Se Moeve también desde el listado. Es uno de esos de sólo para todo.
+
+¿Cómo queréis que se transforme eso? Tiene que haber un único listado para el Repsol. Vale, entonces le vamos a cambiar... No ocurre. En este caso la tenemos.
+
+Yo me voy a cuestionar un poco sobre entonces. ¿Para cada categoría de trabajo tiene que haber usuarios? No. Que todo el mundo entre... Concitras tiendas y ya solo trabajas en tiendas.
+
+Ya te disfrustas de tiendas. Citras obras y ya te disfrustas de obras. Si el citra es fácil... Que no sé si... Simplemente el título, ¿no? Es que los que trabajan en tiendas no pueden ver lo otro.
+
+Da igual. De hecho, no creo que sea ningún problema. De hecho, no es tan malo.
+
+De hecho, yo entro en el Moeve, que sí tenemos unificado todo. Es muy guay. Yo sé lo que se ha hecho en mi estación, aunque sea de otro departamento.
+
+Yo sé que se han hecho cosas. Sé que tenemos un plan, porque si tenemos uno, no sé qué hace 10 años. No está valer, ¿eh? No.
+
+O sea, yo... Yo creo que es ventajoso, de hecho. No. No es ventajoso.
+
+No está así porque no han podido hacerlo. O es el momento de hacerlo. Cada uno tiene su lista, y luego partían.
+
+Y cada uno tiene su propio listado. Pero yo creo que debe ser... Y lo que pasa es que Repsol nació cada uno... Y la executividad de tiendas ya está. Ya tienen su lista de tiendas.
+
+Y esto que veis es como una unificación. A ver, si luego lo que queréis cambiar, en realidad nosotros no lo hemos implementado, ¿no? O sea, no hemos implementado que no puedan ver por categoría. Nosotros hemos implementado que no puedan ver por cliente.
+
+Por cliente. O si más adelante lo necesitáis, pues lo podríamos. No, no.
+
+Además tiene un log. El log guarda... El log guardará todos los cambios, todo lo que sea necesario. Sí.
+
+Todos los cambios... Es que es para que todo el mundo quede en un log y que tengan cuidado porque si haga algo, le vamos a pillar. Claro, si es un... Hay que hacer un sembrado. No voy a decir que sea un log, pero... Bueno, la cosa es que sea un log.
+
+Si luego aumenta mucho de espacio y tal, pues... Podemos hacer que se descargue el log y después descargue lo que vamos a ver, que se borre el log y para... Sobre todo, ser texto plano, en principio, no... no me ocupa mucho. Pues lo mismo. Vamos a... A pedidos.
+
+Todo esto sería... Espera, el retrato... ¿Qué pedís? No, si ya por verlo todo, el... Pues mejor en editar. Entrar en editar. Está.
+
+En fecha de encargo, a... No, no. No, pero... Plantearme todo. Vuelve a trabajo.
+
+Sí, vuelve a trabajo. Por ejemplo, detalle de cliente. Pues eso para modelo tiene sentido.
+
+Bueno, sí, es el que nos lo encarga. De hecho, eso es un nombre personal. Eso es el que nos lo encarga, ¿no? Lo que deberíamos generar.
+
+Esto nos ajusta mucho a los campos de... Nosotros lo que tenemos es el número de estación... Bueno, número ordinal, el primero. Número de estación, nombre de estación, municipio... Municipio, provincia... Lo tenéis ahí, ¿no? Sí, sí. Municipio, provincia... Y luego ya metemos número de pedido.
+
+Eso ya lo tienes dentro, ¿no? Sí. Lo que pasa es que como estamos utilizando ese ordenador, no tenemos el archivo ahí metido. Ah, bueno.
+
+Pero editar. A ver en editar qué te sale. Vale.
+
+Te sale el número de trabajo, el estado, cómo está, la estación de servicio... El estado no tiene sentido. Sí, el estado es... El curso terminado es lo que tenemos. Es un campo... Pero alguien que trabaja más lo sumete automáticamente.
+
+Claro, bueno. Lo que pasa es que y luego lo vas actualizando y es más. Ahí me puedes crear un trabajo, pero es el borrador, y luego ya está finalizado.
+
+Ahora lo que pasa es que el estado lo tenéis como un campo calculado, ¿no? Al principio de otros datos. Exacto. Bueno, esa lógica la podemos meter.
+
+O sea, es que los Excel son campos calculados. O sea, al principio de otros datos. Si tú dices que ha terminado, pues lo haces, pues termina automáticamente.
+
+Puedes pensar ahí que se termina y sabes que está terminado. A ver, yo creo que aquí es que le estamos dando... Demasiado... ¿verdad? Demasiado cuerpo. Demasiada dimensión.
+
+Nada más nosotros ahora partimos de un Excel así... Sí. ...que tú lo ves todo en una sola fila. Y ahora ya pasamos a que... que no, cada trabajo lo tienes como un par de datos.
+
+Exactamente. Y... claro. Te hace quedar un problema a nivel de usuario, ¿no? Sí.
+
+Abajo de la categoría, no sé si es eso. ¿Abajo de toda la derecha que tienes categoría? ¿Qué quieres significar eso de categoría? ¿Abajo de toda la derecha? Ahí. Si tienes un campo de categoría en el Excel de 9, ¿no? Sí, claro.
+
+No, al final de todo... ¿Cómo es el tipo de trabajo? Claro, eso es... Depende de lo que sea. Pero si ves aquí está escrito manual, que se puede poner cualquier cosa.
+
+9. Necesidad de vista tipo Excel
+
+Yo, yo... es que lo que yo esperaba es toda esta información de la ficha como lo tenemos nosotros integrado a la propia fila del Excel.
+
+Y que te puedas modificar a sobre la ficha. Porque es que es mucho más ágil. Ya.
+
+Es mucho más ágil. Que yo pueda entrar a la cara de la ficha a que yo pueda entrar Otra cosa es que yo, en esa ficha que tengo, hemos añadido, por ejemplo, un campo de comentarios abiertos, observaciones, que sería observaciones. Eso tú no lo puedes poner en la primera fila del exámen, otra vez sí.
+
+Pero sí tú puedes hacer que yo seleccione si se abran. Y es lo único que sale en una ficha. En práctica es lo único que sale.
+
+O que de algunos de estos te salgan las opciones que tienes. O sea, la lista de valores finalizados que pueda tener ese campo en ese caso. Y entonces creo que es mucho más práctico.
+
+Lo que pasa es que no sé si a nivel de pedidos vamos a ser capaces de meterlo todo en esa ficha. Los pedidos también se complican. Sí, pero deberíamos tener más... a disponer de información más en una línea.
+
+Yo también, aplicando cientos arriba, yo pueda visualizar muchos trabajos a la vez. ¿Por qué? Para saber cuánto cobre este último trabajo. Ah, ¿cierto? Y usamos mucho como base de datos, no como algodón, sino como el... o, ¿dónde he hecho yo este trabajo? O, ¿cuántos trabajos he hecho yo en este municipio? O, ¿quién trabajó en esta estación? O sea, estamos constantemente usando los cientos y eso es muy útil.
+
+Te permite ver muchas cosas. No, con este sistema de fichas no puedo ver nada. O sea, yo incluso miro eso.
+
+Puedo mirar qué trabajos terminaste más. Pues oye, pues voy a Excel, tengo la columna de filtro y ya está. Es que no sé, funciona muy guay.
+
+O sea, yo insisto que es el siglo XIX, pero funciona muy guay. Claro, es verdad que somos acostumbrados a trabajar así y nos puede costar trabajar a nivel de ficha de trabajo. O sea, pero por ejemplo, el primer bocadillo realmente está en el Excel, prácticamente.
+
+El número de trabajo, la descripción de trabajo, las fechas, entonces, ¿cuántas fechas? Seguimos. ¿El contrato? Vale, el contrato sí. Debe quedarse por defecto.
+
+10. Contratos y tarifas
+
+¿El contrato, Amaya? Bueno, pero es también lo mismo. Va a ser una sección de vista cerrada. Es más, el contrato es un número, ¿vale? Pero es un número y luego un texto.
+
+Un código, sí. ¿Vale? El 1772 y luego le podemos poner un apellido para que se vea. Contrato Marco Cepsa 2035-2018.
+
+Pero fundamentalmente va a ser un número. Es más, yo debo ver el número. A lo mejor es verdad que cuando yo selecciono valores, no está mal que me dé un supuesto, ¿no? Que me dé el número y un texto, pero luego realmente, en el leer esas palabras del número, porque yo me lo sé de memoria y sé que si es 1772, sé que es el que tiene que ser.
+
+¿El contrato lo teníamos en los muestros? No. Vale. Pues lo vamos a tener que meter.
+
+Ya, más que contrato. Es más sencillo, porque es el mismo que cuando teníamos un nuevo contrato de mover el presupuesto para cuatro años. Ya, es que no se toca prácticamente nunca.
+
+Y de hecho, en el fondo, no es una lista de contratos, es una lista de tarifas. Pero bueno. Pero de momento, como los contratos mantienen la tarifa durante toda su vigencia, no es un problema.
+
+Es verdad que si a mí me cambian la tarifa, a partir de 2026 subimos un 3%, pues habría que crear otro contrato. O una versión 1 del contrato. Sí.
+
+Pero bueno. Pero eso con el que va a ocurrir, o sea, después de 35 años, bueno. Ya.
+
+Sí, pero bueno. Oye, pues tú dices entre dos contratos y tendrá que haber contratos que ya no puedas elegir. ¿Por qué? Porque si no está bien el contrato y ya lo tienen un momento determinado, yo ya lo quito y se queda, lógicamente, en el histórico, pero ya no lo puedes crear.
+
+O sea, una fecha directamente, si la fecha ya ha superado el contrato, queda registrado, ¿de acuerdo? Para no fastidiar todo lo que está ya, o sea, trabajos sobre ese contrato. Pero ¿se podría hacer eso? ¿Que sean accesibles si tienen una fecha abierta? No. No.
+
+No. Es normal. Es normal.
+
+Es que cuando crees el contrato, si no hay nuevo, arrastramos el tiempo hasta que salga de nuevo. Y aquí se ha pasado un año. Tú no sabes cuándo va a ser.
+
+Vale, entonces lo que se puede hacer es, se puede poner la fecha, pero que lo que mande, para tener un orientativo de la fecha, poner un estado, que lo cambies con un botón de estado activo, o... Como te diga el maestro de ese maestro, que sea estado activo o no activo, y ya está. O eso, sí. Se puede poner el estado activo.
+
+Ya está. Pues... ¿Y hay que ponerle algún código desde el propio listado, más que desde la fecha? Se puede crear una vista, o una nueva vista, por si alguien quiere ver esto, pero igual. Se puede crear una nueva vista que sea más orientada a un externo.
+
+Sí. Como lo que queréis. Que sea más orientada a un externo.
+
+Que le permita ver muchos datos... En... Y que la fecha que se habla sea básicamente para comentarios. Para, vamos, observaciones, o... Sí. Realmente, para comentarios, para el tema de pedidos también, porque... Tú puedes tener en el Excel, tú puedes tener el importe total del pedido, pero ahora eso va a tener tripas, ese número.
+
+Ya. Entonces, las tripas de ese número van a tener que estar acá. Sí.
+
+Pero a lo mejor yo en Excel solo veo el importe total del pedido, o el importe total de la captura. Todo esto está orientado a la vista, a la vista mencionada. A lo mejor queremos dejarlo para que se pueda ver muy detallado todo, pero luego crear una vista, como lo que estamos haciendo, del Excel, más estilo Excel, y esas vistas implementarlas a los roles que van a estar, digamos, ejecutando el trabajo directamente día a día.
+
+Sí, pero tampoco veo yo que el administrador... Además, el administrador no va a existir. No, o sea, en esa figura no va a existir. Ese rol no va a estar.
+
+Ese rol no va a estar. Va a estar el de dirección, sí. Sí.
+
+Pero el de administrador ya veremos por qué yo... Bueno, eso también un poco asignar roles, supongo, está pensado, ¿no? Pero es que para mí el rol de administrador es el vuestro, realmente. Porque ¿quién crea usuarios, el dirección o el administrador? El administrador. Veamos.
+
+Pues yo sí esperaba que entonces... O sea, para mí... Pero eso no pasa nada. O sea, puede poner que el dirección tenga acceso a... Sí, sí, por eso digo... Pero es que realmente para mí no hay diferencia... O sea, para mí el administrador no... Es un rol que... Que se debe funcionar con el director. Es que en realidad no va a funcionar con el director.
+
+Que se debe funcionar con el director. Para mí lo único que queda por encima... Lo único que no hago yo como administrador es el rol de desarrollador, casi. Claro, lo que he dicho antes, está un rol de soporte, de más y más tirando información.
+
+Nosotros en principio habíamos pensado en un rol de dirección. Control. Sí, control.
+
+Ejecución, digamos. En el proyecto. Pues ellos principalmente.
+
+Yo voy... El administrador es un poco más dudoso, porque... Sí, sí, está bien. Realmente para mí... Pero lo podemos unificar. Sí.
+
+Puedes dejar el administrador para mí como dirección. Por ejemplo, crear nuevos usuarios, pues lo hace el administrador. Pero... Lo haré yo.
+
+Crear un nuevo contrato. También. Lo haré yo.
+
+Actualizar la ley de estaciones. Pues lo haré yo. Claro, es que el administrador sí.
+
+Eso es lo que me va a dar las noticias. Pero bueno... Es decir, que realmente para mí el rol de administrador no me queda. Pues para... Yo creo que un backup... Un backup sin mediadura, con la señal.
+
+Lo habéis pensado en ese sentido, de decir... Joder, ¿qué vamos a hacer a pesar que esté actualizando las estaciones de servicios? Eso es una de las cosas que hemos pensado. Es más, la pantalla esta de importaciones, que no está a mi modo abierto como tal, era justo para importar los Excels, porque toda la base de datos que tenéis ahí mismo, el trabajo de Chino lo vuelve y lo metes todo aquí. Entonces habíamos implementado esto que, pues importar aquí el Excel, y que casi te hace una seguridad bug y una error de datos, pero se puede corregirse por delante, y si está correcto te coincide, y cumple todos los requisitos, te saca aquí una pizarra editable en la que tú hagas la tercera comprobación.
+
+¿Está todo correcto? ¿Toda la fila que se haya acumulado? ¿Está todo correcto? Para adentro. Eso es lo que habíamos pensado en la importación. Vale, pero eso sí es lo único de momento.
+
+Vamos a arrancarlo y vamos a entrarlo, que es un añadido que está adentro. Ahora quiero verlo. Vale, bueno, eso ya lo veremos, el tema de los roles y tal, y asignar los temas que tengan la funcionalidad.
+
+11. Pedidos, ítems y facturas
+
+Pedidos, esto es importante, porque esto sí que es una parte complicada. Aquí están todos los pedidos. Una lista de pedidos.
+
+Pero estos pedidos están asociados a trabajos. Sí. Por ejemplo, ¿el pedido a qué trabajo está anunciado? No puedes poner lo que tú quieras.
+
+Se coge de la base de datos y te pone aquí exactamente los... Vale, pero yo el pedido, cada vez que me hay pedido tengo que verlo. ¿Es posible que haya un pedido que corresponda a varios trabajos? ¿Eso puede ocurrir? No. Son pedidos con los que yo trabajo, ¿no? El proceso es, preparáis un presupuesto.
+
+O sea, yo desde el trabajo... O sea, yo primero creo el trabajo. Cuando el trabajo está creado, entonces puedo crear el pedido. ¿Y lo has impuesto? No lo he impuesto, sí, pero lo hago todo desde el trabajo.
+
+¿Qué ocurre? Y es un tema que tengo que verlo porque considero que ese movimiento de contracción es distinto. El pedido está compuesto de ítems de la tarifa. Sí, de los ítems.
+
+Exacto. De los ítems de la tarifa. Y, una vez creado, se factura por ítems.
+
+Se puede facturar por los ítems AVEC, o incluso partido de ítem. Y cada factura lleva asociado un número de factura, un número de confirmación. A ver, yo creo que tenemos ahí un pequeño problemilla, que es un poco... Es que los Excels que nos enviaste, en realidad Repsol, lo que tiene es una línea por cada ítem, no por cada trabajo.
+
+Claro, pero lo suyo es cambiar eso. Lo suyo es cambiarlo. Lo suyo es cambiar eso.
+
+Lo cual nos obligará un poco a unificar números. Que al final yo creo que lo vamos a tener que hacer, porque también las categorías vamos a tener que cambiar, vamos a tener que renombrar todo. Lo que pasa es que eso... Lo suyo es verlo con... No está aquí la vuela.
+
+O sea, porque el tema de la... Eso lo hablamos hace rato y tal, pero a mí se me va olvidando de nada. La idea que yo tenía era... Yo tengo un trabajo. Ya no sé si un trabajo es un pedido.
+
+Un trabajo puede ser varios pedidos, yo creo. Eso sí que lo hablamos, me parece. O sea, lo que no puede ocurrir es que haya un pedido que corresponda a varios trabajos.
+
+Claro. Pero un trabajo sí que puede llevar varios pedidos. Eso nos lo enviaste en el correo.
+
+Un pedido puede llevar varios ítems. Eso es, sí. Y luego ya tenemos la parte de contabilidad.
+
+Y luego viene la parte de las facturas. Y en la factura se facturan ítems. Se facturan ítems.
+
+Pero ¿una factura puede llevar ítems de pedidos diferentes? La puede llevar... La factura... Las facturas agrupan todo. Y van... ¿Una factura puede agrupar conceptos de diferentes trabajos? Sí, sí. O sea, puede coger un ítem de aquí y un ítem de abajo.
+
+O sea, las facturas cogen varios trabajos. Vale. O sea, las facturas cogen varios trabajos siempre de un mismo contrato.
+
+Vale. Porque vienen de una misma tarifa. Eso es importante, sí.
+
+Siempre de un mismo contrato. De una misma tarifa. Mira, y la hizo en Madrid.
+
+No es malo. Increíble. ¿Algo bueno o malo? Sí, bueno, bueno.
+
+¿Lo tienen ignorado? A ver, a ver. A ver, eso es uno de los males. Pero bueno, te lo cuento.
+
+Un trabajo... Amaya puede tener varios pedidos. A nosotros no, pero... Ya, ya. Ya sé que para eso sí.
+
+Cada pedido está formando varios ítems. Las facturas... Se facturan ítems en el fondo. Y se puede facturar parcialmente un ítem.
+
+Vale. Sí, vale. Y cada factura afecta varios trabajos.
+
+Es verdad. Pero son compuestas, sí. Cuidado que esas también son... Las de Madrid también son compuestas, ¿eh? ¿Esteban? Sí, sí.
+
+¿Me lo confirmo, por si acaso? ¿Esteban? ¿Cuáles? A ver. Sobre todo te hablo para la tema del texto. Un trabajo... Puede tener varios pedidos.
+
+Sí. Vale. Cada pedido está formado por ítems.
+
+Sí. Y cada factura... Se facturan distintos ítems de distintos trabajos. Siempre del mismo contrato.
+
+Y eso sí. No, las facturas no meten al contrato nunca. No.
+
+Sigo bajo el mismo contrato, qué sé yo. Cada trabajo puede tener varios pedidos y cada pedido puede tener varios ítems. O sea, cada pedido no es de un ítem.
+
+No, no, no. Vale, trae varios ítems. Sí.
+
+Puede tener una programación, una dirección facultativa, visita... Vale. Vale. Pues nosotros la hacemos así.
+
+Y lo que... Para confirmar, qué es lo de... Entonces podemos coger ítems de diferentes pedidos para facturarlos. Sí. Sí.
+
+Y diferentes pedidos y diferentes trabajos. Sí. Perfecto.
+
+Mientras estén todos bajo el mismo contrato. Exacto. Y nosotros cuando facturamos, vamos a facturar ítems.
+
+Eso es. Y, de alguna forma... Y ellos los juntan a los guayas, claro. Tiene que haber una lista de facturas.
+
+Entiendo. Habrá una lista de facturas. O sea, se podrá hacer la inversa.
+
+Que yo te... Para esta factura, tú me digas qué trabajos e ítems se han facturado. Vale, perfecto. O sea, se han asignado.
+
+Sí. Y que yo pueda proteger el importe de la factura con el... O sea, el importe de la factura son 10.000 euros. Sí.
+
+Que yo pueda comprobar en el sistema que esa factura tiene asignados ítems por lo menos de 10.000 euros. De manera que yo pueda comprobar que por lo menos cuadra eso. ¿Eh? Dos caminos, verlo.
+
+Que el ítem pertenece a la factura y luego a la factura hay que lo componer y verlo. Con lo cual, yo dentro del trabajo tengo los pedidos. Y luego lo que tengo que tener es una lista de facturas.
+
+Eso es. ¿No? O sea, el... Sí, eso es. Y envuelve igual, pero... O sea, más sencillo es también.
+
+Bueno, en principio tiene que ser ahorita para ahora mismo, porque... Al final... Pero la factura trae capas de cosas de diferentes pedidos. Sí. O sea, que también tiene unas facturas revueltas.
+
+Vienen con distintos pedidos y distintos efectos. Es más. Espera, más.
+
+Las facturas... Pero no... O sea, hay un mensaje en los mails que pone la factura. Vale. ¿La factura se identifica con el número de factura? Sí.
+
+¿Y con el número de cliente? Porque, por lo menos en el caso de Cepsa, facturas distintas. Y eso también, sí. ¿Y eso también? Claro.
+
+Sí, bueno. El resultado es que, bueno, nosotros somos la finalizadora. O sea, tenemos nosotros la finalizada por un lado bajo un contrato y luego tenemos Repsol... Butano.
+
+...promociones... Eso. ...bajo otro contrato y Butano bajo otro contrato. O sea, tenemos un contrato para cada Repsol.
+
+Vale. Pero esto no es un problema porque nosotros vamos a tener, es verdad, que Repsol... Bueno, yo te haré dos ejemplos para que veas los contratos y puedas ver los resultados en vivo. Eso no es un problema.
+
+Cada contrato tiene su tarifa y ya está. Eso. Bueno, la de Butano creo que se realiza por la misma, creo.
+
+Bueno, entonces... La general. La general. Pero bueno, sí.
+
+Y luego, Cepsa te factura los mismos trabajos diferentes compañías. Bueno, Moeve, Moeve Repsol comercial, de hecho Cepsa, Cedipsa, como están conviviendo. Claro.
+
+12. Sociedades, CIF y facturación
+
+Un contrato que nos factura en distintas sociedades, que forman parte de grupo. De hecho, el contrato no es único porque me lo firmó con la matriz grupo. Entonces, lo que quiero decir es que para identificar una factura hay un número de facturas, que es un número muy largo, y tiene que haber un priori.
+
+Un CIF. ¿No? Un CIF. Un CIF y un CIF.
+
+Porque es que además tenemos claramente que CIFs son una serie de nombres. Pero no hay CIF. No, no hay CIF.
+
+No hay CIF. Hay algo independiente de ese CIF. Es decir, un nombre y un CIF.
+
+Pero realmente lo que te importa es el CIF. El nombre también, porque es más práctico, pero vamos. Entonces, pues eso... Trabajamos en el modelo que será así más o menos siempre.
+
+En este tipo de cosas. Vale. Ya está, ¿no? Sí.
+
+Vale. Es una confusión. Yo necesito que te metas en el archivo para que lo miren.
+
+Para comparar. Te lo he dicto. Ah, eso es otra manera.
+
+meet.google.com/... Deja estar, se aprovechó. FST. FST guión.
+
+UQJM. UQJM. Guión.
+
+BBZ. BBZ. ¿Se hace mucho? No, hace muy poco.
+
+Comparte. Vale, ya lo veo. Es el de más conectado del equipo.
+
+Ah, ¿sí? No, no, no. Hay 8. De todos lados. De todos lados.
+
+La estructura realmente es común. Y lo de la vista y demás. Hay que intentar cuadrarlo.
+
+Para que no haya mucho ruido visual, pero también... para que todo el campo se desvíe este. Seguimos. Bien, importante.
+
+13. Listado de facturas y exportación
+
+Pues nada, si hay facturas, la imagen realmente es... Vale, no hay factura... Claro, si hay que... Como lo que hemos dicho, hay que ir restructurando la torre. Claro. Vale, vale.
+
+Exacto. Una factura tiene... trabajos. Y pedidos e ítems.
+
+Faltan dos órdenes. Claro. Falta... Falta completarse eso, porque al menos está como... Pero yo realmente al final lo que necesito es un listado de facturas.
+
+Con... número de factura... sociedad... importe... y poco más. Luego sí que tú puedes entrar al detalle y luego... Sacar todo. Sí, pero realmente listado de facturas... y luego unos datos y poco más.
+
+Falta. Falta algo más. La fecha de factura, porque luego ya... no va a contar vida realmente, se queda aquí.
+
+O sea, ya no pongo fecha de cobro ni... nada, ¿no? Eso ya... queda afuera. O sea, terminamos... O sea, por así decirlo, esto todo termina en el momento en que el trabajo tiene una factura. Ahí es donde termina esta aplicación.
+
+Y factura sería lo de seleccionar... o donde qué le vamos a seleccionar con el trabajo. Y aquí ya, al crear la factura sobre ese trabajo, ya te importa directamente el contrato que tenemos en vigor. Sí, porque tú en el momento que asignas ítems va implícito el contrato.
+
+¿En los Excel no teníais también la pasta de llegar a la parte de cobrado? No, cobrado no. No, no. Solo a la emisión de la factura.
+
+Todo termina cuando llega la factura. Ya está. Luego ya, hay un departamento que se encarga de que las facturas se cobren.
+
+Pero en este departamento ya solo retendré facturas. No importa. El resto sería igual.
+
+¿Y falta algo por cobrar? ¿Se encargan ellas? Aquí no hay facturas. Aquí no hay facturas. En el momento... Lo importante aquí no es a qué trabajos correspondan ni nada.
+
+La fecha de factura se interesa porque la fecha de cobro depende de la fecha de factura y poco más. O sea, esto es la información que necesitamos. Y eso ya se puede ir sacando de aquí.
+
+Como se copia de la propia pantalla. El listado. Y hasta ahí no hay estas facturas.
+
+¿Y para pasárselo luego al cobro, ese listado se podría exportar a Excel? Sí, pero es muy sencillo. ¿Sí? ¿Te vale? Sí. Pero ya te lo cuenta.
+
+Vamos a Excel. O algo que sea exportable. A lo mejor a Excel.
+
+Sí. Una exportación. Sí, sí.
+
+Vamos, que realmente es coger... Es una tabla... Plana. Es verdad que yo lo que haría sería que tú en la tabla de la parte de facturas te puedas decir seleccione una serie de facturas con un filtro y luego digas quiero exportar. Sí.
+
+Y tú exportas lo que tú vayas a seleccionar. Si es interesante que yo, cuando yo diga que tengo una factura, puedo dar el importe de la factura. Y que esto coteje con el importe asignado.
+
+Eso lo tenemos en el panel de dirección. Ah, genial. Para que sepamos qué es o cuál es.
+
+Sí. Y ya está. Luego es verdad que esas facturas tienen una contabilidad de 10.
+
+Han llegado estas facturas, hemos comprobado que con este RAPORFIT internalizados, tomarás y dentro de dos meses las vas a cobrar. O sea, tampoco son tantas. No.
+
+No son 20 o 25 al mes. O sea, tampoco es que sea un disparate de facturas. O sea, tampoco es... Pero bueno, si se pueden exportar, pues sí.
+
+Si aparte hablamos de que este esto plano, todo este esto plano no es peso, no va a hacer que caiga más lento ni nada. Vale. Entonces, en principio es eso.
+
+Ya lo que hemos visto aquí de facturas que hay que... Todas las estructuras de las que nosotros hemos estado hablando. Y poco más, quizás el último en el panel de dirección. Esta es la cantidad que hemos puesto.
+
+A los usuarios no les hemos dado casi poderes como tal, porque cuando... Lo hemos dicho, todos somos buenos trabajadores, pero cualquier error puede fastidiarse ellos cualquier cosa. No, no. Además, los usuarios se producen por accidente.
+
+Por eso. Y si tienes menos posibilidad de error, mejor. Eso es.
+
+Entonces, no hemos dejado ni siquiera que cambie ni su correo de usuario para poder entrar ni nada. Entonces, como hemos dicho, va a poder cambiar su contraseña. Vale.
+
+Y cambiar un correo, su correo alternativo para recuperar la contraseña. No el correo con el que entra. Correo alternativo para... Ah, no es una especialidad personal, porque solo tenemos uno, vale.
+
+Eso es. Entonces, luego aquí una cosilla, pues lo que sea. Si quieres... Para que no tengamos todo el mundo en este corporativo, pues tienes que poner una cosa más.
+
+Una bobada. Una bobada. Y luego ya para finalizar, pues tenemos aquí el panel de dirección.
+
+Veamos. Que aquí está todo. Aquí están todos.
+
+El cliente, la estación, número de aviso, número de pedido, tipo de trabajo, quién es el responsable, para tener una trazabilidad, la fecha de encargo, una fecha... ¿Qué es el número de aviso? ¿El dónde? ¿El número de aviso qué es? ¿Qué quiere ser? ¿Qué número de aviso? Es un campo que tenéis... El periodo de resuelto. Ah, vale, vale. Yo no me he dado el punto de resuelto.
+
+Vale, vale. La fecha de encargo, la fecha real de terminación, porque una cosa está alejada cuando se termina, el importe de pedido, el importe de trabajo, que esto es lo que estábamos hablando justo, que tiene que cuadrar. Este panel es muy parecido a lo que realmente tiene que ver el usuario normal.
+
+Eso es. Es un poco lo que estamos trabajando. Es el plano donde tú puedas, desde donde tú puedas visualizar... Legalización.
+
+Es que había metido la legalización, pero igual la he sacado. No, de momento, claro. Está puesto, pero todavía no está creado.
+
+Es que es un excel aparte de legalizaciones. Ah. Pero es que la legalización realmente al final... ¿Se lo metes? Sí.
+
+Al final se va a convertir en... Siempre creen que no lo metíamos en la primera versión. Ahí sube. Vale, vale.
+
+Está puesta para que eso, incluso con más ruido, para que se vea que... Lo podemos marcar. Y esto es el estado en que está. Si está pendiente de revisión, listo para hacerla, y si está bloqueada por algún costo.
+
+Esa, por ejemplo, tiene dos incidencias. Las verías aquí. Te sale todo lo que está entre todos los datos.
+
+El flujo, que hay dos pasando. El control económico, y aquí esto es lo que hablamos, de si cuadra una cosa u otra. Vale.
+
+La legalización es que está mal hecha, la vamos a sacar. Y luego aquí. Sería, digamos, una checklist de todo lo que tiene y por qué no se puede cerrar.
+
+La fecha real, la terminal, tal. Está pendiente. No tiene la fecha.
+
+En principios, esta es la tabla. Este es un ejemplo de detalle. Esta habría que validarlo, habría que revisarlo.
+
+Ya está terminado. Cuadra todo. Pero le falta revisarlo.
+
+Se revisaría. Y una vez revisado, se podría finalizar el trabajo.
+
+15. Reapertura, estados y finalización
+
+Lo importante es que también se pueden reabrir, como hemos dicho.
+
+Se pueden reabrir. Entonces, si es aquí, todo lo que sea cumplido. Pero, ¿qué significa reabrir? ¿Todo lo que sea cumplido? Normalmente no se reabren.
+
+Sí, se reabren. O sea, el funcionamiento nuestro ahora mismo, a ti te han dado el trabajo. Tú tienes la fecha de creación del trabajo.
+
+Normalmente es la fecha en la que te encargan, es la fecha en la que le metes el registro. Luego tenemos una fecha. Es la de solicitud de pedido.
+
+No, no la ponemos. ¿Por qué? Pero yo creo que sí que la íbamos a añadir. Fecha de solicitud de pedido.
+
+Luego tenemos, no. Luego tenemos la fecha de pedido. Pero no ponemos la fecha.
+
+Ah. Te ponemos el importe. Ah, bueno.
+
+Vale, ponemos el importe. Sí, eso. No es fecha, es importe.
+
+¿Es importe? Sí, es importe. ¿Qué significa ese pedido? Cepsa quiero ahorrar 3.000 por el trabajo que me has encargado. Ya está.
+
+Importe de pedido. Importe de pedido. Sí, sí, es el pedido.
+
+Vale. Pero luego tiene que llegar el pedido. Bueno, lo subes.
+
+El pedido no se sube. Bueno, yo os digo un poco lo que... O sea, nosotros tenemos en la caja de control, tenemos... ¿Cómo es? Trabajo... Nada. Que es un trabajo en curso.
+
+Trabajo pendiente de facturar. ¿No? Que es lo que has visto tú ahí. Pendiente de facturar.
+
+Pendiente de facturar. Pendiente de pedir, creo. Y generalizado.
+
+No, tú lo vienes de... No, no. Son cuatro estados, yo creo. Y no tiene un caso de que haya esperado algo urgente por... Hay que ajustar algo y hay que reabrirlo, por ejemplo.
+
+Es que... Esto es un poco facturación. Si se va a cerrar, que ya tienes la factura. Si se reabre, es que te haya quedado otra cosa y es un otro.
+
+Vale. Sabes, ¿no? Esa es mi teoría. ¿Pendiente de abono, no? ¿Pendiente de abono? Eso, pendiente de abono.
+
+Se puede tirar perfectamente. ¿Solicitar a bono? Bueno, pendiente de abono. Sí.
+
+Pendiente de abono. ¿Ok? Vale. Esto es nueve.
+
+Sí, sí, pero es el mismo también. O sea, yo realmente lo que tengo es... Cuando yo llegué del trabajo, pone... Pues nada, trabajo en curso. Nace.
+
+El trabajo nace. Y tú rellenas y ya existe el trabajo. Que no tenga ningún dato económico.
+
+Exacto. Cuando yo... Considero... Tengo una columna que es facturación solicitada. Y pongo algo.
+
+Pues pone pendiente de... Coquetea, coquetea. Aquí hay pendiente. ¿Pendiente de abono? ¿No es para bono? A ver, gracias.
+
+Tengo... Tengo aquí... Sí. Vale, vacío. ¿Aquí dónde vienen los valores? Ok.
+
+Ok es que lo tengo... He puesto finalizado y lo he cobrado. O sea, ya se acabó. Contabilidad ha dicho que lo he cobrado.
+
+Bueno, que lo he facturado. Que lo he facturado. Y yo, porque eso lo dice el técnico, digo que he terminado.
+
+¿Vale? ¿Qué ocurre? Puede ser que haya terminado... Y no haya solicitado el cobrar. Entonces solicitará bono. Y puede ser que simplemente lo haya terminado y me quede de cobrar.
+
+Porque yo tengo... Yo tengo... Tengo tres importes. Uno es si me importa el pedido. Otro es si me importa lo solicitado.
+
+Y otro es si me importa lo cobrado. De lo facturado, ¿vale? Vale. Facturado solo toca contabilidad.
+
+Sí. A través de las facturas. Entonces, ¿qué ocurre? ¿Deberíamos estar capaz los demás? Sí, sí, están.
+
+Porque ya tienen un rol aparte precisamente para que pueda... Sí. Para que pueda hacer esas cosas. Entonces, pues yo tengo un trabajo y tengo un pedido.
+
+Y los son medio euros. Y ya está. El trabajo avanza y en el momento determinado considero que debo cobrar 500.
+
+Entonces, en solicitud pongo 500 y yo sé que espero ya... Que ya lo he pedido y que espero los 500 euros. Oye, llegará. Cuando llegue.
+
+Y luego tengo la posibilidad de terminarlo. Normalmente si lo termino solicito ya... Total. Lo que me quede.
+
+Lo que me quede por cobrar. Y entonces al final... No, medio euro por cobrar no. Los mil.
+
+Aunque hay 500 euros que ya has cobrado. Sí. Hay una casilla.
+
+Dices, ahora quiero cobrar mil. Si hay 500 que ya están cobrados. O sea, pero es el total.
+
+Claro. Ojo, eh. Y entonces, a mí esto me va diciendo... Esa cebita me va diciendo en forma automática.
+
+Me da un control. Que ahora, si ya lo he terminado y ya lo he cobrado. Realmente me lo he ido.
+
+O sea, hay un trabajo que ya no tengo que volver. Que puede ocurrir que yo ya he cobrado un trabajo y luego me piden algo. En teoría no.
+
+No lo creo. O sea, que te toca hacer no sé qué, pero... Yo no lo creo. Yo no lo creo.
+
+Lo que hemos hecho es que hagamos un nuevo trabajo sobre... Sí. O se hace el trabajo sin abrirlo o se quede un nuevo trabajo. Entonces, yo lo que tengo que hacer aquí tengo que tener ese mismo flow.
+
+De hecho, yo creo que si... Tenemos... Lo mismo es con el Sol. Creo que también hay que añadir fechas de pedido. De su sitio de pedido.
+
+Sí, nosotros necesitamos algo más. Nosotros necesitamos algo más. Pero realmente eso se usa automáticamente.
+
+Es cuando yo lo creo. Sí, sí, claro. Entonces no se inserta nada más.
+
+Se va a crear un registro. Claro, si tú metes mil, pues ya está creado. Claro, sí.
+
+Esto lo que va a hacer... Aquí no va a hacer casi nada. Como muchos hemos dicho. Poder revisar o tal.
+
+O sea, esto realmente es lo que es el campo este-este para visualizar. ¿Y la fecha finalizada va a ser automática o la podemos meter más o menos? No, la fecha finalizada es que tú, como técnico, tienes que decirlo. No hay manera que sea automática.
+
+Ya, pero... ¿Es cuando yo digo que está finalizado o cuando yo escribo la fecha que está finalizada? Yo digo que si pones la fecha... Ya está. No hay que hacer otras cosas. Cuando tú pones la fecha... Ya, pero hay dos opciones.
+
+Porque yo puedo decir que está finalizado y tú escoges la fecha del día. Ah, del día que lo metes. Pues vale, vale.
+
+O... Digo, no, no. Es que esto termina en otro grado. Como técnico, es mucho más sencillo decir finalizado, pero... Sin poner la fecha, pero... Es menos real.
+
+Esto pone tramos. Yo tengo una fecha... No, no. Hay una.
+
+La que sea, pero una. No es tan importante. Pues entonces que en vez de insertar la fecha manualmente... O sea, aquí cuando se dice cerrar, se inserta la fecha.
+
+Sí. Es más sencillo. Sí.
+
+Y la fecha exacta no es igual, realmente. Ya, es que te das cuenta que el trabajo es de las veces finalizado. Pero no es tan importante.
+
+Si la fecha exacta da igual, cuando se mete el botón, de instante, se puede hacer que se imprime, se guarde la fecha exactamente de cuando has dado. ¿De acuerdo? Eso es, eso es. Pero no automático.
+
+Si tú metes la... Igualmente, si estás cerrándolo tú, te lo estás dejando ya, aunque el trabajo esté finalizado, para ti sigue abierto hasta que no haya otra. Hasta que no haya otro. Entonces... Vale.
+
+Sí. Pues en principio tampoco ya... No hay mucho más que decir. Vale.
+
+Pero realmente, lo que cerramos es el trabajo. Yo creo que el trabajo es terminado. No finalizado.
+
+Yo creo que el trabajo está hecho. Sí, sí. El trabajo está hecho luego.
+
+O sea, yo termino el trabajo, pero no sé hasta qué punto voy a hacer. Eso es. Si no nos acercamos la terminología de cerrada, tampoco terminamos el trabajo.
+
+Eso es. La terminología de cerrada ya... Vale, está bien. Mucho... Pero hay que... Esto está muy guay, eh.
+
+O sea, yo lo veo muy... Claro, está por sacarnos todo tipo de pegas, pero me... Para eso estamos. Me parece muy prometedor. Es lo que quiero decir.
+
+No, no te parece muy prometedor porque se ve que tiene... O sea, yo lo veo súper prometedor. Está muy... O sea, le queda mucha adaptación, pero se ve que tiene la capacidad de hacerlo. Sí, sí.
+
+Sí, sí. Todo esto... Hasta aquí muy cabrones, pero...
+
+16. Arquitectura técnica y despliegue
+
+Está programado. Está en base Laravel, con React.
+
+Fue mi idea ya eso. Vale. Y corre bajo un navegador porque ya... Ahora mismo esto está subido en un servidor que hemos creado y lo subido ya es lo que más te... ¿Cuánto ocupa ahora mismo, más o menos, en lo que está subido el servidor? Y de qué cabe.
+
+O sea, te están todavía sin... No, aquí hay... Aquí hay mínimos, ¿no? Pero bueno... Ahí no son, aquí no me ven... 94. 94 menos. ¿Venían pagas libres? No, venían pagas libres.
+
+En total eran... 100 menos. Así, todo eso, la estructura integral, todo. Esto es 100 menos, más o menos, más lo que ocupa en la base de datos.
+
+No, no, con base de datos incluida no es cero, más o menos. Sí, pero la base de datos integral todavía es pequeña, todavía es pequeña. Sí, no, la base de datos va a crecer y además un poquillo más nada se cargará.
+
+Sí, pero la base de datos es lo justo para trabajar, entiendo, no es... No, no, está cargado de datos falsos como tal, Vale, pero las bases de datos en total que te hemos dado ocupan 10 o menos. No ocupan nada más. Eso es esto.
+
+No te hará nada. Entonces, ya lo que digo, está aquí, esto realmente solo verá luego el mostrador o informáticos que hay futuros que luego quieran, por ejemplo, saber aquí está, en qué está construido y luego consultar los registros y demás. Y luego esto en la Laravel-11, por ejemplo, que es un área muy estable, salió justamente cuando empezamos a probar para ello la Laravel-13, pero claro, puede traer novedades, pero no es una cosa estable ya que tenga un parámetro L que está, pues, para evitar fallos que hemos hecho en una cosa bastante más estable que React, porque es lo mismo que se usa, sobre todo React, con las empresas que se están usando, es una parte frontal muy... que puedes hacer muchísimas cosas que no... React es lo que ves, es el HTML que ves al final.
+
+React es el frontal, es lo que ves. Y la Laravel es la parte trasera. Vale.
+
+Entonces, la Laravel, digamos, trabaja con PHP, que, digamos, el 70% de la web del mundo está en PHP y es una... Siempre está muerto, pero normalmente es lo que se usa porque no falla. Y React es, digamos, es lo que se usa ahora mismo en las empresas para deportear muchísimas animaciones, es una carga, tiene una carga, digamos, asíndola. No te lo carga todo y para cargarlo tienes que pagar cualquier cambio, te lo pinta.
+
+Digo pinta, que es, te lo cambian. Cambia cualquier momento y te lo vuelve a cambiar. Entonces, no tiene una carga ligera de ahí.
+
+Por lo tanto, tengo que cargar 10 MB. Tengo que cargar 10 MB. Entonces, te va cargando las cosas que tú necesitas cambiar.
+
+Digamos, muy ligero, que no va a ocupar mucho espacio, que va a recargar y va a ver la web, va a ir fluido, que es lo importante. Tengo una reunión con el equipo de equipo de UX / Interfaz de Usuario y una de las participantes en la accesibilidad, que yo creo que en principio la tiene, si no nos desplazamos, tiene su accesibilidad, digamos, que se dé bien, que todas las cosas las podemos mejorar, porque va a entrar una nueva normativa de accesibilidad y demás, lo podemos mejorar, pero si se pone en un partido, en un lado el campo, la accesibilidad en otro lado la funcionalidad, que tiene que tener acceso siempre, te digo otra cosa, la funcionalidad, la funcionalidad siempre, entonces nosotros tenemos que hacer una cosa corporativa y funcional, que obviamente, como habéis visto, me llevo un cifra para hacer los cambios y demás, y te digo eso, que sea siempre funcional, que no tenga mucho peso, que no tenga, en plan, que viva lento, yo tengo a mi pareja detrás y trabajan, en vez de trabajar con un ERP, trabajan con un VPN conectados en remoto, porque ve tan lento el servidor, cualquiera no se que, todo eso con esto te lo quitas, porque es una carga de una web y va muchísimo más fluido. Si, vale, entonces la idea es trabajarlo en el servidor local.
+
+Si, eso es la idea, a nivel de arquitectura, la idea es tenerlo en un servidor aquí.
+
+17. Acceso de prueba para CIETE
+
+¿Hay alguna posibilidad sencilla de que podamos cacharrear con esto? ¿Que me des un acceso para que yo cacharree? Te doy al mismo a los usuarios, y eso está levantado también la IP, y puedes cacharrear con ello. Lo único es el plan de revisarlo cuando vayamos a hacer una actualización.
+
+Ah, claro, y se acabe, no está todavía metido, me gustaría que lo hubieras ya aprobado. Si, no pasa nada, lo que va a pasar es que en el momento que cagues algo te va a poner pantalla blanca de esto está levantado un tal, y hasta que no lo levante yo no hago eso, pero que tardó mejor entre una subida y otra, mejor todo media hora, no hace nada. No, no, es para poder cacharrear, para poder ver cómo me pongo con Gaviela, o sea, siempre lo que hay en el servidor es igual cacharrear.
+
+Claro, claro, lo vamos viendo, y lo que hay es cambiándote, pero vamos, nos están enviando temas, y... Bueno, cacharrear, cacharrear, o sea, alguien va a hacer otro trabajo nuevo. Claro. O sea, me das caso de que ya está pasado.
+
+Claro, si todo es más fluido, entonces... Hombre, lo que haremos será enviaros eso, vamos a cambiar la versión, la versión nueva, vais a ver que hemos metido esto, esto y esto, para que vosotros... Claro, para poder volver a cacharrear. Para que vosotros sepáis, oye, de repente esto no, de repente me aparece... Pero como alguien, tú lo sabes, haz lo que cambies y ya está. Vale.
+
+Todo lo que está cambiando, queremos para el equipo, lo pongo aquí. La cosa es eso, es el, es que no ha estado con él, que no dar la IP, ahora mismo que podría entrar cualquier persona, y demás, porque está haciendo la segunda prueba, ahora mismo, que hubiera podido entrar alguien del equipo, sin ningún tipo de malintención ni nada. Pero luego se pueden aprobar y de repente alguna prueba nos facilita... Claro.
+
+Pues claro, no hay ningún problema, se pasa la IP, se pasan los usuarios contraseñas del error, que tienen errores, y es más, podéis casi, al cacharar más, nos ha dado un feedback mucho más... Eso es lo que yo creo, que eso nos puede dar a unos y a otros.
+
+18. Edición simultánea, bloqueo y log de cambios
+
+Luego, lo que habíamos hablado antes, lo del bloqueo de hojas de usuarios, al meter... Ah, sí, esa fue una cosa que nos mandaste en el correo, que era qué ocurre si alguien se mete a la vez y modifica el mismo dato... Sí, sí, esa es la pregunta que tenemos, sí. A mí se me ha ocurrido antes, que es lo que se puede hacer en un cine, como en el cine online, por ejemplo, cuando se compran las entradas, tú se le ponen las butacas y se queda bloqueado durante un tiempo delimitado.
+
+También está la otra, que habíamos hablado, que en vez de bloquearlo, es hacer... Vamos para abajo. No me va a ocurrir mucho, pero es posible que algo pase si nos pase. Puede pasar.
+
+Entonces, en vez de aquí aparezca ahí. Bueno, en vez de este, no, porque esto sería crear un nuevo trabajo y no sería crear los mensaje, por ejemplo. En el fondo, un poco, el concepto de la otra opción, era que, digamos, bajo ciertas reglas, te dé un aviso de que alguien, como dice, ha sobrescrito tu información.
+
+No es desde la hora. Podemos sacar aquí una pantallita, un cuadrito más, y que, al ser que lo estás editando, ya sabes que es este el trabajo en concreto, te salga un mensaje que le des a despegar y te salga los últimos cinco cambios que se han hecho en el trabajo y quién los ha hecho y cómo no lo han registrado. Entonces, ya sepas que a lo mejor lo ha hecho esta persona y ya los ha metido.
+
+Si está esto y la persona no lo ha metido, ¿por qué lo ha metido? Entonces, es lo mejor para... Y sería posible que yo entre en este trabajo porque voy a editarlo y me diga, ¿hay alguien editando esto mismo? En principio, sí se podía hacer. Hay un problema. Es que nosotros hemos visto problemas que no podemos trabajar desde la pantalla general, que no desde la ficha.
+
+Ya. Correcto. Entonces, no vale.
+
+No está metido en un trabajo concreto. Claro. Entonces, al ponerlo en la ficha, habría que buscar otra manera.
+
+Habría que... Entonces, hay que tirar más del bloqueo. Sí. Para hacerlo más seguro.
+
+¿Y qué tal, Isabel? ¿Esto está bloqueado por otro usuario? ¿Ya está? Ya sabes que... Lo que es lo que no va a funcionar. Si no estás metido en un trabajo... O sea, yo creo que funcionaría en ese sentido mejor el tipo de alerta, ¿sabes? Es decir, todo el mundo puede tocar todo, pero a lo mejor, bajo ciertas reglas, que te dé un aviso de, oye, ha habido muy poco intervalo de tiempo entre estas dos modificaciones en las que tú has intervenido. Claro, para que te diga... Es como una alerta de... Yo no he bloqueado nada, pero aquí veo algo raro, porque ha habido muy poco desfase entre dos datos que se han modificado diferente por dos usuarios.
+
+Eso sería una opción. Si me ocurre añadir un campo... Es un poco lo que hace Excel, ¿no? O sea... A mí me ha ocurrido algo. O sea, yo, por ejemplo, en el campo observaciones, ¿no? ¿Por qué ocurre? Si yo actualizo una fecha, pues entiendo... Entiendo que esto se ha actualizado continuamente, ¿no? Sí, se ha actualizado.
+
+Pero si está abierto, ¿va a saber cómo cambia la fecha de tu carice? Si está cambiando otro. No, en ese sentido no. Claro.
+
+Pero lo que se puede hacer es... Que... Claro, es que... Eso es que ya siguen siendo las dos personas en el mismo momento. Pero, por ejemplo, si tú has pedido una cosa y al 0,1 segundo después esa persona entra en el panel que sale en Excel, sí que va a salir. Que es lo que ya está cargado en la base de datos.
+
+Claro, eso es. Tarda ese 0,1 segundo. Pero eso es a la vez.
+
+Yo tengo el campo observaciones. A ver, a la vez, a la vez, no va a ser nunca. O sea, realmente es que... O sea, lo tenga abierto, lo tenga en una pantalla... Vamos a suponer que no sea a la vez.
+
+Pero que entra ahí, o que no se lo tenga en una pantalla y yo, bueno, aquí ha entrado el pedido de mil euros, le pongo a mil y Excel en ese momento quiere entregar observaciones. ¿Qué pasa ahí? Aunque no sea exactamente en un instante, pero a la vez, más o menos. Se puede hacer que los campos vayan individuales.
+
+Que no se guarde ningún bloque. Que no me guarde... Vamos a trabajar, aunque no se vaya a ver eso. Que no se guarde... Guarda la fecha, guarda la fecha, pero también guarda esto de nuevo.
+
+No. Que detecte el cambio, que es individual. No, no lo estamos entendiendo.
+
+Sí, eso es normal. A ver, yo estoy... Tú antes de la ficha. Tú antes de la ficha.
+
+No, no, no. No es la ficha. No, no.
+
+No es la ficha. Es la tabla del Excel. Que detecte y que no haga un cambio de la fila entera.
+
+Que no haga una comprobación de todos los bloques. Claro. O sea, que si yo estoy con la fecha y descargo de mi importe... No vas a hablar.
+
+No, no, no. Vale. Se mejora mucho.
+
+Mejora mucho. A mí se me ocurren observaciones a estar dos personas trabajando en el mismo campo de observaciones. Yo edito observaciones, modifico y cuando le doy a guardar me dice este campo ya ha sido modificado por... En este que le hice tiene un problema.
+
+Es que como no le das a guardar, no guarda. Entonces yo lo puedo cambiar a las once de la mañana pero no guardo, que a las ocho de la tarde cuando le doy a guardar resulta que entre las once de la mañana y las ocho de la tarde a mí me ha tocado también. O sea, puedo hacer una columna o un aviso en plan de que haga una comprobación de cuándo ha sido la última actualización de ese archivo en concreto y que haga un grado y ve y compare con ese más el anterior cuál ha sido el campo que ha sido cambiado y no guarde este sí que te guarda lo que has escrito en observaciones como tal lo que te he escrito sin borrarlo porque me ha escrito un montonazo y para que no se borre y que ese no se guarde en mi campo eso sí que lo has escrito pero te hago un mensajito de la última actualización.
+
+[tramo no transcrito / revisar audio] que ese mismo botón, si hay observaciones metidas, te las enseñe y las puedes editar, pero también, si no hay ninguna de esas observaciones, este botón es como en la tabla y le des y te hace una ventana distante para meter las observaciones. Pues en principio ya no haremos nada más. A ver... Eh... Mohamed, ¿te suena que tengamos alguna cosa ahí amuntada que no esté atendiente de contestar? Uh, qué mal se te oye.
+
+Espera, que te llamo, te llamo, que se oye fatal. Andrés, si hay algo que... No te oigo nada, me he pasado como ayer. Espera, que te voy a editar... A ver ahora... No, no, Andrés, si no tenía bien configurado el micro.
+
+Ahora lo he configurado bien y creo que se me va a escuchar. Vale. A ver ahora... ¿Se me escucha ahora? Sí, ahora sí.
+
+Vale, ¿alguna cosilla que se nos quedara de lo que teníamos amuntado? Sí, bueno... Algunas preguntas que tenía aquí yo redactadas, algunas se han contestado, sí, pero bueno... Me gustaría volver a pasar sobre ellas, en ese caso. Vale.
+
+19. Preguntas pendientes: sociedades, tarifas y CIFs
+
+Teníamos una cosa, me estoy acordando de memoria, que tenía que ver con el tema de las... De las empresas, ¿no? De los distintos CIFs que facturan de Moeve, ¿no? Sí, esa es la... Una pregunta, sí.
+
+Las sociedades que tiene solo Repsol o Moeve no se consideran clientes independientes en el sistema, ¿verdad? Solo es como un campo de sociedad más a la hora de las facturaciones. En principio sí, porque... A ver... En el caso de Moeve tenemos una tarifa y varias sociedades que facturan con esa tarifa. En el caso de Repsol es verdad que cada sociedad tiene su tarifa.
+
+Pues si tiene su tarifa, son clientes distintos. Ya está. Vale.
+
+Vale, pues entonces lo hacemos así. O sea, si un cliente factura bajo la misma tarifa, tiene su registro como cliente. Y si... O sea, todos los clientes que facturen bajo la misma tarifa tienen un solo cliente asociado.
+
+Y si algún cliente, que en principio pueda ser de Repsol, tiene una tarifa diferente, entonces tiene que tener su registro de clientes. No, pero yo creo que Mutalo no tiene que estar distrito, aunque tenga una tarifa. ¿Qué? Mutalo ha dicho, ¿no? Que si tiene una tarifa distinta... Sí, pero pues da igual.
+
+Dos tarifas coincidan, da igual. Claro. O sea, si cada uno factura con esa tarifa, ya está.
+
+Pero vamos, en el caso de Moeve tenemos una tarifa y varias sociedades. Es más, puede haber alguna más que no tengamos identificada, ¿eh? Porque, como es el grupo, pues de repente... Casi igual, ¿no? Que no quieran facturar con esa tarifa también. Por ejemplo.
+
+Pero vamos, que en principio realmente nosotros lo que tenemos son tarifas más que clientes. Vale. No, Mutalo no.
+
+Pero, da igual. Pero yo le digo a Mutalo que probate una tarifa distinta, ya está. O no.
+
+Que es la misma, pero sí. Que es la misma, probate una tarifa distinta. Y cada tarifa, realmente, oye, que facture que quiera.
+
+Y tampoco. Exacto. Vale.
+
+No sé si eso nos genera algún tipo de problema, porque... O sea, si pasamos el concepto de cliente a tarifa, eh... O sea, yo creo que lo que haría... Lo que pasa es que no sé si va a funcionar del todo, es... O sea, nosotros tenemos... A día de hoy tenemos un cliente que es Moeve y otro que es Epson. Y luego podemos crear más. Podemos crear más.
+
+Cada uno de esos clientes puede tener X tarifas asociadas. Y X tips. O contratos.
+
+Y X tips. Y X tips también. Pero vamos a dejarlo de momento.
+
+Nosotros lo que tenemos desarrollado es cliente con su tarifa. Vale. De hecho, creo que no tenemos ni siquiera el campo CIF.
+
+Probablemente no lo tengamos. Pero para la factura sí hará falta, ¿no? Sí, sí. Lo que pasa es que para la factura, eh... O sea, cuando metemos la factura, le vamos a tener que meter de qué CIF es.
+
+Exacto. Pero esto se puede hacer normalmente, ¿eh? Igual a lo mejor los suyos tienen determinada lista, pero... Bueno, hay un esperado y se quedan las cuatro que hay y ya está, vamos. Se crea un nuevo.
+
+Nosotros ya hemos... Sí. Vale. Igualmente, cuando yo quiero haya asignado cada tarifa... Cada tarifa que tenga asignado a unos clientes.
+
+Eso es. Ya está. Ya está.
+
+Entonces, yo cuando doy vida a una factura, pongo el número de factura... Es que le vamos a dar la vuelta. En lugar de tener clientes y los clientes tengan tarifas, que tengamos tarifas... Y asesemos los clientes con sus CIFs. Exacto.
+
+Por eso digo que está más... va más por tarifa que por clientes. Lo único que es la tarifa... Para separar Repsol de Moeve, la tarifa... Sí, tiene que ser tarifa con grupo de clientes, a lo mejor. Exacto.
+
+Cada tarifa tenga asociado a una serie de CIFs. O sea, tenemos por un lado clientes... Un grupo de clientes que asocia... Y lo agrupamos. Sí.
+
+Y luego la tarifa está asociada a un grupo... Imagínate que tienes uno, dos, tres, cuatro, cinco, seis, siete... Sí. Igual no tenemos que cambiar tanto. No hay cambio, así que el sector apunta diferentes tarifas.
+
+Sí, lo que vamos a tener que meter probablemente es el concepto de grupo de clientes. Que sea grupo de clientes Repsol. Dentro de ese grupo de clientes Repsol hay una serie de CIFs.
+
+Que tienen su razón social, su CIF. Un grupo de clientes con Repsol y ya está. A lo que asociamos los usuarios, no es el grupo de clientes sino el cliente.
+
+Sí. Y luego ya las facturas... Y se encajan muy bien con el otro. Vienen con el grupo de clientes y con el cliente.
+
+Eso es. Se encajan muy bien con el otro. Porque de ahí puede tener el campo claro.
+
+Tienes un campo muy claro. Un grupo de otros se encaja muy bien con otros clientes. Claro.
+
+Y yo creo que cuando meto la factura, meteré el grupo de cliente... Meteré el cliente... Y ya está. Y meteré el cliente. Y meteré el cliente que te lo filtrará.
+
+O sea, si tú estás dentro de... O sea... La tarifa va a estar sacada de un grupo de clientes. Entonces, cuando vayas a facturar, como ese trabajo pertenece a un contrato, el contrato pertenece a un grupo de clientes y sólo te va a enseñar los clientes que estén dentro de ese grupo de clientes. Y sólo te va a permitir seleccionar ítems de ese cliente.
+
+Claro. O sea, digamos que tú... El trabajo lo tienes asociado a un contrato. La tarifa es el mismo concepto, ¿no? Sí.
+
+Y realmente lo que tienes es eso. El trabajo lo tienes asociado al contrato y como lo tienes asociado al contrato, está vinculado a un solo grupo de clientes. Y claro, como tú el trabajo te asocia a un contrato, sólo puedes meter ítems de ese contrato.
+
+20. Presupuestos fuera de alcance
+
+Hay una cosa que no hemos metido en el sistema, que es el tema de los presupuestos, pero en pedirlos no los dejamos fuera, ¿no? ¿Qué presupuesto? Hacía el presupuesto. Había un concepto ahí de los primeros Excel que teníamos que era como que tú decías, venga, voy a preparar un presupuesto, entonces... Ah, no. Eso queda fuera, sí.
+
+La hoja de pedido. No, la hoja de pedido está fuera. No tiene sentido.
+
+Entonces... Para la versión... No, es un 7. Va a ser más avanzada, vale. Eso lo podéis seguir. Vamos a Repsolr esto.
+
+Si lo necesitáis, lo podéis seguir. Eso es realmente interesante. Y eso algún día nos lo plantearemos, a lo mejor como un añadido si queremos.
+
+A mí me lo hace la guía, ya lo sabes, ¿no? Sí. Vale, pues eso. Realmente lo que tenemos es generar un trabajo.
+
+Tú en el trabajo lo siguiente que metes, digamos, es el pedido o no, porque habíamos hablado en su momento de que podías empezar a trabajar sin el pedido. Sí. Sí, sí.
+
+Eso tiene que ser libre. Tú puedes... Tienes que hacer el trabajo, pues el pedido... Acabar el trabajo y recibir el pedido después. Eso ocurre, sí, sí.
+
+Y ya está. Y luego vas metiendo los datos sobre... Pues cuando has terminado el trabajo, lo das por terminado a nivel ejecución. No lo das por finalizado, lo das por terminado a nivel ejecución.
+
+Eso, digamos, el siguiente paso es que un poco se solicite la facturación. El siguiente paso es la factura llega y se registra. Y eso finaliza el trabajo, o sea, el trabajo.
+
+Y eso finaliza el trabajo. Porque ya no tenemos... No, no. Se factura y el responsable tiene que hacerlo.
+
+Eso es lo que hemos hablado. Pero estamos diciendo que ya se habría terminado. O sea, si el técnico ha dicho que ha terminado y llega la factura, ching, pum, ya ha llegado.
+
+Bueno, pues hemos dicho que va a partir de la factura. Bueno, pero son dos condiciones. Si se cumplen las dos, se cierra.
+
+Si tenemos la factura y el técnico ha dicho que ha terminado su trabajo... Automáticamente se finaliza el trabajo. Se acaba. Y eso puede ocurrir igual incluso de forma que a veces va en un orden y a veces va en el otro.
+
+Sí, sí. Puede ser desordenado, sí, sí. O sea, lo das por finalizado, pero puede ocurrir antes una cosa u otra.
+
+Sí. No coinciden los dos. Sí, no van siempre en el mismo orden, con lo lógico.
+
+Y bueno, pues yo creo que lo de... La pregunta está respondiendo Mohamed. Adelante con lo que nos queda pendiente. Yo tengo aquí una pregunta más adicional.
+
+21. Fecha de baja de estaciones
+
+En los Excel de estaciones de servicio aparece una columna que es fecha de baja. Claro, yo interpreté que puede ser la fecha de baja de la estación de servicio, pero la cosa es que hay algunas que son fechas futuras, como 2030 y tal. Entonces, no sé si es que representa la fecha de baja de la estación o la baja operativa de la estación o fin de contrato con esa estación.
+
+Realmente no lo sabemos, pero para nosotros es relevante. A ignorar. A ignorar.
+
+O sea, nosotros lo que queremos ver de la estación es el número de la estación, el nombre y la dirección. Y creo que nada más. El que esté dado de baja por funcionamiento... El municipio.
+
+El municipio, sí. El municipio y la provincia, sí. El que esté dado de alta o dado de baja a propósito de información que venga ahí no es relevante para lo que estamos contando.
+
+O sea, que no se lleve adelante. Que no merezca.
+
+22. Ítems sin importe y trabajos cancelados
+
+También hay un total de 717 ítems de pedido entre los trabajos de Repsol y Cepsa que no tienen importe.
+
+No sé si es porque son servicios de cortesía, o sea, no sé cómo era, o porque están pendientes de asignar un importe. No, eso debe ser Repsol, porque tienen un funcionamiento distinto. Y a veces tienen una cosa que es un número de servicios, un número de no sé qué, y no tienen importe.
+
+Pero... En Moeve eso no hay, seguro. Salvo que sean trabajos cancelados. Estoy pensando.
+
+Los cancelados sí que los dejamos sin importe para que el sistema no lo lea. Para que no... Para que os ponga pendiente al final. No sé muy bien.
+
+¿Te refieres a Moeve o a Repsol? En principio son 595 de Moeve. De esos 717, hay 122 de Repsol. De los de Moeve son trabajos cancelados.
+
+¿No están tachados? ¿No pone el texto tachado en Excel? No. Bueno, situaciones. ¿Trabajo cancelado? Pues no hay de él.
+
+Sí, esos son... Son muchos años. Podría ser, ¿eh? 500 trabajos cancelados, probablemente más de muchos, pero podría ser. Pero si hay número de pedido, hay importe.
+
+Dime algún ejemplo, Mohamed, porque a lo mejor lo puedo enseñar aquí en pantalla. ¿Qué importa? No lo has entendido. No lo has entendido.
+
+Si vas al Excel de trabajos de Moeve... ¿Quién trabaja con importe de pedido? Es el importe... Es el importe de pedido. Si te quita el símbolo. Si te quita a cero.
+
+Y si te vas, por ejemplo, pues yo empecé a... Son los pelados. Los pelados. Hay muchos tachados.
+
+Sí, tachados porque son cancelados. Mete a la 6108. De aquí.
+
+Baja, baja por aquí. Bueno. 6108.
+
+Aquí. ¿Dónde está? Realmente es un proyecto que no... Sí que veo los tachados. A piso tiempo los veo, pero... No, no.
+
+Aparentemente no. No parece que haya terminado con una cancelación o algo. Esto tiene una descripción de servicio, que es mantenimiento CSS.
+
+Tiene importe de pedido cero. Bolueta.
+No, ese tiene. Tiene importe de pedido... Bueno, tiene importe de pedido cero.
+
+Ah, es este. Importe de pedido cero, ¿no? Vale, es un trabajo cancelado. De hecho mete observaciones, por si no lo dice.
+
+Vale. Claro, o sea, si está cero... O sea, si pone cero... O sea, si está en blanco es que no ha solicitado el pedido. Pero si pone cero, es un trabajo que se ha cancelado seguramente, que no se va a cobrar nada.
+
+Y está puesto así... Tiene cero en esa columna. Tiene cero en la columna pendiente de facturación. Y tiene cero en la tercera columna, para que salga OK en la tablita de control que tengo a la derecha.
+
+Para que no está dormido, básicamente. Exacto. Bueno, a ver si le podemos dar una vuelta a una última.
+
+Como eso ya es una cuestión de la migración final. Eso podría no migrarse, de hecho. Bueno, si da mucho problema, no.
+
+Pero si se puede migrar, no se puede olvidarlo. Al final es información. Deja olvidarlo tú.
+
+O sea, si vemos que eran todos... Hay una media que se conforma con los que no se han solicitado el pedido todavía. Es lo mismo. Bueno, pero no, porque tiene fecha de terminación.
+
+Vale, vale, sí, sí. ¿Eh? Vale, vale, sí, sí. O sea, que no dividía... No, no dividía.
+
+Claro que no tiene factura. ¿Alguna cosa más, Mohamed? Al principio no, ya... Vale. Vale.
+
+Durante la reunión, ¿no? Sí, doctor. Si no les importa que haya algunas facturas raras de Repsol que tienen números bajos. O sea, por ejemplo, tendrías que desfacturar, solicitar unidades.
+
+Entiendo que son como cajones de desastre, ¿no? Que vais metiendo ahí... En un sector de Repsol. No, no, no. No me lo sé, porque yo no las establezco.
+
+Le pregunto a ustedes, ¿eh? Un minuto. Está ya, ahorita. A ver, Bruno.
+
+Mohamed, repite la pregunta que ha venido Esther. Entiendo que en los Excel de trabajo de Repsol hay algunas facturas que tienen números extraños. Como solicitar unidades pendientes de facturar.
+
+Esto es un texto que figura en el número de factura. Y yo quería saber si es alguna... Un cajón de desastre que hay en los Excel, que es para ir metiendo cosas, o si nos migramos o no, o cómo nos interpretamos estas facturas. ¿En qué Excel lo has visto? ¿Puedes concretar alguno? Sí.
+
+Sí, en algún momento te confirmo después. Eso lo he visto yo contigo, Mohamed. Lo que no sé es... en qué Excel lo hayamos visto.
+
+¿Seguro que no era en el de Moeve? No. Era en el de Repsol. Es que me da vergüenza.
+
+No había visto contigo eso, ¿eh? Puedes solicitar unidades y... No. Si no lo encuentras, Mohamed, se lo pasamos luego por email, ¿eh? Porque yo creo que eso es un metadato. No lo he solucionado.
+
+¿Sabes qué? La columna, no sé para el archivo, a ver si sabe la columna, dónde sale o... Ha dicho que es en el campo de números de factura. Pensa que yo tengo aquí abierto el obras Z10. Vale.
+
+Debe ser aquí. Y verá que aquí hay uno que pone anulado, pero bueno, algún anulado puede ser. Y luego yo aquí no encuentro... No, este nuevamente... Pero a lo mejor es otro... Como los tenemos todos, ¿sabes? Este puede ser otro, sí.
+
+Puede ser un error, pero vamos, en principio solo tiene que figurar el número de las facturas. O sea, el nombre de las facturas, en realidad. Porque para Cajón Desastre tenemos esto, la observación.
+
+No. O sea, si hay algo ahí, en teoría está mal. Yo sí que lo he visto con Mohamed.
+
+O sea, si hay algo que se refiere, pues se lo he visto yo con él. Por la generalidad de esto, es el número de facturas solo. Si hay otra cosa, es que... Ya puede ser un error puntual.
+
+Vale. Vale, en lo mejor si lo... Si lo encuentro... Si no lo encuentras, nos lo pasamos por los correo, que si ahí está. Vale, pues... Ya está todo.
+
+Muchas gracias a todos. Y nada, pues nos vemos mañana. Esto por terminado... ¿Es que lo dejé abierto o...? No, no.
+
+No se puede estar apagado, ¿no? Sí, sí. Vale.

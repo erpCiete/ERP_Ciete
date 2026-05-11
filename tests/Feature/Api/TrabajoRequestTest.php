@@ -47,7 +47,7 @@ class TrabajoRequestTest extends TestCase
             'descripcion_trabajo' => 'Trabajo prueba Repsol',
             'id_estacion_servicio' => $estacion->id_estacion_servicio,
             'fecha_encargo' => now()->toDateString(),
-            'estado' => 'borrador',
+            'estado' => 'en_curso',
         ]);
 
         $response->assertStatus(422)->assertJsonValidationErrors(['id_tipo_documento', 'id_tipo_trabajo']);
@@ -63,7 +63,7 @@ class TrabajoRequestTest extends TestCase
             'descripcion_trabajo' => 'Trabajo prueba Moeve',
             'id_estacion_servicio' => $estacion->id_estacion_servicio,
             'fecha_encargo' => now()->toDateString(),
-            'estado' => 'borrador',
+            'estado' => 'en_curso',
         ]);
 
         $response->assertStatus(422)->assertJsonValidationErrors(['id_contrato']);
@@ -75,11 +75,11 @@ class TrabajoRequestTest extends TestCase
         $estacion = $this->createStationForContext(2);
 
         $response = $this->actingAs($user)->postJson('/test/store-trabajo', [
-            'numero_trabajo' => 'TR-REP-OK-001',
+            'numero_trabajo' => 91001,
             'descripcion_trabajo' => 'Trabajo válido Repsol',
             'id_estacion_servicio' => $estacion->id_estacion_servicio,
             'fecha_encargo' => now()->toDateString(),
-            'estado' => 'borrador',
+            'estado' => 'en_curso',
             'id_tipo_documento' => 4,
             'id_tipo_trabajo' => 8,
         ]);
@@ -87,7 +87,7 @@ class TrabajoRequestTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('ok', true)
-            ->assertJsonPath('data.numero_trabajo', 'TR-REP-OK-001');
+            ->assertJsonPath('data.numero_trabajo', 91001);
     }
 
     public function test_update_trabajo_request_allows_partial_update_without_context_codes(): void
@@ -102,6 +102,42 @@ class TrabajoRequestTest extends TestCase
             ->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('data.descripcion_trabajo', 'Titulo actualizado');
+    }
+
+    public function test_store_trabajo_request_rejects_legacy_statuses_for_new_work(): void
+    {
+        $user = User::factory()->create(['id_contexto' => 2]);
+        $estacion = $this->createStationForContext(2);
+
+        $response = $this->actingAs($user)->postJson('/test/store-trabajo', [
+            'numero_trabajo' => 'TR-REP-LEG-001',
+            'descripcion_trabajo' => 'Trabajo legacy no permitido',
+            'id_estacion_servicio' => $estacion->id_estacion_servicio,
+            'fecha_encargo' => now()->toDateString(),
+            'estado' => 'borrador',
+            'id_tipo_documento' => 4,
+            'id_tipo_trabajo' => 8,
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['estado']);
+    }
+
+    public function test_store_trabajo_request_rejects_closed_status_for_new_work(): void
+    {
+        $user = User::factory()->create(['id_contexto' => 2]);
+        $estacion = $this->createStationForContext(2);
+
+        $response = $this->actingAs($user)->postJson('/test/store-trabajo', [
+            'numero_trabajo' => 'TR-REP-LEG-002',
+            'descripcion_trabajo' => 'Trabajo cerrado no permitido',
+            'id_estacion_servicio' => $estacion->id_estacion_servicio,
+            'fecha_encargo' => now()->toDateString(),
+            'estado' => 'cerrado',
+            'id_tipo_documento' => 4,
+            'id_tipo_trabajo' => 8,
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['estado']);
     }
 
     private function createStationForContext(int $contextId): EstacionServicio

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\Empresa;
 use App\Models\EstacionServicio;
 use App\Rules\ValidSpanishPostalCode;
 use Illuminate\Validation\Rule;
@@ -11,7 +12,8 @@ class EstacionUpdateRequest extends BaseApiRequest
 {
     public function rules(): array
     {
-        $contextId = Auth::user()?->id_contexto;
+        $user = Auth::user();
+        $activeContextIds = $user?->getActiveContextIds() ?? [];
         $estacion = $this->route('estacion');
         $estacionId = $estacion instanceof EstacionServicio ? $estacion->id_estacion_servicio : $estacion;
 
@@ -21,7 +23,7 @@ class EstacionUpdateRequest extends BaseApiRequest
                 'required',
                 'integer',
                 Rule::exists('empresas', 'id_empresa')->where(
-                    fn($query) => $query->where('id_contexto', $contextId)
+                    fn($query) => $query->whereIn('id_contexto', $activeContextIds)
                 ),
             ],
             'nombre' => ['sometimes', 'required', 'string', 'max:180'],
@@ -32,7 +34,15 @@ class EstacionUpdateRequest extends BaseApiRequest
                 'max:80',
                 Rule::unique('estaciones_servicio', 'codigo_estacion')
                     ->ignore($estacionId, 'id_estacion_servicio')
-                    ->where(fn($query) => $query->where('id_contexto', $contextId)),
+                    ->where(function ($query) use ($activeContextIds, $estacion) {
+                        $clienteId = $this->input('id_empresa_cliente')
+                            ?: ($estacion instanceof EstacionServicio ? $estacion->id_empresa_cliente : 0);
+
+                        return $query
+                            ->whereIn('id_contexto', $activeContextIds)
+                            ->where('id_empresa_cliente', $clienteId)
+                            ->where('id_contexto', $this->resolveClienteContextId($estacion));
+                    }),
             ],
             'direccion' => ['nullable', 'string', 'max:255'],
             'codigo_postal' => ['nullable', 'string', 'size:5', new ValidSpanishPostalCode()],
@@ -94,5 +104,22 @@ class EstacionUpdateRequest extends BaseApiRequest
                 'activo' => $this->boolean('activo'),
             ]);
         }
+    }
+
+    private function resolveClienteContextId(EstacionServicio|int|string|null $estacion): int
+    {
+        $clienteId = (int) $this->input('id_empresa_cliente', 0);
+
+        if ($clienteId <= 0 && $estacion instanceof EstacionServicio) {
+            $clienteId = (int) $estacion->id_empresa_cliente;
+        }
+
+        if ($clienteId <= 0) {
+            return $estacion instanceof EstacionServicio ? (int) $estacion->id_contexto : 0;
+        }
+
+        return (int) (Empresa::withoutGlobalScopes()
+            ->where('id_empresa', $clienteId)
+            ->value('id_contexto') ?? 0);
     }
 }

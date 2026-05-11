@@ -3,7 +3,7 @@ import ThemeSelector from '@/Components/ThemeSelector';
 
 export default function GlobalPreferenceSelectors({ compact = false, className = '' }) {
     return (
-        <div className={`flex items-center gap-1 ${className}`.trim()}>
+        <div className={`flex min-w-0 flex-wrap items-center gap-1 ${className}`.trim()}>
             <ThemeSelector compact={compact} />
             <LanguageSelector compact={compact} />
         </div>

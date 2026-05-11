@@ -55,6 +55,11 @@ class EstacionServicio extends Model
         return $this->belongsTo(Empresa::class, 'id_empresa_cliente', 'id_empresa');
     }
 
+    public function contexto(): BelongsTo
+    {
+        return $this->belongsTo(ContextoCliente::class, 'id_contexto', 'id_contexto');
+    }
+
     public function moeveExt(): HasOne
     {
         return $this->hasOne(EstacionMoeveExt::class, 'id_estacion_servicio', 'id_estacion_servicio');

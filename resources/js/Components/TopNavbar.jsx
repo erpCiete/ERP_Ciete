@@ -159,16 +159,18 @@ export default function TopNavbar({ header }) {
 
     const headerNode =
         typeof header === 'string' ? (
-            <h2 className="truncate py-1 text-[14px] font-black uppercase tracking-tight text-text-main">{header}</h2>
+            <h2 className="truncate py-0.5 text-[15px] font-black uppercase tracking-[0.12em] text-text-main lg:text-[16px]">
+                {header}
+            </h2>
         ) : (
             header
         );
 
     return (
         <>
-            <header className="sticky top-0 z-40 flex min-h-13 w-full items-center border-b border-border bg-surface px-3 shadow-sm md:min-h-16 md:px-8">
-                <div className="w-full">
-                    <div className="flex items-center gap-2">
+            <header className="sticky top-0 z-40 border-b bg-surface shadow-sm" style={{ borderBottomColor: 'var(--workspace-context-accent-line)' }}>
+                <div className="flex min-h-13 w-full flex-wrap items-center gap-3 px-3 py-2 sm:px-4 xl:px-6 xl:py-2 2xl:h-[var(--app-shell-header-height)] 2xl:flex-nowrap 2xl:py-0 2xl:px-8">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                         <button
                             ref={sidebarTriggerRef}
                             type="button"
@@ -180,15 +182,20 @@ export default function TopNavbar({ header }) {
                             }
                             aria-expanded={isSidebarOpen}
                             aria-controls={sidebarDrawerId}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface-2 md:hidden"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface-2 xl:hidden"
                         >
                             <CieteMark className="h-5 w-5" />
                         </button>
 
                         <div className="min-w-0 flex-1">
-                            <div className="hidden md:block">{headerNode}</div>
+                            <p className="truncate pb-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-text-main/78 sm:text-[12px]">
+                                {t('nav.brand')}
+                            </p>
+                            <div className="block">{headerNode}</div>
                         </div>
+                    </div>
 
+                    <div className="flex items-center gap-2 xl:hidden">
                         <button
                             ref={prefsTriggerRef}
                             type="button"
@@ -200,7 +207,7 @@ export default function TopNavbar({ header }) {
                             }
                             aria-expanded={isPrefsOpen}
                             aria-controls={prefsDrawerId}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface-2 md:hidden"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-surface-2"
                         >
                             <span className="inline-flex flex-col gap-0.75">
                                 <span className="h-0.5 w-4 rounded-sm bg-text-main" />
@@ -208,9 +215,11 @@ export default function TopNavbar({ header }) {
                                 <span className="h-0.5 w-4 rounded-sm bg-text-main" />
                             </span>
                         </button>
+                    </div>
 
-                        <div className="hidden items-center gap-4 md:flex">
-                            <nav className="flex items-center text-[10px] font-bold uppercase tracking-widest sm:text-[11px]">
+                    <div className="hidden min-w-0 basis-full items-start justify-between gap-3 xl:flex 2xl:min-w-0 2xl:flex-1 2xl:basis-auto 2xl:items-center 2xl:justify-end">
+                        <div className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain">
+                            <nav className="flex min-w-max items-center justify-start text-[10px] font-bold uppercase tracking-widest sm:text-[11px] 2xl:justify-end">
                                 {navItems.map((item, index) => {
                                     const ItemIcon = getNavigationIcon(item.key);
 
@@ -227,9 +236,9 @@ export default function TopNavbar({ header }) {
                                     );
                                 })}
                             </nav>
-
-                            <GlobalPreferenceSelectors compact />
                         </div>
+
+                        <GlobalPreferenceSelectors compact className="w-full justify-start xl:w-auto xl:justify-end" />
                     </div>
                 </div>
             </header>

@@ -15,7 +15,7 @@ class LoginRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $email = trim((string) ($this->input('email') ?? $this->input('login') ?? $this->input('nombre_usuario') ?? ''));
+        $email = trim((string) ($this->input('email') ?? ''));
 
         $this->merge([
             'email' => $email,

@@ -63,7 +63,7 @@ export default function AdminSupportShow({ ticket }) {
         <AuthenticatedLayout header={t('supportAdmin.header')}>
             <Head title={`${t('supportAdmin.header')} #${ticket.id_solicitud_soporte}`} />
 
-            <div className="mx-auto max-w-6xl space-y-5 pb-10">
+            <div className="ciete-page max-w-6xl">
                 <Link href={route('admin.support.index')} className="inline-flex items-center gap-1.5 text-xs text-text-muted transition hover:text-text-main">
                     <ArrowLeft size={14} />
                     {t('supportAdmin.backToList')}
@@ -75,7 +75,7 @@ export default function AdminSupportShow({ ticket }) {
                     </div>
                 )}
 
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
                     <div className="space-y-5">
                         <div className="rounded-xl border border-border bg-surface p-5">
                             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -92,7 +92,7 @@ export default function AdminSupportShow({ ticket }) {
                                 </div>
                             </div>
 
-                            <div className="mt-4 grid gap-3 text-xs text-text-muted sm:grid-cols-2">
+                            <div className="mt-4 grid gap-3 text-xs text-text-muted lg:grid-cols-2">
                                 <div className="rounded-lg bg-surface-2 px-3 py-2">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('supportAdmin.requester')}</p>
                                     <p className="mt-1 text-sm text-text-main">
@@ -162,7 +162,7 @@ export default function AdminSupportShow({ ticket }) {
                                 <button
                                     type="submit"
                                     disabled={statusForm.processing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-4 py-2 text-xs font-bold text-text-main transition hover:bg-border disabled:opacity-50"
+                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface-2 px-4 py-2 text-xs font-bold text-text-main transition hover:bg-border disabled:opacity-50 sm:w-auto"
                                 >
                                     <Save size={14} />
                                     {t('supportAdmin.saveStatus')}
@@ -208,8 +208,8 @@ export default function AdminSupportShow({ ticket }) {
                                     <button
                                         type="submit"
                                         disabled={replyForm.processing}
-                                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50"
-                                    >
+                                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-50 sm:w-auto"
+                                >
                                         <Send size={14} />
                                         {t('supportAdmin.sendReply')}
                                     </button>

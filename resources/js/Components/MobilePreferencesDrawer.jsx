@@ -1,7 +1,6 @@
 import LanguageSelector from '@/Components/LanguageSelector';
 import ThemeSelector from '@/Components/ThemeSelector';
 import { useI18n } from '@/i18n';
-import { Link } from '@inertiajs/react';
 
 export default function MobilePreferencesDrawer({ open, drawerId, drawerRef, onClose, user }) {
     const { t } = useI18n();
@@ -12,7 +11,7 @@ export default function MobilePreferencesDrawer({ open, drawerId, drawerRef, onC
                 <button
                     type="button"
                     aria-label={t('common.aria.closePreferencesPanel')}
-                    className="fixed inset-0 z-70 bg-black/45 md:hidden"
+                    className="fixed inset-0 z-70 bg-black/45 xl:hidden"
                     onClick={onClose}
                 />
             )}
@@ -24,7 +23,7 @@ export default function MobilePreferencesDrawer({ open, drawerId, drawerRef, onC
                 aria-modal="true"
                 aria-label={t('common.aria.preferencesPanel')}
                 tabIndex={-1}
-                className={`fixed inset-y-0 right-0 z-80 flex w-[min(18rem,82vw)] flex-col bg-surface shadow-2xl transition-transform duration-200 ease-out md:hidden ${
+                className={`fixed inset-y-0 right-0 z-80 flex w-[min(20rem,90vw)] max-w-full flex-col bg-surface shadow-2xl transition-transform duration-200 ease-out xl:hidden ${
                     open ? 'translate-x-0' : 'translate-x-full'
                 }`}
             >
@@ -42,31 +41,7 @@ export default function MobilePreferencesDrawer({ open, drawerId, drawerRef, onC
                     </button>
                 </div>
 
-                <div className="space-y-4 px-4 py-4">
-                    <div className="rounded-xl border border-border bg-surface-2 p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-hint">
-                            {t('nav.groups.general')}
-                        </p>
-                        <div className="mt-2 space-y-2">
-                            <Link
-                                href={route('index')}
-                                className="block rounded-md border border-border px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-main transition-colors hover:bg-surface"
-                                onClick={onClose}
-                            >
-                                {t('nav.home')}
-                            </Link>
-                            {user?.is_admin && (
-                                <Link
-                                    href={route('admin.dashboard')}
-                                    className="block rounded-md border border-border px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-main transition-colors hover:bg-surface"
-                                    onClick={onClose}
-                                >
-                                    {t('nav.adminPanel')}
-                                </Link>
-                            )}
-                        </div>
-                    </div>
-
+                <div className="space-y-4 overflow-y-auto px-4 py-4">
                     <div className="rounded-xl border border-border bg-surface-2 p-3">
                         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-text-hint">
                             {t('common.theme')}

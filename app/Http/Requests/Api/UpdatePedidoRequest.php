@@ -8,11 +8,27 @@ use Illuminate\Validation\Rule;
 
 class UpdatePedidoRequest extends BaseApiRequest
 {
+    private const ALLOWED_STATUSES = [
+        'pendiente',
+        'solicitado',
+        'recibido',
+        'en_ejecucion',
+        'facturado_parcial',
+        'facturado',
+        'cancelado',
+        'anulado',
+    ];
+
     public function rules(): array
     {
-        $contextId = Auth::user()?->id_contexto;
+        $user = Auth::user();
+        $accessibleContextIds = $user?->getActiveContextIds() ?? [];
         $pedido = $this->route('pedido');
         $pedidoId = $pedido instanceof Pedido ? $pedido->id_pedido : $pedido;
+        $trabajo = $this->input('id_trabajo')
+            ? \App\Models\Trabajo::query()->withoutGlobalScopes()->find($this->input('id_trabajo'))
+            : null;
+        $targetContextId = $trabajo?->id_contexto ?? ($pedido instanceof Pedido ? $pedido->id_contexto : null);
 
         return [
             'id_trabajo' => [
@@ -20,13 +36,13 @@ class UpdatePedidoRequest extends BaseApiRequest
                 'required',
                 'integer',
                 Rule::exists('trabajos', 'id_trabajo')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'id_tarifario' => [
                 'nullable',
                 'integer',
                 Rule::exists('tarifarios', 'id_tarifario')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'numero_pedido' => [
                 'sometimes',
@@ -35,7 +51,7 @@ class UpdatePedidoRequest extends BaseApiRequest
                 'max:100',
                 Rule::unique('pedidos', 'numero_pedido')
                     ->ignore($pedidoId, 'id_pedido')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'fecha_solicitud' => ['nullable', 'date'],
             'fecha_recepcion' => ['nullable', 'date'],
@@ -46,7 +62,7 @@ class UpdatePedidoRequest extends BaseApiRequest
             'unidades_solicitadas' => ['nullable', 'numeric', 'min:0'],
             'estado' => [
                 'sometimes',
-                Rule::in(['pendiente', 'solicitado', 'recibido', 'en_ejecucion', 'cerrado', 'anulado']),
+                Rule::in(self::ALLOWED_STATUSES),
             ],
             'pedido_completo' => ['nullable', 'boolean'],
             'tiene_mas_de_1_item' => ['nullable', 'boolean'],
@@ -54,16 +70,20 @@ class UpdatePedidoRequest extends BaseApiRequest
             'observaciones' => ['nullable', 'string'],
 
             'items' => ['sometimes', 'array'],
+            'items.*.id_pedido_item' => [
+                'nullable',
+                'integer',
+                'distinct',
+                'min:1',
+                Rule::exists('pedido_items', 'id_pedido_item')
+                    ->where(fn ($query) => $query->where('id_pedido', $pedidoId)),
+            ],
             'items.*.id_tarifario_linea' => [
                 'nullable',
                 'integer',
                 Rule::exists('tarifario_lineas', 'id_tarifario_linea')
-                    ->where(fn ($query) => $query->where('id_contexto', $contextId)),
+                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
             ],
-            
-            // Validaciones para Líneas de Pedido (Items) - Esquema Real
-            'items' => ['nullable', 'array'],
-            'items.*.id_tarifario_linea' => ['nullable', 'integer'],
             'items.*.codigo_servicio' => ['nullable', 'string', 'max:30'],
             'items.*.numero_tarifa' => ['nullable', 'string', 'max:30'],
             'items.*.descripcion_servicio' => ['nullable', 'string', 'max:255'],
@@ -92,10 +112,12 @@ class UpdatePedidoRequest extends BaseApiRequest
         // Limpieza y estructuración de los items anidados (Esquema Real de abaco_ciete)
         if ($this->has('items') && is_array($this->input('items'))) {
             $normalized['items'] = collect($this->input('items'))->map(function ($item) {
+                $idPedidoItem = $item['id_pedido_item'] ?? $item['id'] ?? null;
                 $cantidad = isset($item['cantidad']) ? (float) $item['cantidad'] : 1;
                 $precioUnitario = isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : 0;
                 
                 return [
+                    'id_pedido_item' => $idPedidoItem !== null && $idPedidoItem !== '' ? (int) $idPedidoItem : null,
                     'id_tarifario_linea' => $item['id_tarifario_linea'] ?? null,
                     'codigo_servicio' => $this->normalizeNullableString($item['codigo_servicio'] ?? null),
                     'numero_tarifa' => $this->normalizeNullableString($item['numero_tarifa'] ?? null),

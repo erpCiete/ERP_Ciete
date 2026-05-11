@@ -99,6 +99,7 @@ class HasContextTest extends TestCase
         ]);
 
         $this->actingAs($user);
+        $user->setActiveContextSelection(User::ACTIVE_CONTEXT_ALL);
 
         $ids = Empresa::query()->pluck('id_empresa')->sort()->values()->all();
 

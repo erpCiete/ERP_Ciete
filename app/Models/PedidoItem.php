@@ -6,6 +6,7 @@ use App\Traits\HasContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PedidoItem extends Model
 {
@@ -45,5 +46,10 @@ class PedidoItem extends Model
     public function tarifarioLinea(): BelongsTo
     {
         return $this->belongsTo(TarifarioLinea::class, 'id_tarifario_linea', 'id_tarifario_linea');
+    }
+
+    public function facturaItems(): HasMany
+    {
+        return $this->hasMany(FacturaItem::class, 'id_pedido_item', 'id_pedido_item');
     }
 }

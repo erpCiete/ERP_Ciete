@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\MensajeInterno;
 use App\Models\User;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,8 +35,7 @@ class MessageController extends Controller
             ->where('archivado', false)
             ->count();
 
-        $users = User::where('id_usuario', '!=', $user->id_usuario)
-            ->where('activo', true)
+        $users = $this->recipientQueryFor($user)
             ->select('id_usuario', 'nombre', 'apellidos', 'email')
             ->orderBy('nombre')
             ->get();
@@ -49,8 +50,12 @@ class MessageController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $allowedRecipientIds = $this->recipientQueryFor($request->user())
+            ->pluck('id_usuario')
+            ->all();
+
         $validated = $request->validate([
-            'id_destinatario' => ['required', 'exists:usuarios,id_usuario'],
+            'id_destinatario' => ['required', 'integer', Rule::in($allowedRecipientIds)],
             'asunto' => ['required', 'string', 'max:255'],
             'cuerpo' => ['required', 'string', 'max:5000'],
             'prioridad' => ['sometimes', 'in:normal,alta,urgente'],
@@ -138,5 +143,25 @@ class MessageController extends Controller
         MensajeInterno::insert($rows);
 
         return back();
+    }
+
+    private function recipientQueryFor(User $user)
+    {
+        $accessibleContextIds = $user->getAccessibleContextIds();
+
+        return User::query()
+            ->where('id_usuario', '!=', $user->id_usuario)
+            ->where('activo', true)
+            ->where(function ($query) use ($accessibleContextIds) {
+                $query->whereIn('id_contexto', $accessibleContextIds)
+                    ->orWhereExists(function (QueryBuilder $contextQuery) use ($accessibleContextIds) {
+                        $contextQuery
+                            ->selectRaw('1')
+                            ->from('usuario_contextos')
+                            ->whereColumn('usuario_contextos.id_usuario', 'usuarios.id_usuario')
+                            ->where('usuario_contextos.activo', true)
+                            ->whereIn('usuario_contextos.id_contexto', $accessibleContextIds);
+                    });
+            });
     }
 }

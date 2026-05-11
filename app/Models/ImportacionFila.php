@@ -13,10 +13,20 @@ class ImportacionFila extends Model
 
     protected $fillable = [
         'id_importacion',
-        'fila_numero',
+        'archivo_origen',
+        'hoja_origen',
+        'numero_fila',
         'datos_json',
         'estado',
-        'error_mensaje',
+        'resultado',
+        'tipo_fila',
+        'severidad',
+        'codigo',
+        'clasificacion',
+        'mensaje_error',
+        'decision_sugerida',
+        'id_registro_destino',
+        'tipo_registro_destino',
     ];
 
     protected function casts(): array

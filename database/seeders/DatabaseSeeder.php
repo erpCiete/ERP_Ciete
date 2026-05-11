@@ -1,5 +1,4 @@
 <?php
-
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -7,7 +6,9 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Seed minimo de instalacion inicial del ERP.
+     *
+     * Sin datos demo ni operativa ficticia.
      */
     public function run(): void
     {

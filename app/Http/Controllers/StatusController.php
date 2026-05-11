@@ -53,7 +53,7 @@ class StatusController extends Controller
         // App
         $checks['app'] = [
             'status'      => 'ok',
-            'version'     => 'v1.4.2',
+            'version'     => 'v2.0',
             'environment' => app()->environment(),
             'php'         => PHP_VERSION,
             'laravel'     => app()->version(),

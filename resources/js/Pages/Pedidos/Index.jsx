@@ -1,18 +1,31 @@
+import PedidosExcelView from '@/Components/ui/PedidosExcelView';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
+import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
-import { Head, router } from '@inertiajs/react';
+import { useTheme } from '@/theme';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { usePedidos } from '@/Hooks/usePedidos';
 import BadgePedido from '@/Components/ui/BadgePedidos'; // Asegúrate de que la ruta coincide con tu archivo
 
 // ─── Opciones de estado para el filtro ───────────────────────────────────────
-const ESTADO_OPTIONS = ['borrador', 'solicitado', 'recibido', 'facturado', 'cancelado'];
+const ESTADO_OPTIONS = ['pendiente', 'solicitado', 'recibido', 'facturado_parcial', 'facturado', 'cancelado'];
+const hasPermission = (user, permission, aliases = []) =>
+    Boolean(user?.permission_slugs?.some((slug) => slug === permission || aliases.includes(slug)));
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], canCreate = true }) {
+export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], canCreate = true, trabajos = [] }) {
     const { t } = useI18n();
     const { irACrear, irAEditar, eliminarPedido } = usePedidos();
+    const { visualStyle } = useTheme();
+    const { auth } = usePage().props;
+
+    const isCieteExcel  = visualStyle === 'ciete_excel';
+    const activeContext = auth?.user?.active_context;
+    const canCreatePedidos = hasPermission(auth?.user, 'pedidos.crear');
+    const canEditPedidos = hasPermission(auth?.user, 'pedidos.editar');
+    const canDeletePedidos = hasPermission(auth?.user, 'pedidos.eliminar');
 
     // Contexto activo del usuario
     const isMoeve  = contextoIds.includes(1);
@@ -75,7 +88,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
         router.get(route('pedidos.index'), {}, { replace: true });
     };
 
-    // ── Eliminar pedido ───────────────────────────────────────────────────────
+    // ── Cancelar pedido ───────────────────────────────────────────────────────
     const handleDelete = () => {
         if (!deleteTarget) return;
     
@@ -103,57 +116,57 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
         >
             <Head title={t('pedidos.title')} />
 
-            {/* Modal confirmación eliminar */}
+            {/* Modal confirmación cancelar */}
             <ModalConfirmacion
                 isOpen={Boolean(deleteTarget)}
                 title={t('pedidos.confirmDelete')}
                 message={`Nº ${deleteTarget?.numero_pedido}`}
                 onClose={() => setDeleteTarget(null)}
                 onConfirm={handleDelete}
-                confirmLabel={t('common.actions.delete')}
+                confirmLabel={t('pedidos.cancelAction')}
             />
 
-            <div className="space-y-6">
-
-                {/* ── Cabecera ──────────────────────────────────────────────── */}
-                <section className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-sm md:flex-row md:items-end md:justify-between">
-                    <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">
-                            {t('nav.groups.operations')}
-                        </p>
-                        <h1 className="mt-2 text-2xl font-semibold text-text-main">
-                            {t('pedidos.title')}
-                        </h1>
-                        <div className="mt-2 flex items-center gap-2">
-                            <p className="text-sm text-text-muted">{t('pedidos.list')}</p>
-                            {/* Indicadores de contexto activo */}
-                            {isMoeve  && (
-                                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
-                                    MOEVE
-                                </span>
-                            )}
-                            {isRepsol && (
-                                <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
-                                    REPSOL
-                                </span>
-                            )}
-                        </div>
-                    </div>
-
-                    {canCreate && (
+            <div className={`ciete-page ${isCieteExcel ? 'ciete-page-full' : 'ciete-page-wide'}`}>
+                <ContextualPageHeader
+                    eyebrow={t('nav.groups.operations')}
+                    title={t('pedidos.title')}
+                    description={t('pedidos.list')}
+                    actions={!isCieteExcel && canCreate ? (
                         <button
                             type="button"
                             onClick={() => irACrear()}
-                            className="inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark)"
+                            className="inline-flex w-full items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark) sm:w-auto"
                         >
                             + {t('pedidos.create')}
                         </button>
-                    )}
-                </section>
+                    ) : null}
+                />
+
+                {canCreatePedidos && activeContext?.is_all && (
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                        No puedes crear registros desde TODOS. Selecciona primero un contexto real: MOEVE, REPSOL u OTROS CLIENTES.
+                    </div>
+                )}
+
+                {/* ── Vista Excel ──────────────────────────────────────────── */}
+                {isCieteExcel ? (
+                    <PedidosExcelView
+                        pedidos={rows}
+                        filters={filters}
+                        aplicarFiltros={aplicarFiltros}
+                        canCreate={canCreate}
+                        canEdit={canEditPedidos}
+                        canDelete={canDeletePedidos}
+                        pagination={pedidos?.meta?.pagination}
+                        isRepsol={isRepsol}
+                        trabajos={trabajos}
+                    />
+                ) : (
+                <>
 
                 {/* ── Filtros ───────────────────────────────────────────────── */}
-                <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
-                    <div className="flex flex-wrap gap-3 lg:items-center">
+                <section className="ciete-filter-bar">
+                    <div className="ciete-filter-row">
 
                         {/* Búsqueda libre */}
                         <input
@@ -185,7 +198,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                         </select>
 
                         {/* Fecha desde */}
-                        <div className="flex items-center gap-2">
+                        <div className="ciete-filter-group">
                             <label className="whitespace-nowrap text-xs text-text-hint">
                                 {t('trabajos.filters.dateFrom')}
                             </label>
@@ -202,7 +215,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                         </div>
 
                         {/* Fecha hasta */}
-                        <div className="flex items-center gap-2">
+                        <div className="ciete-filter-group">
                             <label className="whitespace-nowrap text-xs text-text-hint">
                                 {t('trabajos.filters.dateTo')}
                             </label>
@@ -230,43 +243,44 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                         )}
 
                         {/* Total */}
-                        <span className="text-sm text-text-hint lg:ml-auto">
-                            {total} {total === 1 ? 'pedido' : 'pedidos'}
+                        <span className="text-sm text-text-hint xl:ml-auto">
+                            {total === 1 ? t('pedidos.countOne', { count: total }) : t('pedidos.countOther', { count: total })}
                         </span>
                     </div>
                 </section>
 
                 {/* ── Tabla ─────────────────────────────────────────────────── */}
-                <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-border text-sm">
+                <section className="ciete-table-card">
+                    <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
+                    <div className="ciete-table-scroll">
+                        <table className="min-w-[900px] w-full divide-y divide-border text-sm">
                             <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                                 <tr>
                                     {/* Columnas siempre visibles */}
-                                    <th className="px-5 py-3 whitespace-nowrap">Nº Pedido</th>
-                                    <th className="px-5 py-3">Estado</th>
-                                    <th className="px-5 py-3">F. Solicitud</th>
-                                    <th className="px-5 py-3 text-right">Importe Total</th>
+                                    <th className="px-5 py-3 whitespace-nowrap">{t('pedidos.columns.number')}</th>
+                                    <th className="px-5 py-3">{t('pedidos.columns.status')}</th>
+                                    <th className="px-5 py-3">{t('pedidos.columns.requestedAt')}</th>
+                                    <th className="px-5 py-3 text-right">{t('pedidos.columns.totalAmount')}</th>
 
                                     {/* Columnas REPSOL — indicadas con badge rojo */}
                                     {isRepsol && (
                                         <>
                                             <th className="px-5 py-3 text-right whitespace-nowrap">
                                                 <span className="inline-flex items-center gap-1 justify-end w-full">
-                                                    Imp. Solicitado
+                                                    {t('pedidos.columns.requestedAmount')}
                                                     <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">R</span>
                                                 </span>
                                             </th>
                                             <th className="px-5 py-3 text-right whitespace-nowrap">
                                                 <span className="inline-flex items-center gap-1 justify-end w-full">
-                                                    Uds. Solicitadas
+                                                    {t('pedidos.columns.requestedUnits')}
                                                     <span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-700">R</span>
                                                 </span>
                                             </th>
                                         </>
                                     )}
 
-                                    <th className="px-5 py-3 text-right">Acciones</th>
+                                    <th className="px-5 py-3 text-right">{t('pedidos.columns.actions')}</th>
                                 </tr>
                             </thead>
 
@@ -289,7 +303,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                 {status === 'error' && (
                                     <tr>
                                         <td colSpan={totalCols} className="px-5 py-10 text-center text-text-muted">
-                                            <p>No se pudo cargar la lista de pedidos.</p>
+                                            <p>{t('pedidos.loadError')}</p>
                                             <button
                                                 type="button"
                                                 onClick={() => aplicarFiltros()}
@@ -352,22 +366,26 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
 
                                         {/* Acciones */}
                                         <td className="px-5 py-4 align-top">
-                                            <div className="flex justify-end gap-3">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => irAEditar(pedido.id_pedido)}
-                                                    className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
-                                                >
-                                                    {t('common.actions.edit')}
-                                                </button>
+                                            <div className="flex flex-wrap justify-end gap-3">
+                                                {canEditPedidos && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => irAEditar(pedido.id_pedido)}
+                                                        className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
+                                                    >
+                                                        {t('common.actions.edit')}
+                                                    </button>
+                                                )}
                                                 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setDeleteTarget(pedido)}
-                                                    className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
-                                                >
-                                                    {t('common.actions.delete')}
-                                                </button>
+                                                {canDeletePedidos && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDeleteTarget(pedido)}
+                                                        className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
+                                                    >
+                                                        {t('pedidos.cancelAction')}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -378,19 +396,22 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
 
                     {/* ── Paginación ─────────────────────────────────────────── */}
                     {pedidos?.meta?.pagination?.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-border px-5 py-3">
+                        <div className="flex flex-col gap-3 border-t border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-xs text-text-hint">
-                                Página {pedidos.meta.pagination.current_page} de {pedidos.meta.pagination.last_page}
-                                {' · '}{total} resultados
+                                {t('pedidos.pagination.summary', {
+                                    page: pedidos.meta.pagination.current_page,
+                                    lastPage: pedidos.meta.pagination.last_page,
+                                    total,
+                                })}
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                                 <button
                                     type="button"
                                     disabled={pedidos.meta.pagination.current_page <= 1}
                                     onClick={() => aplicarFiltros({ page: pedidos.meta.pagination.current_page - 1 })}
                                     className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
                                 >
-                                    Anterior
+                                    {t('pedidos.pagination.previous')}
                                 </button>
                                 <button
                                     type="button"
@@ -398,12 +419,14 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                     onClick={() => aplicarFiltros({ page: pedidos.meta.pagination.current_page + 1 })}
                                     className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
                                 >
-                                    Siguiente
+                                    {t('pedidos.pagination.next')}
                                 </button>
                             </div>
                         </div>
                     )}
                 </section>
+            </>
+            )}
             </div>
         </AuthenticatedLayout>
     );

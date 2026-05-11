@@ -18,7 +18,7 @@ class DashboardController extends Controller
 
         $obras = Trabajo::query()
             ->whereIn('id_contexto', $contextIds)
-            ->whereIn('estado', ['borrador', 'en_curso'])
+            ->where('estado', 'en_curso')
             ->with('empresa:id_empresa,nombre_comercial')
             ->latest('fecha_encargo')
             ->limit(10)

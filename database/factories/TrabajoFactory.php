@@ -21,8 +21,7 @@ class TrabajoFactory extends Factory
             'id_empresa_cliente'  => Empresa::factory(),
             'numero_trabajo'      => fake()->unique()->randomNumber(5),
             'descripcion_trabajo' => fake()->sentence(),
-            'estado'              => 'borrador',
-            'cerrado'             => false,
+            'estado'              => 'en_curso',
             'bloqueado_cierre'    => false,
             'fecha_encargo'       => now(),
         ];
@@ -31,8 +30,7 @@ class TrabajoFactory extends Factory
     public function closed(): static
     {
         return $this->state(fn() => [
-            'cerrado' => true,
-            'estado'  => 'cerrado',
+            'estado'  => 'finalizado',
         ]);
     }
 }

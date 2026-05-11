@@ -6,10 +6,14 @@ use App\Models\MensajeInterno;
 use App\Models\Role;
 use App\Models\SolicitudSoporte;
 use App\Models\User;
+use Database\Seeders\ContextosClienteSeeder;
 use Database\Seeders\PermisosSeeder;
 use Database\Seeders\RolPermisosSeeder;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Vite;
+use Illuminate\Support\HtmlString;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class InternalCommunicationTest extends TestCase
@@ -20,7 +24,15 @@ class InternalCommunicationTest extends TestCase
     {
         parent::setUp();
 
+        $this->app->instance(Vite::class, new class extends Vite {
+            public function __invoke($entrypoints, $buildDirectory = null): HtmlString
+            {
+                return new HtmlString('');
+            }
+        });
+
         $this->seed([
+            ContextosClienteSeeder::class,
             RolesSeeder::class,
             PermisosSeeder::class,
             RolPermisosSeeder::class,
@@ -173,6 +185,41 @@ class InternalCommunicationTest extends TestCase
             'tipo_remitente' => 'support',
             'asunto' => '[Soporte] Error de acceso',
         ]);
+    }
+
+    public function test_message_directory_and_recipient_validation_are_limited_by_shared_context(): void
+    {
+        $sender = User::factory()->create(['id_contexto' => 1]);
+        $sender->contextos()->sync([
+            1 => ['es_contexto_principal' => true, 'activo' => true],
+        ]);
+
+        $shared = User::factory()->create(['id_contexto' => 1]);
+        $shared->contextos()->sync([
+            1 => ['es_contexto_principal' => true, 'activo' => true],
+        ]);
+
+        $hidden = User::factory()->create(['id_contexto' => 2]);
+        $hidden->contextos()->sync([
+            2 => ['es_contexto_principal' => true, 'activo' => true],
+        ]);
+
+        $this->actingAs($sender)
+            ->get(route('messages.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Messages/Index')
+                ->has('users', 1)
+                ->where('users.0.id_usuario', $shared->id_usuario));
+
+        $this->actingAs($sender)
+            ->post(route('messages.store'), [
+                'id_destinatario' => $hidden->id_usuario,
+                'asunto' => 'Prueba',
+                'cuerpo' => 'No deberia enviarse',
+                'prioridad' => 'normal',
+            ])
+            ->assertSessionHasErrors('id_destinatario');
     }
 
     private function assignRole(User $user, string $roleSlug): void

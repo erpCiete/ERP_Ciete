@@ -28,7 +28,7 @@ final class TrabajoPermission
 
     public static function canEditClosed(?User $user): bool
     {
-        return $user?->hasPermission('trabajos.editar_cerrado') ?? false;
+        return $user?->hasPermission('trabajos.editar_finalizado') ?? false;
     }
 
     public static function canDelete(?User $user, Trabajo $trabajo): bool
@@ -52,18 +52,11 @@ final class TrabajoPermission
 
     public static function canClose(?User $user): bool
     {
-        return $user?->hasPermission('trabajos.cerrar') ?? false;
-    }
-
-    public static function canReopen(?User $user): bool
-    {
-        return $user?->hasPermission('trabajos.reabrir') ?? false;
+        return $user?->hasPermission('trabajos.finalizar') ?? false;
     }
 
     public static function isClosed(Trabajo $trabajo): bool
     {
-        return (bool) $trabajo->cerrado
-            || $trabajo->estado === 'cerrado'
-            || $trabajo->fecha_cierre !== null;
+        return $trabajo->isProtectedFinalizedState();
     }
 }

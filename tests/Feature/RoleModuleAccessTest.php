@@ -26,7 +26,7 @@ class RoleModuleAccessTest extends TestCase
         $this->actingAs($admin)->get('/importaciones')->assertOk();
     }
 
-    public function test_director_can_access_direction_trabajos_pedidos_facturas_but_not_masters_or_imports(): void
+    public function test_director_can_access_direction_operations_and_masters_but_not_imports(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -38,12 +38,12 @@ class RoleModuleAccessTest extends TestCase
         $this->actingAs($director)->get('/pedidos/crear')->assertOk();
         $this->actingAs($director)->get('/facturas')->assertOk();
         $this->actingAs($director)->get('/facturas/crear')->assertOk();
-        $this->actingAs($director)->get('/clientes')->assertForbidden();
-        $this->actingAs($director)->get('/estaciones')->assertForbidden();
+        $this->actingAs($director)->get('/clientes')->assertOk();
+        $this->actingAs($director)->get('/estaciones')->assertOk();
         $this->actingAs($director)->get('/importaciones')->assertForbidden();
     }
 
-    public function test_execution_cannot_access_direction_or_facturas_and_keeps_operational_modules(): void
+    public function test_execution_cannot_access_direction_or_facturas_and_keeps_operational_catalogs(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -51,9 +51,10 @@ class RoleModuleAccessTest extends TestCase
 
         $this->actingAs($ejecucion)->get('/trabajos')->assertOk();
         $this->actingAs($ejecucion)->get('/pedidos')->assertOk();
+        $this->actingAs($ejecucion)->get('/estaciones')->assertOk();
+        $this->actingAs($ejecucion)->get('/clientes')->assertOk();
         $this->actingAs($ejecucion)->get('/cierre')->assertForbidden();
         $this->actingAs($ejecucion)->get('/facturas')->assertForbidden();
-        $this->actingAs($ejecucion)->get('/clientes')->assertForbidden();
     }
 
     public function test_context_execution_profiles_keep_their_operational_access_without_global_panels(): void
@@ -66,13 +67,14 @@ class RoleModuleAccessTest extends TestCase
         foreach ([$moeve, $repsol] as $user) {
             $this->actingAs($user)->get('/trabajos')->assertOk();
             $this->actingAs($user)->get('/pedidos')->assertOk();
+            $this->actingAs($user)->get('/estaciones')->assertOk();
+            $this->actingAs($user)->get('/clientes')->assertOk();
             $this->actingAs($user)->get('/cierre')->assertForbidden();
             $this->actingAs($user)->get('/facturas')->assertForbidden();
-            $this->actingAs($user)->get('/clientes')->assertForbidden();
         }
     }
 
-    public function test_contable_can_access_pedidos_y_facturas_but_not_operational_trabajos_or_direction(): void
+    public function test_contable_can_access_traceable_trabajos_pedidos_y_facturas_but_not_direction_or_masters(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -82,7 +84,7 @@ class RoleModuleAccessTest extends TestCase
         $this->actingAs($contable)->get('/pedidos/crear')->assertForbidden();
         $this->actingAs($contable)->get('/facturas')->assertOk();
         $this->actingAs($contable)->get('/facturas/crear')->assertOk();
-        $this->actingAs($contable)->get('/trabajos')->assertForbidden();
+        $this->actingAs($contable)->get('/trabajos')->assertOk();
         $this->actingAs($contable)->get('/cierre')->assertForbidden();
         $this->actingAs($contable)->get('/clientes')->assertForbidden();
     }
