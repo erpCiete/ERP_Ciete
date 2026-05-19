@@ -28,6 +28,14 @@ docs/
 
 Si hay contradiccion entre documentos, prevalece la reunion/transcripcion salvo decision posterior explicitamente trazada.
 
+## Documentacion de presentacion v2.1.0
+
+Creada el 2026-05-19: documentación de apoyo para presentación práctica v2.1.0.
+
+- Tutorial práctico de uso: `docs/02_CLIENTE/TUTORIAL_PRACTICO_ERP_CIETE_V210_2026-05-19.md`
+- Guion para demostración práctica: `docs/02_CLIENTE/GUION_DEMO_PRACTICA_ERP_CIETE_V210_2026-05-19.md`
+- Resumen ejecutivo imprimible: `docs/02_CLIENTE/RESUMEN_IMPRIMIBLE_ERP_CIETE_V210_2026-05-19.md`
+
 ## Matrices y validaciones vigentes
 
 - Matriz de accesos por rol: `docs/02_CLIENTE/MATRIZ_ACCESOS_ROLES_ERP_CIETE_2026-05-18.md`
