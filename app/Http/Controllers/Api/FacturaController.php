@@ -12,13 +12,13 @@ use App\Models\Factura;
 use App\Models\FacturaItem;
 use App\Models\PedidoItem;
 use App\Models\Trabajo;
+use App\Models\User;
 use App\Services\AuditLogger;
 use App\Traits\ApiResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -64,9 +64,7 @@ class FacturaController extends Controller
         'observaciones',
     ];
 
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     /**
      * Listado de facturas.
@@ -75,7 +73,7 @@ class FacturaController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->integer('per_page', 10), 1), 100);
         $search = trim((string) $request->input('search', ''));
         $estado = trim((string) $request->input('estado', ''));
         $trabajoId = $request->integer('id_trabajo');
@@ -85,7 +83,7 @@ class FacturaController extends Controller
             ->withSociedadCifValidada()
             ->with($this->facturaRelations())
             ->when($trabajoId > 0, function ($query) use ($trabajoId): void {
-                $query->whereHas('items.pedidoItem.pedido', fn ($pedidoQuery) => $pedidoQuery->where('id_trabajo', $trabajoId));
+                $query->whereHas('items.pedidoItem.pedido', fn($pedidoQuery) => $pedidoQuery->where('id_trabajo', $trabajoId));
             })
             ->when($empresaId > 0, function ($query) use ($empresaId): void {
                 $query->where('id_empresa_cliente', $empresaId);
@@ -98,7 +96,7 @@ class FacturaController extends Controller
                     $nested->where('numero_factura', 'like', "%{$search}%")
                         ->orWhere('numero_factura_ccp', 'like', "%{$search}%")
                         ->orWhere('observaciones', 'like', "%{$search}%")
-                        ->orWhereHas('items.pedidoItem.pedido', fn ($pedidoQuery) => $pedidoQuery->where('numero_pedido', 'like', "%{$search}%"))
+                        ->orWhereHas('items.pedidoItem.pedido', fn($pedidoQuery) => $pedidoQuery->where('numero_pedido', 'like', "%{$search}%"))
                         ->orWhereHas('items.pedidoItem.pedido.trabajo', function ($trabajoQuery) use ($search): void {
                             $trabajoQuery
                                 ->where('numero_trabajo', 'like', "%{$search}%")
@@ -163,12 +161,12 @@ class FacturaController extends Controller
         });
     }
 
-    public function show(Factura $factura): JsonResponse
+    public function show(Request $request, Factura $factura): JsonResponse
     {
-        $accessibleContextIds = array_map('intval', Auth::user()->getActiveContextIds());
+        $accessibleContextIds = $this->accessibleContextIds($request);
 
         if (! in_array((int) $factura->id_contexto, $accessibleContextIds, true)) {
-            return $this->errorResponse('No autorizado. Violacion de aislamiento de contexto.', 'CONTEXT_FORBIDDEN', [], 403);
+            return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 'CONTEXT_FORBIDDEN', [], 403);
         }
 
         return $this->successResponse(new FacturaResource($this->loadFacturaRelations($factura)));
@@ -215,14 +213,14 @@ class FacturaController extends Controller
             });
 
             fclose($handle);
-        }, 'facturas_'.now()->format('Ymd_His').'.csv', [
+        }, 'facturas_' . now()->format('Ymd_His') . '.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 
     public function exportDetail(Request $request, Factura $factura): StreamedResponse
     {
-        $accessibleContextIds = array_map('intval', $request->user()->getActiveContextIds());
+        $accessibleContextIds = $this->accessibleContextIds($request);
 
         if (! in_array((int) $factura->id_contexto, $accessibleContextIds, true)) {
             abort(403);
@@ -277,10 +275,10 @@ class FacturaController extends Controller
 
     public function update(UpdateFacturaRequest $request, Factura $factura): JsonResponse
     {
-        $accessibleContextIds = array_map('intval', Auth::user()->getActiveContextIds());
+        $accessibleContextIds = $this->accessibleContextIds($request);
 
         if (! in_array((int) $factura->id_contexto, $accessibleContextIds, true)) {
-            return $this->errorResponse('No autorizado. Violacion de aislamiento de contexto.', 'CONTEXT_FORBIDDEN', [], 403);
+            return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 'CONTEXT_FORBIDDEN', [], 403);
         }
 
         return DB::transaction(function () use ($request, $factura) {
@@ -352,10 +350,10 @@ class FacturaController extends Controller
 
     public function destroy(Request $request, Factura $factura): JsonResponse
     {
-        $accessibleContextIds = array_map('intval', $request->user()->getActiveContextIds());
+        $accessibleContextIds = $this->accessibleContextIds($request);
 
         if (! in_array((int) $factura->id_contexto, $accessibleContextIds, true)) {
-            return $this->errorResponse('No autorizado. Violacion de aislamiento de contexto.', 'CONTEXT_FORBIDDEN', [], 403);
+            return $this->errorResponse('No autorizado. Violación de aislamiento de contexto.', 'CONTEXT_FORBIDDEN', [], 403);
         }
 
         DB::transaction(function () use ($request, $factura): void {
@@ -404,8 +402,7 @@ class FacturaController extends Controller
         Collection $pedidoItems,
         array $data,
         bool $requiresFacturadora
-    ): void
-    {
+    ): void {
         $empresaId = $factura->id_empresa_facturadora;
 
         if (! $empresaId) {
@@ -439,7 +436,7 @@ class FacturaController extends Controller
             throw ValidationException::withMessages([
                 'id_empresa_facturadora' => [
                     'La sociedad/empresa facturadora no tiene CIF registrado. '
-                    . 'Registra el CIF antes de usarla para facturar.',
+                        . 'Registra el CIF antes de usarla para facturar.',
                 ],
             ]);
         }
@@ -534,11 +531,11 @@ class FacturaController extends Controller
             return collect();
         }
 
-        $accessibleContextIds = array_map('intval', $request->user()->getActiveContextIds());
+        $accessibleContextIds = $this->accessibleContextIds($request);
         $ids = collect($itemsData)
             ->pluck('id_pedido_item')
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->map(fn ($id) => (int) $id)
+            ->filter(fn($id) => $id !== null && $id !== '')
+            ->map(fn($id) => (int) $id)
             ->values();
 
         $duplicatedIds = $ids->duplicates()->unique()->values();
@@ -563,7 +560,7 @@ class FacturaController extends Controller
 
         $missingIds = $ids
             ->unique()
-            ->reject(fn (int $id) => $pedidoItems->has($id))
+            ->reject(fn(int $id) => $pedidoItems->has($id))
             ->values();
 
         if ($missingIds->isNotEmpty()) {
@@ -572,7 +569,7 @@ class FacturaController extends Controller
             ]);
         }
 
-        $invalidItems = $pedidoItems->filter(fn (PedidoItem $item) => $item->pedido === null || $item->pedido->trabajo === null);
+        $invalidItems = $pedidoItems->filter(fn(PedidoItem $item) => $item->pedido === null || $item->pedido->trabajo === null);
 
         if ($invalidItems->isNotEmpty()) {
             throw ValidationException::withMessages([
@@ -595,7 +592,7 @@ class FacturaController extends Controller
         }
 
         $contextIds = $pedidoItems
-            ->map(fn (PedidoItem $item) => (int) $item->id_contexto)
+            ->map(fn(PedidoItem $item) => (int) $item->id_contexto)
             ->unique()
             ->values();
 
@@ -612,7 +609,7 @@ class FacturaController extends Controller
                     ?? $item->tarifarioLinea?->tarifario?->id_contrato;
             })
             ->filter()
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->unique()
             ->values();
 
@@ -629,7 +626,7 @@ class FacturaController extends Controller
                     ?? $item->tarifarioLinea?->id_tarifario;
             })
             ->filter()
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->unique()
             ->values();
 
@@ -666,11 +663,11 @@ class FacturaController extends Controller
     private function singleContractIdFromItems(Collection $pedidoItems): ?int
     {
         $contractIds = $pedidoItems
-            ->map(fn (PedidoItem $item) => $item->pedido?->trabajo?->id_contrato
+            ->map(fn(PedidoItem $item) => $item->pedido?->trabajo?->id_contrato
                 ?? $item->pedido?->tarifario?->id_contrato
                 ?? $item->tarifarioLinea?->tarifario?->id_contrato)
             ->filter()
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->unique()
             ->values();
 
@@ -690,7 +687,7 @@ class FacturaController extends Controller
         ]);
 
         return $factura->items
-            ->map(fn (FacturaItem $item) => $item->pedidoItem)
+            ->map(fn(FacturaItem $item) => $item->pedidoItem)
             ->filter()
             ->values();
     }
@@ -708,13 +705,13 @@ class FacturaController extends Controller
 
         $sentFacturaItemIds = collect($itemsData)
             ->pluck('id_factura_item')
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->map(fn ($id) => (int) $id)
+            ->filter(fn($id) => $id !== null && $id !== '')
+            ->map(fn($id) => (int) $id)
             ->unique()
             ->values();
 
         $unknownFacturaItemIds = $sentFacturaItemIds
-            ->reject(fn (int $id) => $existingItems->has($id))
+            ->reject(fn(int $id) => $existingItems->has($id))
             ->values();
 
         if ($unknownFacturaItemIds->isNotEmpty()) {
@@ -804,11 +801,11 @@ class FacturaController extends Controller
             $requestedUnits = $this->nullableFloat($itemData['unidades_facturadas'] ?? null);
             $alreadyBilledAmount = (float) FacturaItem::query()
                 ->where('id_pedido_item', $pedidoItemId)
-                ->when($facturaItemId !== null, fn ($query) => $query->where('id_factura_item', '!=', $facturaItemId))
+                ->when($facturaItemId !== null, fn($query) => $query->where('id_factura_item', '!=', $facturaItemId))
                 ->sum('importe_facturado');
             $alreadyBilledUnits = (float) FacturaItem::query()
                 ->where('id_pedido_item', $pedidoItemId)
-                ->when($facturaItemId !== null, fn ($query) => $query->where('id_factura_item', '!=', $facturaItemId))
+                ->when($facturaItemId !== null, fn($query) => $query->where('id_factura_item', '!=', $facturaItemId))
                 ->sum('unidades_facturadas');
             $pendingAmount = max(0.0, (float) $pedidoItem->total_linea - $alreadyBilledAmount);
             $pendingUnits = max(0.0, (float) $pedidoItem->cantidad - $alreadyBilledUnits);
@@ -903,28 +900,32 @@ class FacturaController extends Controller
         $fechaHasta = $request->input('fecha_hasta');
         $selectedIds = $this->parseExportIds($request);
 
-        return Factura::query()
-            ->withSociedadCifValidada()
+        /** @var Builder $query */
+        $query = Factura::query();
+
+        $query->withSociedadCifValidada()
             ->with($this->facturaRelations())
-            ->whereIn('id_contexto', array_map('intval', $request->user()->getActiveContextIds()))
-            ->when($selectedIds !== [], fn (Builder $query) => $query->whereIn('id_factura', $selectedIds))
+            ->whereIn('id_contexto', $this->accessibleContextIds($request))
+            ->when($selectedIds !== [], fn(Builder $query) => $query->whereIn('id_factura', $selectedIds))
             ->when($selectedIds === [] && $search !== '', function (Builder $query) use ($search): void {
                 $query->where(function (Builder $query) use ($search): void {
                     $query->where('numero_factura', 'like', "%{$search}%")
                         ->orWhere('sociedad', 'like', "%{$search}%")
-                        ->orWhereHas('empresa', fn (Builder $empresaQuery) => $empresaQuery->where('nombre', 'like', "%{$search}%"))
-                        ->orWhereHas('empresaFacturadora', fn (Builder $empresaQuery) => $empresaQuery->where('nombre', 'like', "%{$search}%"));
+                        ->orWhereHas('empresa', fn(Builder $empresaQuery) => $empresaQuery->where('nombre', 'like', "%{$search}%"))
+                        ->orWhereHas('empresaFacturadora', fn(Builder $empresaQuery) => $empresaQuery->where('nombre', 'like', "%{$search}%"));
                 });
             })
-            ->when($selectedIds === [] && $estado !== '', fn (Builder $query) => $query->where('estado', $estado))
+            ->when($selectedIds === [] && $estado !== '', fn(Builder $query) => $query->where('estado', $estado))
             ->when($selectedIds === [] && $trabajoId, function (Builder $query) use ($trabajoId): void {
-                $query->whereHas('items.pedidoItem.pedido', fn (Builder $pedidoQuery) => $pedidoQuery->where('id_trabajo', $trabajoId));
+                $query->whereHas('items.pedidoItem.pedido', fn(Builder $pedidoQuery) => $pedidoQuery->where('id_trabajo', $trabajoId));
             })
-            ->when($selectedIds === [] && $empresaId, fn (Builder $query) => $query->where('id_empresa_cliente', $empresaId))
-            ->when($selectedIds === [] && $fechaDesde, fn (Builder $query) => $query->whereDate('fecha_emision', '>=', $fechaDesde))
-            ->when($selectedIds === [] && $fechaHasta, fn (Builder $query) => $query->whereDate('fecha_emision', '<=', $fechaHasta))
+            ->when($selectedIds === [] && $empresaId, fn(Builder $query) => $query->where('id_empresa_cliente', $empresaId))
+            ->when($selectedIds === [] && $fechaDesde, fn(Builder $query) => $query->whereDate('fecha_emision', '>=', $fechaDesde))
+            ->when($selectedIds === [] && $fechaHasta, fn(Builder $query) => $query->whereDate('fecha_emision', '<=', $fechaHasta))
             ->orderByDesc('fecha_emision')
             ->orderByDesc('id_factura');
+
+        return $query;
     }
 
     /**
@@ -936,8 +937,8 @@ class FacturaController extends Controller
         $ids = is_array($ids) ? $ids : explode(',', (string) $ids);
 
         return collect($ids)
-            ->map(fn (mixed $id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
+            ->map(fn(mixed $id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
             ->unique()
             ->values()
             ->all();
@@ -949,12 +950,12 @@ class FacturaController extends Controller
     private function facturaListExportHeaders(): array
     {
         return [
-            'Numero factura',
+            'Número factura',
             'Contexto',
             'Cliente',
             'Sociedad facturadora',
             'CIF',
-            'Fecha emision',
+            'Fecha emisión',
             'Fecha vencimiento',
             'Estado',
             'Total factura',
@@ -1005,12 +1006,12 @@ class FacturaController extends Controller
         $total = (float) ($factura->total ?? $factura->importe ?? 0);
 
         return [
-            ['Numero factura', $this->facturaNumber($factura)],
+            ['Número factura', $this->facturaNumber($factura)],
             ['Contexto', $this->contextLabel($factura)],
             ['Sociedad facturadora', $this->companyLabel($factura->empresaFacturadora) ?: (string) $factura->sociedad],
             ['CIF', $factura->empresaFacturadora?->cif ?: $factura->empresa?->cif],
             ['Cliente', $this->companyLabel($factura->empresa)],
-            ['Fecha emision', $this->formatDateValue($factura->fecha_emision)],
+            ['Fecha emisión', $this->formatDateValue($factura->fecha_emision)],
             ['Fecha vencimiento', $this->formatDateValue($factura->fecha_vencimiento)],
             ['Estado', $factura->estado],
             ['Total factura', $this->formatMoneyValue($total)],
@@ -1089,7 +1090,7 @@ class FacturaController extends Controller
     private function assignedAmountForExport(Factura $factura): float
     {
         if ($factura->items->isNotEmpty()) {
-            return (float) $factura->items->sum(fn (FacturaItem $item) => (float) $item->importe_facturado);
+            return (float) $factura->items->sum(fn(FacturaItem $item) => (float) $item->importe_facturado);
         }
 
         return 0.0;
@@ -1137,9 +1138,9 @@ class FacturaController extends Controller
     private function pedidosLabels(Factura $factura): Collection
     {
         $fromItems = $factura->items
-            ->map(fn (FacturaItem $item) => $item->pedidoItem?->pedido)
+            ->map(fn(FacturaItem $item) => $item->pedidoItem?->pedido)
             ->filter()
-            ->map(fn ($pedido) => $pedido->numero_pedido ?? $pedido->id_pedido);
+            ->map(fn($pedido) => $pedido->numero_pedido ?? $pedido->id_pedido);
 
         return collect($fromItems->all())->filter()->unique()->values();
     }
@@ -1147,9 +1148,9 @@ class FacturaController extends Controller
     private function trabajosLabels(Factura $factura): Collection
     {
         $fromItems = $factura->items
-            ->map(fn (FacturaItem $item) => $item->pedidoItem?->pedido?->trabajo)
+            ->map(fn(FacturaItem $item) => $item->pedidoItem?->pedido?->trabajo)
             ->filter()
-            ->map(fn ($trabajo) => $trabajo->numeroTrabajoVisible() ?? $trabajo->id_trabajo);
+            ->map(fn($trabajo) => $trabajo->numeroTrabajoVisible() ?? $trabajo->id_trabajo);
 
         return collect($fromItems->all())
             ->filter()
@@ -1167,7 +1168,7 @@ class FacturaController extends Controller
                 ];
             })
             ->filter()
-            ->map(fn ($tarifario) => $this->modelLabel($tarifario, ['nombre', 'version']));
+            ->map(fn($tarifario) => $this->modelLabel($tarifario, ['nombre', 'version']));
 
         return collect($fromItems->all())->filter()->unique()->values();
     }
@@ -1225,5 +1226,20 @@ class FacturaController extends Controller
             'items.pedidoItem.pedido.tarifario',
             'items.pedidoItem.tarifarioLinea.tarifario.contrato',
         ];
+    }
+
+    private function currentUser(Request $request): ?User
+    {
+        $user = $request->user();
+
+        return $user instanceof User ? $user : null;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function accessibleContextIds(Request $request): array
+    {
+        return array_map('intval', $this->currentUser($request)?->getActiveContextIds() ?? []);
     }
 }

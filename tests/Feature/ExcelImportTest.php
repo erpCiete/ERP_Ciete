@@ -128,11 +128,11 @@ class ExcelImportTest extends TestCase
         app(CieteExcelImportService::class)->import($root, commit: true);
 
         $this->assertSame(1, EstacionServicio::query()
-            ->whereHas('contexto', fn ($query) => $query->where('codigo', 'MOEVE'))
+            ->whereHas('contexto', fn($query) => $query->where('codigo', 'MOEVE'))
             ->where('codigo_estacion', '1001')
             ->count());
         $this->assertSame(1, EstacionServicio::query()
-            ->whereHas('contexto', fn ($query) => $query->where('codigo', 'REPSOL'))
+            ->whereHas('contexto', fn($query) => $query->where('codigo', 'REPSOL'))
             ->where('codigo_estacion', '1001')
             ->count());
         $this->assertSame(2, EstacionServicio::query()->where('codigo_estacion', '1001')->count());
@@ -148,24 +148,17 @@ class ExcelImportTest extends TestCase
         $written = app(PrivateSeederGeneratorService::class)->writeSeeders();
 
         $masterPath = base_path('database/seeders/private/CieteRealDataSeeder.php');
+        $catalogosPath = base_path('database/seeders/private/CieteRealCatalogosSeeder.php');
         $facturasPath = base_path('database/seeders/private/CieteRealFacturasSeeder.php');
-        $facturaItemsPath = base_path('database/seeders/private/CieteRealFacturaItemsSeeder.php');
-        $tiposDocumentoPath = base_path('database/seeders/private/CieteRealTiposDocumentoSeeder.php');
-        $tiposTrabajoPath = base_path('database/seeders/private/CieteRealTiposTrabajoSeeder.php');
 
         $this->assertFileExists($masterPath);
+        $this->assertFileExists($catalogosPath);
         $this->assertFileExists($facturasPath);
-        $this->assertFileExists($facturaItemsPath);
-        $this->assertFileExists($tiposDocumentoPath);
-        $this->assertFileExists($tiposTrabajoPath);
         $this->assertSame(base_path('database/seeders/private'), $written['directory']);
         $this->assertStringContainsString('CieteRealFacturasSeeder::class', (string) file_get_contents($masterPath));
         $masterContents = (string) file_get_contents($masterPath);
         $this->assertTrue(
-            strpos($masterContents, 'CieteRealTiposDocumentoSeeder::class') < strpos($masterContents, 'CieteRealTrabajosSeeder::class')
-        );
-        $this->assertTrue(
-            strpos($masterContents, 'CieteRealTiposTrabajoSeeder::class') < strpos($masterContents, 'CieteRealTrabajosSeeder::class')
+            strpos($masterContents, 'CieteRealCatalogosSeeder::class') < strpos($masterContents, 'CieteRealTrabajosSeeder::class')
         );
         $this->assertStringNotContainsString('factura_pedidos', (string) file_get_contents($facturasPath));
         $this->assertStringNotContainsString("'borrador'", (string) file_get_contents($masterPath));

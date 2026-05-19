@@ -2,7 +2,9 @@
 import BadgeCliente from '@/Components/ui/BadgeCliente';
 import BadgeFactura from '@/Components/ui/BadgeFactura';
 import FacturasExcelView from '@/Components/ui/FacturasExcelView';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import OperationalReadOnlyNotice from '@/Components/OperationalReadOnlyNotice';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
@@ -44,7 +46,16 @@ function formatWorkNumber(trabajo) {
 //   filters     → { search, estado } (filtros activos en el servidor)
 //   contextoIds → [1] MOEVE · [2] REPSOL · [1,2] ambos
 //   canCreate   → boolean — permiso facturas.crear del usuario
-export default function FacturasIndex({ facturas, filters = {}, contextoIds = [], canCreate = true, canExport = false }) {
+export default function FacturasIndex({
+    facturas,
+    filters = {},
+    contextoIds = [],
+    canCreate = true,
+    canExport = false,
+    pedidoItemsFacturables = [],
+    empresasFacturadoras = {},
+    facturacionCatalogos = {},
+}) {
     const { t } = useI18n();
     const { eliminarFactura } = useFacturas();
     const { visualStyle } = useTheme();
@@ -67,7 +78,7 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
     const [selectedIds, setSelectedIds] = useState([]);
 
     const rows  = facturas?.data  ?? [];
-    const total = facturas?.meta?.pagination?.total ?? rows.length;
+    const total = facturas?.meta?.total ?? rows.length;
     const hasFilters = search !== '' || estado !== '';
     const selectedCount = selectedIds.length;
     const visibleIds = rows.map((factura) => factura.id_factura).filter(Boolean);
@@ -213,7 +224,7 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                                     )}
                                 </>
                             )}
-                            {canCreate && (
+                            {!isCieteExcel && canCreate && (
                                 <button
                                     type="button"
                                     onClick={() => router.visit(route('facturas.create'))}
@@ -225,6 +236,8 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                         </div>
                     )}
                 />
+
+                <OperationalReadOnlyNotice />
 
                 {canCreateFacturas && activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
@@ -247,9 +260,13 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                         onExportList={exportList}
                         onExportSelected={exportSelected}
                         onExportDetail={exportDetail}
-                        pagination={facturas?.meta?.pagination}
+                        pagination={facturas?.meta}
                         isMoeve={isMoeve}
                         isRepsol={isRepsol}
+                        activeContext={activeContext}
+                        pedidoItemsFacturables={pedidoItemsFacturables}
+                        empresasFacturadoras={empresasFacturadoras}
+                        facturacionCatalogos={facturacionCatalogos}
                     />
                 ) : (
                 <>
@@ -329,7 +346,7 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                 <section className="ciete-table-card">
                     <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
                     <div className="ciete-table-scroll">
-                        <table className="min-w-[1180px] w-full divide-y divide-border text-sm">
+                        <table className="min-w-[1240px] w-full table-fixed divide-y divide-border text-sm">
                             <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                                 <tr>
                                     {canExportFacturas && (
@@ -344,10 +361,10 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                                         </th>
                                     )}
                                     {/* Columnas siempre visibles */}
-                                    <th className="px-5 py-3 whitespace-nowrap">{t('facturas.columns.number')}</th>
+                                    <th className="w-[16rem] max-w-[16rem] px-5 py-3 whitespace-nowrap">{t('facturas.columns.number')}</th>
                                     <th className="px-5 py-3">{t('facturas.columns.work')}</th>
                                     <th className="px-5 py-3">{t('facturas.columns.company')}</th>
-                                    <th className="px-5 py-3 whitespace-nowrap">{t('facturas.columns.issuedAt')}</th>
+                                    <th className="w-32 px-5 py-3 whitespace-nowrap">{t('facturas.columns.issuedAt')}</th>
                                     <th className="px-5 py-3 text-right whitespace-nowrap">{t('facturas.columns.total')}</th>
                                     <th className="px-5 py-3 text-right whitespace-nowrap">Asignado</th>
                                     <th className="px-5 py-3 text-right whitespace-nowrap">Diferencia</th>
@@ -454,8 +471,11 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                                         )}
 
                                         {/* Nº factura — mono rojo */}
-                                        <td className="px-5 py-4 align-top">
-                                            <span className="font-mono text-xs font-semibold text-(--ciete-red)">
+                                        <td className="w-[16rem] max-w-[16rem] px-5 py-4 align-top">
+                                            <span
+                                                className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--ciete-red)"
+                                                title={factura.numero_factura ?? undefined}
+                                            >
                                                 {factura.numero_factura ?? '—'}
                                             </span>
                                         </td>
@@ -473,7 +493,7 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                                         </td>
 
                                         {/* Empresa — BadgeCliente */}
-                                        <td className="px-5 py-4 align-top">
+                                        <td className="min-w-0 px-5 py-4 align-top">
                                             <div className="space-y-1">
                                                 <BadgeCliente cliente={sociedadFacturadora?.nombre_comercial ?? sociedadFacturadora?.nombre} />
                                                 <p className="font-mono text-[11px] text-text-hint">
@@ -483,7 +503,7 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                                         </td>
 
                                         {/* Fecha emisión */}
-                                        <td className="px-5 py-4 align-top whitespace-nowrap text-text-muted">
+                                        <td className="w-32 px-5 py-4 align-top whitespace-nowrap text-text-muted">
                                             {factura.fecha_emision
                                                 ? new Date(factura.fecha_emision).toLocaleDateString('es-ES')
                                                 : '—'}
@@ -600,35 +620,10 @@ export default function FacturasIndex({ facturas, filters = {}, contextoIds = []
                     </div>
 
                     {/* ── Paginación ─────────────────────────────────────────── */}
-                    {facturas?.meta?.pagination?.last_page > 1 && (
-                        <div className="flex flex-col gap-3 border-t border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs text-text-hint">
-                                {t('facturas.pagination.summary', {
-                                    page: facturas.meta.pagination.current_page,
-                                    lastPage: facturas.meta.pagination.last_page,
-                                    total,
-                                })}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    disabled={facturas.meta.pagination.current_page <= 1}
-                                    onClick={() => aplicarFiltros({ page: facturas.meta.pagination.current_page - 1 })}
-                                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
-                                >
-                                    {t('facturas.pagination.previous')}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={facturas.meta.pagination.current_page >= facturas.meta.pagination.last_page}
-                                    onClick={() => aplicarFiltros({ page: facturas.meta.pagination.current_page + 1 })}
-                                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
-                                >
-                                    {t('facturas.pagination.next')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <PaginationControls
+                        pagination={facturas?.meta}
+                        onPageChange={(p) => aplicarFiltros({ page: p })}
+                    />
                 </section>
             </>
             )}

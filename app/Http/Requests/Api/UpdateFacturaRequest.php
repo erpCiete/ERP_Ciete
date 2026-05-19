@@ -6,7 +6,6 @@ use App\Models\Factura;
 use App\Models\PedidoItem;
 use App\Models\Trabajo;
 use App\Support\ContextGuard;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -71,7 +70,7 @@ class UpdateFacturaRequest extends BaseApiRequest
 
     public function rules(): array
     {
-        $user = Auth::user();
+        $user = $this->currentUser();
         $accessibleContextIds = $user?->getActiveContextIds() ?? [];
         $factura = $this->route('factura');
         $facturaId = $factura instanceof Factura ? $factura->id_factura : $factura;
@@ -87,28 +86,28 @@ class UpdateFacturaRequest extends BaseApiRequest
                 'nullable',
                 'integer',
                 Rule::exists('trabajos', 'id_trabajo')
-                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
+                    ->where(fn($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'id_empresa_cliente' => [
                 'sometimes',
                 'nullable',
                 'integer',
                 Rule::exists('empresas', 'id_empresa')
-                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'id_contrato' => [
                 'sometimes',
                 'nullable',
                 'integer',
                 Rule::exists('contratos', 'id_contrato')
-                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'id_empresa_facturadora' => [
                 'sometimes',
                 'nullable',
                 'integer',
                 Rule::exists('empresas', 'id_empresa')
-                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'numero_factura' => [
                 'sometimes',
@@ -135,14 +134,14 @@ class UpdateFacturaRequest extends BaseApiRequest
                 'integer',
                 'distinct',
                 Rule::exists('factura_items', 'id_factura_item')
-                    ->where(fn ($query) => $query->where('id_factura', $facturaId)),
+                    ->where(fn($query) => $query->where('id_factura', $facturaId)),
             ],
             'items.*.id_pedido_item' => [
                 'required_with:items',
                 'integer',
                 'distinct',
                 Rule::exists('pedido_items', 'id_pedido_item')
-                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
+                    ->where(fn($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'items.*.unidades_facturadas' => ['nullable', 'numeric', 'min:0'],
             'items.*.importe_facturado' => ['required_with:items', 'numeric', 'min:0'],
@@ -157,7 +156,7 @@ class UpdateFacturaRequest extends BaseApiRequest
                 'max:100',
                 Rule::unique('facturas', 'numero_factura_ccp')
                     ->ignore($facturaId, 'id_factura')
-                    ->where(fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->where(fn($query) => $query->where('id_contexto', $targetContextId)),
             ];
             $rules['orden_factura'] = ['nullable', 'integer', 'min:1'];
         } elseif (ContextGuard::isRepsolContextId($targetContextId ? (int) $targetContextId : null)) {
@@ -168,7 +167,7 @@ class UpdateFacturaRequest extends BaseApiRequest
                 'min:1',
                 Rule::unique('facturas', 'orden_factura')
                     ->ignore($facturaId, 'id_factura')
-                    ->where(fn ($query) => $query->where('id_trabajo', $trabajoId)
+                    ->where(fn($query) => $query->where('id_trabajo', $trabajoId)
                         ->where('id_contexto', $targetContextId)),
             ];
             $rules['numero_factura_ccp'] = ['nullable', 'string', 'max:100'];
@@ -183,7 +182,7 @@ class UpdateFacturaRequest extends BaseApiRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $user = Auth::user();
+            $user = $this->currentUser();
             $accessibleContextIds = $user?->getActiveContextIds() ?? [];
             $factura = $this->route('factura');
             $facturaId = $factura instanceof Factura ? $factura->id_factura : $factura;
@@ -198,7 +197,7 @@ class UpdateFacturaRequest extends BaseApiRequest
                 : $this->normalizeNullableString($factura instanceof Factura ? $factura->numero_factura : null);
 
             if (in_array($estado, ['emitida', 'enviada'], true) && $numeroFactura === null) {
-                $validator->errors()->add('numero_factura', 'El numero de factura es obligatorio para facturas emitidas o enviadas.');
+                $validator->errors()->add('numero_factura', 'El número de factura es obligatorio para facturas emitidas o enviadas.');
             }
 
             if ($numeroFactura === null) {
@@ -218,11 +217,11 @@ class UpdateFacturaRequest extends BaseApiRequest
                 ->where('id_contexto', $targetContextId)
                 ->where('id_empresa_facturadora', (int) $empresaFacturadoraId)
                 ->where('numero_factura', $numeroFactura)
-                ->when($facturaId, fn ($query) => $query->where('id_factura', '!=', $facturaId))
+                ->when($facturaId, fn($query) => $query->where('id_factura', '!=', $facturaId))
                 ->exists();
 
             if ($exists) {
-                $validator->errors()->add('numero_factura', 'Ya existe una factura con ese numero para el contexto y sociedad facturadora seleccionados.');
+                $validator->errors()->add('numero_factura', 'Ya existe una factura con ese número para el contexto y sociedad facturadora seleccionados.');
             }
         });
     }

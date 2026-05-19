@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -61,6 +62,72 @@ class User extends Authenticatable
         'is_admin',
         'role_slugs',
         'permission_slugs',
+    ];
+
+    private const OPERATIONAL_READ_PERMISSIONS = [
+        'trabajos.ver',
+        'pedidos.ver',
+        'facturas.ver',
+        'clientes.ver',
+        'estaciones.ver',
+        'maestros.ver',
+        'contratos.ver',
+        'sociedades_facturadoras.ver',
+        'tarifarios.ver',
+        'tarifario_lineas.ver',
+    ];
+
+    private const OPERATIONAL_MUTATION_PERMISSIONS = [
+        'trabajos.crear',
+        'trabajos.editar',
+        'trabajos.eliminar',
+        'trabajos.finalizar',
+        'trabajos.cambiar_estado',
+        'trabajos.marcar_terminado',
+        'trabajos.editar_finalizado',
+        'pedidos.crear',
+        'pedidos.editar',
+        'pedidos.eliminar',
+        'facturas.crear',
+        'facturas.editar',
+        'facturas.eliminar',
+        'clientes.crear',
+        'clientes.editar',
+        'clientes.eliminar',
+        'estaciones.crear',
+        'estaciones.editar',
+        'estaciones.eliminar',
+        'maestros.gestionar',
+        'contratos.crear',
+        'contratos.editar',
+        'contratos.eliminar',
+        'sociedades_facturadoras.crear',
+        'sociedades_facturadoras.editar',
+        'sociedades_facturadoras.eliminar',
+        'tarifarios.crear',
+        'tarifarios.editar',
+        'tarifarios.eliminar',
+        'tarifario_lineas.crear',
+        'tarifario_lineas.editar',
+        'tarifario_lineas.eliminar',
+    ];
+
+    private const TECHNICAL_ADMIN_PERMISSIONS = [
+        'admin.panel.ver',
+        'usuarios.ver',
+        'usuarios.crear',
+        'usuarios.editar',
+        'usuarios.gestionar',
+        'soporte.gestionar',
+        'auditoria.ver',
+        'auditoria.exportar',
+        'auditoria.limpiar',
+        'mantenimiento.gestionar',
+        'avisos.gestionar',
+        'importaciones.ver',
+        'importaciones.ejecutar',
+        'importaciones.confirmar',
+        ...self::OPERATIONAL_READ_PERMISSIONS,
     ];
 
     public const ACTIVE_CONTEXT_SESSION_KEY = 'ciete.active_context';
@@ -139,6 +206,9 @@ class User extends Authenticatable
     /** @var array<string, bool>|null In-memory cache: permission slug → true */
     private ?array $cachedPermissionSet = null;
 
+    /** @var array<string, bool>|null In-memory cache: effective permission slug → true */
+    private ?array $cachedEffectivePermissionSet = null;
+
     /** @var array<string, bool>|null In-memory cache: role slug → true */
     private ?array $cachedRoleSet = null;
 
@@ -160,6 +230,29 @@ class User extends Authenticatable
         }
 
         return $this->cachedRoleSet;
+    }
+
+    private function resolveEffectivePermissionSet(): array
+    {
+        if ($this->cachedEffectivePermissionSet !== null) {
+            return $this->cachedEffectivePermissionSet;
+        }
+
+        $set = $this->resolvePermissionSet();
+
+        if ($this->isTechnicalAdmin()) {
+            foreach (self::TECHNICAL_ADMIN_PERMISSIONS as $permission) {
+                $set[$permission] = true;
+            }
+
+            foreach (self::OPERATIONAL_MUTATION_PERMISSIONS as $permission) {
+                unset($set[$permission]);
+            }
+        }
+
+        $this->cachedEffectivePermissionSet = $set;
+
+        return $this->cachedEffectivePermissionSet;
     }
 
     public function hasRole(string $role): bool
@@ -193,7 +286,7 @@ class User extends Authenticatable
             return false;
         }
 
-        $set = $this->resolvePermissionSet();
+        $set = $this->resolveEffectivePermissionSet();
 
         if (isset($set[$permission])) {
             return true;
@@ -226,6 +319,11 @@ class User extends Authenticatable
         return $this->hasRole('admin');
     }
 
+    public function isTechnicalAdmin(): bool
+    {
+        return $this->isAdmin();
+    }
+
     public function isDirector(): bool
     {
         if (! $this->exists) {
@@ -241,7 +339,25 @@ class User extends Authenticatable
             return false;
         }
 
-        return $this->hasAnyRole(['admin', 'director']);
+        return $this->hasAnyRole(['director', 'direccion']);
+    }
+
+    public function canAccessClosure(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->canAccessDirectionPanel() && $this->hasPermission('trabajos.ver');
+    }
+
+    public function canAccessAdminPanel(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasPermission('admin.panel.ver');
     }
 
     public function isExecution(): bool
@@ -286,7 +402,79 @@ class User extends Authenticatable
             return false;
         }
 
-        return $this->isAdmin() || $this->hasPermission('soporte.gestionar');
+        return $this->hasPermission('soporte.gestionar');
+    }
+
+    public function canManageUsers(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasAnyPermission([
+            'usuarios.ver',
+            'usuarios.crear',
+            'usuarios.editar',
+            'usuarios.gestionar',
+        ]);
+    }
+
+    public function canManageMaintenance(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasPermission('mantenimiento.gestionar');
+    }
+
+    public function canManageNotices(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasPermission('avisos.gestionar');
+    }
+
+    public function canViewAudit(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasPermission('auditoria.ver');
+    }
+
+    public function canManageImports(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasAnyPermission([
+            'importaciones.ver',
+            'importaciones.ejecutar',
+            'importaciones.confirmar',
+        ]);
+    }
+
+    public function canViewOperationalData(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasAnyPermission(self::OPERATIONAL_READ_PERMISSIONS);
+    }
+
+    public function canMutateOperationalData(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->hasAnyPermission(self::OPERATIONAL_MUTATION_PERMISSIONS);
     }
 
     public function getIsAdminAttribute(): bool
@@ -305,11 +493,10 @@ class User extends Authenticatable
 
     public function getPermissionSlugsAttribute(): array
     {
-        return $this->permissions()
-            ->pluck('permisos.slug')
-            ->map(fn(string $slug): string => $slug)
-            ->values()
-            ->all();
+        $slugs = array_keys($this->resolveEffectivePermissionSet());
+        sort($slugs);
+
+        return $slugs;
     }
 
     public function getAccessibleContextIds(): array

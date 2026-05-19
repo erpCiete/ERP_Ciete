@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import { useI18n } from '@/i18n';
 import { Head, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -11,6 +12,7 @@ const FLOW_STEPS = [
     'revision_finalizacion',
     'finalizado',
 ];
+const PAGE_SIZE = 10;
 
 const statusOrder = {
     pendiente: 0,
@@ -194,6 +196,7 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
     const [selectedIds, setSelectedIds] = useState([]);
     const [activeWorkId, setActiveWorkId] = useState(null);
     const [exportFormat, setExportFormat] = useState('csv');
+    const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
         setWorks(initialWorks);
@@ -223,6 +226,17 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
         if (statusFilter === 'todos') return scopedWorks;
         return scopedWorks.filter((work) => resolveClosureStatus(work) === statusFilter);
     }, [scopedWorks, statusFilter]);
+
+    const totalVisible = visibleWorks.length;
+    const lastPage = Math.max(1, Math.ceil(totalVisible / PAGE_SIZE));
+    const effectivePage = Math.min(currentPage, lastPage);
+    const from = totalVisible === 0 ? 0 : (effectivePage - 1) * PAGE_SIZE + 1;
+    const to = totalVisible === 0 ? 0 : Math.min(effectivePage * PAGE_SIZE, totalVisible);
+
+    const paginatedVisibleWorks = useMemo(() => {
+        const start = (effectivePage - 1) * PAGE_SIZE;
+        return visibleWorks.slice(start, start + PAGE_SIZE);
+    }, [visibleWorks, effectivePage]);
 
     const selectedWorks = useMemo(
         () => works.filter((work) => selectedIds.includes(work.id)),
@@ -285,8 +299,18 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
         return items.filter((item) => item.count > 0);
     }, [scopedWorks, t]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [contextFilter, statusFilter, search]);
+
+    useEffect(() => {
+        if (currentPage > lastPage) {
+            setCurrentPage(lastPage);
+        }
+    }, [currentPage, lastPage]);
+
     const allVisibleSelected =
-        visibleWorks.length > 0 && visibleWorks.every((work) => selectedIds.includes(work.id));
+        paginatedVisibleWorks.length > 0 && paginatedVisibleWorks.every((work) => selectedIds.includes(work.id));
 
     const canMassClose =
         selectedWorks.length > 0 &&
@@ -316,14 +340,14 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
     const handleSelectAllVisible = () => {
         if (allVisibleSelected) {
             setSelectedIds((current) =>
-                current.filter((id) => !visibleWorks.some((work) => work.id === id)),
+                current.filter((id) => !paginatedVisibleWorks.some((work) => work.id === id)),
             );
             return;
         }
 
         setSelectedIds((current) => {
             const next = new Set(current);
-            visibleWorks.forEach((work) => next.add(work.id));
+            paginatedVisibleWorks.forEach((work) => next.add(work.id));
             return [...next];
         });
     };
@@ -671,12 +695,12 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                     </div>
 
                     <div className="space-y-2 p-3 md:hidden">
-                        {visibleWorks.length === 0 ? (
+                        {paginatedVisibleWorks.length === 0 ? (
                             <div className="rounded-lg border border-border bg-surface-2 px-3 py-6 text-center text-sm text-text-hint">
                                 {t('closureDashboard.main.empty')}
                             </div>
                         ) : (
-                            visibleWorks.map((work) => {
+                            paginatedVisibleWorks.map((work) => {
                                 const closureStatus = resolveClosureStatus(work);
 
                                 return (
@@ -780,14 +804,14 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {visibleWorks.length === 0 ? (
+                                {paginatedVisibleWorks.length === 0 ? (
                                     <tr>
                                         <td colSpan={15} className="px-4 py-10 text-center text-sm text-text-hint">
                                             {t('closureDashboard.main.empty')}
                                         </td>
                                     </tr>
                                 ) : (
-                                    visibleWorks.map((work) => {
+                                    paginatedVisibleWorks.map((work) => {
                                         const closureStatus = resolveClosureStatus(work);
 
                                         return (
@@ -859,6 +883,13 @@ export default function ClosureDashboard({ works: initialWorks = [], contexts = 
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    <div className="border-t border-border px-4 py-3">
+                        <PaginationControls
+                            pagination={{ current_page: effectivePage, last_page: lastPage, total: totalVisible, from, to }}
+                            onPageChange={(p) => setCurrentPage(p)}
+                        />
                     </div>
                 </section>
 

@@ -30,7 +30,7 @@ class ValidSpanishPostalCode implements ValidationRule
         if (! self::passes($value)) {
             $fail(app()->isLocale('en')
                 ? 'Enter a valid Spanish postal code.'
-                : 'Introduce un codigo postal espanol valido.');
+                : 'Introduce un código postal español válido.');
         }
     }
 }

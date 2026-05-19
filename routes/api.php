@@ -37,11 +37,13 @@ Route::prefix('v1')->middleware('web')->group(function () {
 
     Route::middleware('auth')->group(function () {
         // API de Trabajos (Obras)
-        Route::get('trabajos', [TrabajoApiController::class, 'index'])->name('api.trabajos.index')->middleware('permission:trabajos.ver');
-        Route::get('trabajos/{trabajo}', [TrabajoApiController::class, 'show'])->name('api.trabajos.show')->middleware('permission:trabajos.ver');
-        Route::post('trabajos', [TrabajoApiController::class, 'store'])->name('api.trabajos.store')->middleware('permission:trabajos.crear');
-        Route::match(['put', 'patch'], 'trabajos/{trabajo}', [TrabajoApiController::class, 'update'])->name('api.trabajos.update')->middleware('permission:trabajos.editar');
-        Route::delete('trabajos/{trabajo}', [TrabajoApiController::class, 'destroy'])->name('api.trabajos.destroy')->middleware('permission:trabajos.eliminar');
+        Route::middleware('forbid_role:contable')->group(function () {
+            Route::get('trabajos', [TrabajoApiController::class, 'index'])->name('api.trabajos.index')->middleware('permission:trabajos.ver');
+            Route::get('trabajos/{trabajo}', [TrabajoApiController::class, 'show'])->name('api.trabajos.show')->middleware('permission:trabajos.ver');
+            Route::post('trabajos', [TrabajoApiController::class, 'store'])->name('api.trabajos.store')->middleware('permission:trabajos.crear');
+            Route::match(['put', 'patch'], 'trabajos/{trabajo}', [TrabajoApiController::class, 'update'])->name('api.trabajos.update')->middleware('permission:trabajos.editar');
+            Route::delete('trabajos/{trabajo}', [TrabajoApiController::class, 'destroy'])->name('api.trabajos.destroy')->middleware('permission:trabajos.eliminar');
+        });
 
         // API de Pedidos
         Route::get('pedidos', [PedidoController::class, 'index'])->middleware('permission:pedidos.ver');

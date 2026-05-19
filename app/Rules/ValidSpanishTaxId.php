@@ -101,6 +101,6 @@ class ValidSpanishTaxId implements ValidationRule
     {
         return app()->isLocale('en')
             ? 'Enter a valid Spanish tax ID (NIF, NIE, or CIF).'
-            : 'Introduce un identificador fiscal espanol valido (NIF, NIE o CIF).';
+            : 'Introduce un identificador fiscal español válido (NIF, NIE o CIF).';
     }
 }

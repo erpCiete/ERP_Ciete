@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\ContextoCliente;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
+use App\Models\Pedido;
+use App\Models\TipoDocumento;
+use App\Models\TipoTrabajo;
 use App\Models\Trabajo;
 use App\Models\User;
-use App\Support\ContextGuard;
 use App\Support\TrabajoPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Vite;
@@ -140,7 +142,8 @@ class TrabajoTest extends TestCase
         $this->actingAs($gestorMoeve)
             ->get('/trabajos/crear')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) =>
+            ->assertInertia(
+                fn(Assert $page) =>
                 $page->component('Trabajos/Form')
                     ->has('clientContexts')
                     ->has('contratos')
@@ -162,7 +165,8 @@ class TrabajoTest extends TestCase
         $this->actingAs($gestorMoeve)
             ->get('/trabajos')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) =>
+            ->assertInertia(
+                fn(Assert $page) =>
                 $page->component('Trabajos/Index')
                     ->has('creationCatalogs.estaciones', 1)
             );
@@ -351,6 +355,176 @@ class TrabajoTest extends TestCase
         ]);
     }
 
+    public function test_patch_field_updates_station_fk_from_excel_selector()
+    {
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
+        $estacionInicial = EstacionServicio::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+        ]);
+        $estacionNueva = EstacionServicio::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+            'codigo_estacion' => 'MOE-FK-02',
+            'nombre' => 'Estacion selector',
+        ]);
+        $trabajo = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+            'id_estacion_servicio' => $estacionInicial->id_estacion_servicio,
+            'estado' => 'en_curso',
+        ]);
+
+        $response = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajo), [
+            'campo' => 'id_estacion_servicio',
+            'valor' => $estacionNueva->id_estacion_servicio,
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'campo' => 'id_estacion_servicio',
+                'valor' => $estacionNueva->id_estacion_servicio,
+            ]);
+
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'id_estacion_servicio' => $estacionNueva->id_estacion_servicio,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'tabla' => 'trabajos',
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'id_estacion_servicio',
+            'accion' => 'actualizar',
+        ]);
+    }
+
+    public function test_patch_field_reassigns_selected_pedido_to_trabajo_with_context_guard()
+    {
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
+        $trabajoOrigen = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+        ]);
+        $trabajoDestino = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+        ]);
+        $pedido = Pedido::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_trabajo' => $trabajoOrigen->id_trabajo,
+            'numero_pedido' => 'PED-SEL-001',
+        ]);
+
+        $response = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajoDestino), [
+            'campo' => 'id_pedido_principal',
+            'valor' => $pedido->id_pedido,
+            'updated_at' => $trabajoDestino->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'campo' => 'id_pedido_principal',
+                'valor' => $pedido->id_pedido,
+            ]);
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $pedido->id_pedido,
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_trabajo' => $trabajoDestino->id_trabajo,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'tabla' => 'pedidos',
+            'registro_id' => $pedido->id_pedido,
+            'campo' => 'id_trabajo',
+            'accion' => 'actualizar',
+        ]);
+    }
+
+    public function test_patch_field_rejects_pedido_from_another_context()
+    {
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $empresaMoeve = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
+        $empresaRepsol = Empresa::factory()->create(['id_contexto' => $this->ctxRepsol->id_contexto]);
+        $trabajoMoeve = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresaMoeve->id_empresa,
+        ]);
+        $trabajoRepsol = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxRepsol->id_contexto,
+            'id_empresa_cliente' => $empresaRepsol->id_empresa,
+        ]);
+        $pedidoRepsol = Pedido::factory()->create([
+            'id_contexto' => $this->ctxRepsol->id_contexto,
+            'id_trabajo' => $trabajoRepsol->id_trabajo,
+            'numero_pedido' => 'PED-REPSOL-001',
+        ]);
+
+        $response = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajoMoeve), [
+            'campo' => 'id_pedido_principal',
+            'valor' => $pedidoRepsol->id_pedido,
+            'updated_at' => $trabajoMoeve->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response->assertUnprocessable();
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $pedidoRepsol->id_pedido,
+            'id_contexto' => $this->ctxRepsol->id_contexto,
+            'id_trabajo' => $trabajoRepsol->id_trabajo,
+        ]);
+    }
+
+    public function test_patch_field_updates_repsol_work_type_from_catalog()
+    {
+        $gestorRepsol = $this->createUserWithContext('ejecucion_repsol', $this->ctxRepsol);
+        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxRepsol->id_contexto]);
+        $tipoDocumento = TipoDocumento::create([
+            'id_contexto' => $this->ctxRepsol->id_contexto,
+            'codigo' => 'REP-DOC',
+            'nombre' => 'Documento REPSOL',
+            'activo' => true,
+        ]);
+        $tipoTrabajo = TipoTrabajo::create([
+            'id_contexto' => $this->ctxRepsol->id_contexto,
+            'id_tipo_documento' => $tipoDocumento->id_tipo_documento,
+            'codigo' => 'REP-TIP',
+            'nombre' => 'Tipo REPSOL',
+            'activo' => true,
+        ]);
+        $trabajo = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxRepsol->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+            'id_tipo_documento' => $tipoDocumento->id_tipo_documento,
+        ]);
+
+        $response = $this->actingAs($gestorRepsol)->patchJson(route('trabajos.patch-field', $trabajo), [
+            'campo' => 'id_tipo_trabajo',
+            'valor' => $tipoTrabajo->id_tipo_trabajo,
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'success' => true,
+                'campo' => 'id_tipo_trabajo',
+                'valor' => $tipoTrabajo->id_tipo_trabajo,
+            ]);
+
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'id_tipo_documento' => $tipoDocumento->id_tipo_documento,
+            'id_tipo_trabajo' => $tipoTrabajo->id_tipo_trabajo,
+        ]);
+    }
+
     public function test_patch_field_returns_conflict_when_updated_at_is_stale()
     {
         $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
@@ -383,7 +557,7 @@ class TrabajoTest extends TestCase
             ]);
     }
 
-    public function test_all_context_can_patch_existing_allowed_job_but_cannot_open_create_form()
+    public function test_legacy_all_session_is_normalized_to_real_context_for_web_forms()
     {
         $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
         DB::table('usuario_contextos')->insert([
@@ -394,34 +568,18 @@ class TrabajoTest extends TestCase
             'created_at' => now(),
         ]);
 
-        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxRepsol->id_contexto]);
-        $trabajo = Trabajo::factory()->create([
-            'id_contexto' => $this->ctxRepsol->id_contexto,
-            'id_empresa_cliente' => $empresa->id_empresa,
-            'fecha_terminacion' => null,
-        ]);
-
         $session = [User::ACTIVE_CONTEXT_SESSION_KEY => User::ACTIVE_CONTEXT_ALL];
 
         $this->actingAs($gestorMoeve)
             ->withSession($session)
-            ->patchJson(route('trabajos.patch-field', $trabajo), [
-                'campo' => 'fecha_terminacion',
-                'valor' => '2026-05-03',
-                'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
-            ])
-            ->assertOk()
-            ->assertJson([
-                'success' => true,
-                'campo' => 'fecha_terminacion',
-                'valor' => '2026-05-03',
-            ]);
-
-        $this->actingAs($gestorMoeve)
-            ->withSession($session)
             ->get('/trabajos/crear')
-            ->assertRedirect(route('trabajos.index'))
-            ->assertSessionHas('warning', ContextGuard::CREATE_FROM_ALL_MESSAGE);
+            ->assertOk()
+            ->assertInertia(
+                fn(Assert $page) => $page
+                    ->component('Trabajos/Form')
+                    ->where('auth.user.active_context.is_all', false)
+                    ->where('auth.user.active_context.value', $this->ctxMoeve->id_contexto)
+            );
     }
 
     public function test_normal_user_cannot_update_finalized_job_even_when_closed_flag_is_false()
@@ -461,9 +619,9 @@ class TrabajoTest extends TestCase
         $this->assertTrue(TrabajoPermission::isClosed($trabajoFinalizado));
     }
 
-    public function test_admin_can_update_finalized_job()
+    public function test_director_can_update_finalized_job()
     {
-        $adminRepsol = $this->createUserWithContext('admin', $this->ctxRepsol);
+        $directorRepsol = $this->createUserWithContext('director', $this->ctxRepsol);
 
         $empresaRepsol = Empresa::factory()->create(['id_contexto' => $this->ctxRepsol->id_contexto]);
         $trabajoCerrado = Trabajo::factory()->create([
@@ -472,8 +630,8 @@ class TrabajoTest extends TestCase
             'estado' => 'finalizado',
         ]);
 
-        $response = $this->actingAs($adminRepsol)->put("/trabajos/{$trabajoCerrado->id_trabajo}", [
-            'descripcion_trabajo' => 'Modificación autorizada por admin',
+        $response = $this->actingAs($directorRepsol)->put("/trabajos/{$trabajoCerrado->id_trabajo}", [
+            'descripcion_trabajo' => 'Modificación autorizada por dirección',
             'estado' => 'finalizado',
         ]);
 
@@ -481,13 +639,13 @@ class TrabajoTest extends TestCase
         $response->assertRedirect(route('trabajos.index'));
         $this->assertDatabaseHas('trabajos', [
             'id_trabajo' => $trabajoCerrado->id_trabajo,
-            'descripcion_trabajo' => 'Modificación autorizada por admin',
+            'descripcion_trabajo' => 'Modificación autorizada por dirección',
         ]);
     }
 
-    public function test_destroy_cancels_work_without_physical_delete_and_logs_audit()
+    public function test_director_destroy_cancels_work_without_physical_delete_and_logs_audit()
     {
-        $gestorMoeve = $this->createUserWithContext('admin', $this->ctxMoeve);
+        $directorMoeve = $this->createUserWithContext('director', $this->ctxMoeve);
         $empresaMoeve = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
         $trabajo = Trabajo::factory()->create([
             'id_contexto' => $this->ctxMoeve->id_contexto,
@@ -495,7 +653,7 @@ class TrabajoTest extends TestCase
             'estado' => 'en_curso',
         ]);
 
-        $this->actingAs($gestorMoeve)
+        $this->actingAs($directorMoeve)
             ->deleteJson(route('api.trabajos.destroy', $trabajo))
             ->assertOk()
             ->assertJsonPath('trabajo.estado', 'cancelado');

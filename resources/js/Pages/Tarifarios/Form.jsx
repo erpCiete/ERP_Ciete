@@ -3,7 +3,7 @@ import InputError from '@/Components/InputError';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function TarifarioForm({ tarifario = null, contratos = [] }) {
+export default function TarifarioForm({ tarifario = null, contratos = [], activeContext = null }) {
     const isEditing = Boolean(tarifario);
     const { data, setData, post, put, processing, errors } = useForm({
         id_contrato: tarifario?.id_contrato ?? '',
@@ -41,12 +41,40 @@ export default function TarifarioForm({ tarifario = null, contratos = [] }) {
                 />
 
                 <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-5">
+                    <div className="mb-5 rounded-lg border border-border bg-surface-2 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-hint">Contexto activo</p>
+                        <p className="mt-1 text-sm font-semibold text-text-main">
+                            {activeContext?.nombre ?? 'Contexto no disponible'}
+                        </p>
+                        <p className="mt-1 text-sm text-text-muted">
+                            El tarifario solo puede enlazarse a contratos activos de este contexto.
+                        </p>
+                    </div>
+
+                    {contratos.length === 0 && (
+                        <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                            <p className="text-sm font-medium text-amber-800">
+                                No hay contratos activos para crear un tarifario en este contexto.
+                            </p>
+                            <p className="mt-1 text-sm text-amber-700">
+                                Crea o activa primero el contrato maestro. Sin contrato no hay cascada contrato - tarifario - lineas.
+                            </p>
+                            <Link
+                                href={route('maestros.contratos.index')}
+                                className="mt-3 inline-flex rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-amber-800 transition hover:bg-amber-100"
+                            >
+                                Abrir contratos
+                            </Link>
+                        </div>
+                    )}
+
                     <div className="grid gap-4 md:grid-cols-2">
                         <label className="block md:col-span-2">
                             <span className="text-sm font-semibold text-text-main">Contrato</span>
                             <select
                                 value={data.id_contrato}
                                 onChange={(event) => setData('id_contrato', event.target.value)}
+                                disabled={contratos.length === 0}
                                 className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
                             >
                                 <option value="">Selecciona contrato</option>

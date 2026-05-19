@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class AuditAccessMiddleware
 {
     /**
-     * Keep audit access enforced in backend for admin, direction, or explicit audit permission.
+     * Keep audit access enforced by explicit capability, without role bypass.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -19,7 +19,7 @@ class AuditAccessMiddleware
             abort(401);
         }
 
-        if (! ($user->hasAnyRole(['admin', 'director']) || $user->hasPermission('auditoria.ver'))) {
+        if (! $user->canViewAudit()) {
             abort(403, 'No tienes permisos suficientes para acceder al módulo de auditoría.');
         }
 

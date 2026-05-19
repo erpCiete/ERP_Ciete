@@ -43,16 +43,14 @@ class PedidoController extends Controller
         'observaciones',
     ];
 
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     /**
      * Listado paginado de pedidos con filtros por trabajo, estado y contexto.
      */
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->integer('per_page', 10), 1), 100);
         $search = trim((string) $request->input('search', ''));
         $estado = trim((string) $request->input('estado', ''));
         $trabajoId = $request->integer('id_trabajo');
@@ -180,7 +178,7 @@ class PedidoController extends Controller
 
             $blockedItems = $itemSyncSummary['blocked'] ?? [];
             $message = $blockedItems === []
-                ? 'Operacion exitosa'
+                ? 'Operación exitosa'
                 : 'Pedido actualizado. No se eliminaron las lineas ya vinculadas a factura.';
             $meta = $blockedItems === [] ? [] : ['items_bloqueados' => $blockedItems];
 
@@ -275,13 +273,13 @@ class PedidoController extends Controller
 
         $sentIds = collect($items)
             ->pluck('id_pedido_item')
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->map(fn ($id) => (int) $id)
+            ->filter(fn($id) => $id !== null && $id !== '')
+            ->map(fn($id) => (int) $id)
             ->unique()
             ->values();
 
         $unknownIds = $sentIds
-            ->reject(fn (int $id) => $existingItems->has($id))
+            ->reject(fn(int $id) => $existingItems->has($id))
             ->values();
 
         if ($unknownIds->isNotEmpty()) {
@@ -338,6 +336,9 @@ class PedidoController extends Controller
     {
         $cantidad = isset($itemData['cantidad']) ? (float) $itemData['cantidad'] : 1.0;
         $precioUnitario = isset($itemData['precio_unitario']) ? (float) $itemData['precio_unitario'] : 0.0;
+        $totalLinea = isset($itemData['total_linea'])
+            ? (float) $itemData['total_linea']
+            : ($cantidad * $precioUnitario);
 
         $item->id_contexto = $pedido->id_contexto;
         $item->id_pedido = $pedido->id_pedido;
@@ -345,9 +346,9 @@ class PedidoController extends Controller
         $item->codigo_servicio = $itemData['codigo_servicio'] ?? null;
         $item->numero_tarifa = $itemData['numero_tarifa'] ?? null;
         $item->descripcion_servicio = $itemData['descripcion_servicio'] ?? null;
-        $item->cantidad = $cantidad;
-        $item->precio_unitario = $precioUnitario;
-        $item->total_linea = $itemData['total_linea'] ?? ($cantidad * $precioUnitario);
+        $item->setAttribute('cantidad', number_format($cantidad, 3, '.', ''));
+        $item->setAttribute('precio_unitario', number_format($precioUnitario, 2, '.', ''));
+        $item->setAttribute('total_linea', number_format($totalLinea, 2, '.', ''));
     }
 
     private function loadPedidoRelations(Pedido $pedido): Pedido

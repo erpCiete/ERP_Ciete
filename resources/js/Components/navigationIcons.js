@@ -38,6 +38,7 @@ const ICON_BY_KEY = {
     'nav.imports': Activity,
     'nav.masterData': Database,
     'nav.audit': FileClock,
+    'nav.activityLog': FileClock,
     'nav.adminUsers': Users,
     'nav.legalizations': FileText,
     'nav.reports': BarChart3,
@@ -47,6 +48,7 @@ const ICON_BY_KEY = {
     'nav.messages': MessageSquare,
     'nav.support': LifeBuoy,
     'nav.status': Activity,
+    'nav.systemStatus': Activity,
     'common.actions.logOut': LogOut,
     'nav.login': LogIn,
 };

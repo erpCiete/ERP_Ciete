@@ -2,8 +2,10 @@
 
 > **Documento vivo.**  
 > Este documento es el backlog maestro vigente de tareas restantes del ERP CIETE.  
-> Fuente funcional principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`  
-> Última auditoría: **2026-05-07**, ERP al **86,2%**, Excel MOEVE/REPSOL actualizados importados en local/demo y gobierno mínimo de Maestros cerrado.  
+> Fuente funcional principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`  
+> Traducción operativa vigente: `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`  
+> Síntesis interpretativa secundaria: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`  
+> Última auditoría: **2026-05-17**, auditoría de alineación funcional basada en reunión/transcripción; avance operativo estimado mantenido en **86,2%** hasta cerrar la primera ola correctiva.  
 > Responsable funcional: Pablo Sevillano.  
 > Uso del documento: backlog maestro de fase actual.  
 > No usar como contrato técnico detallado ni como memoria histórica.
@@ -17,6 +19,32 @@ Este documento debe actualizarse al cerrar cada P0/P1 relevante.
 Cada tarea cerrada debe moverse a la sección "Tareas cerradas" con una nota breve de qué se hizo y qué archivos principales se tocaron.
 
 No se deben añadir tareas nuevas sin indicar prioridad, área, criterio de aceptación y motivo.
+
+## 0a. Orden de autoridad funcional vigente
+
+1. `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`
+2. `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`
+3. `docs/02_CLIENTE/tareasComparar.md`
+4. `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md` como síntesis interpretativa secundaria.
+5. Notas históricas de reuniones anteriores con CIETE.
+6. Excel reales de MOEVE/REPSOL.
+7. Base de datos actual y código existente.
+8. Propuestas técnicas previas.
+
+Si una interpretación técnica entra en conflicto con la reunión/transcripción, prevalece la reunión salvo que quede documentado como duda pendiente de decisión.
+
+## 0b. Auditoría de alineación funcional 2026-05-17
+
+Documento asociado:
+
+- `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`
+
+Resultado ejecutivo:
+
+- El modelo vivo sigue siendo compatible con gran parte de lo pedido por CIETE; el eje funcional correcto sigue siendo trabajo -> pedidos/item -> facturas.
+- El principal desfase no es rehacer estructura por defecto, sino cerrar huecos entre reunión y operativa real en cuatro frentes: gobierno de maestros, validaciones compartidas, flujo UI en cascada y reconciliación/importación segura.
+- El síntoma visible actual más representativo es la lista vacía de Sociedad/CIF: el modelo ya soporta la regla funcional, pero cuando falta maestro o pivot la UI no siempre explica causa y corrección.
+- La primera ola priorizada queda fijada en: auditoría de completitud de maestros por contexto, diagnósticos accionables en operativa y cascadas funcionales en trabajos/pedidos/tarifarios/facturas.
 
 ## 1. Estado general del ERP
 
@@ -43,20 +71,33 @@ Los grandes pendientes son:
 - Depurar con CIETE las filas con aviso/ignoradas de los Excel reales, especialmente trabajos con importe sin número de pedido y facturas MOEVE históricas no enlazadas a `factura_items`.
 - Preparar carga/gobierno de datos reales de OTROS CLIENTES si aparece fuente propia.
 - Completar datos maestros reales en el nuevo panel: contratos, sociedades facturadoras, tarifarios, líneas, usuarios y roles.
+- Extender a trabajos, pedidos y tarifarios el patrón de diagnóstico funcional cuando falte maestro o haya combinación inválida de contexto/contrato/tarifa.
+- Aplicar de forma controlada la matriz A.3 de `admin técnico` sobre la base local actual/post-importación, resincronizando `roles/permisos/rol_permisos/usuario_roles` sin tocar datos operativos y reauditando `admin@ciete.es`, `cesar@ciete.es` y `contable@ciete.es`.
+
+## 2.2 Primera ola priorizada tras la auditoría 2026-05-17
+
+Orden recomendado:
+
+1. **P1-13 — Alineación funcional reunión -> ERP -> backlog.** Cerrada con matriz y backlog actualizado.
+2. **P1-14 — Auditoría de completitud de maestros por contexto.** Cerrada sobre muestra local/demo; repetición real bloqueada por fuente Excel no disponible.
+3. **P1-15 — Diagnóstico accionable de maestro faltante y listas vacías en operativa.** En curso con primer bloque funcional implementado sobre testing/muestra controlada.
+4. **P1-16 — Cascadas funcionales en trabajos, pedidos y tarifarios.** En curso con primer bloque de cascadas implementado sobre testing/muestra controlada.
+
+Motivo: antes de endurecer más reglas o tocar BBDD, hay que garantizar que el ERP explica al usuario por qué no puede operar, que los maestros realmente existen por contexto y que los formularios no permiten combinaciones que contradigan el flujo hablado con CIETE. La repetición P1-14 sobre base real post-importación sigue pendiente por falta de Excel en la ruta esperada, pero no bloquea el primer bloque práctico P1-15/P1-16 orientado al flujo diario sobre muestra controlada.
 
 ## 2. Porcentaje de avance actual
 
-| Área | Peso | Avance interno | Ponderado |
-|---|---:|---:|---:|
-| BD/modelo negocio | 20% | 83% | 16,6 |
-| Contextos/roles/permisos | 15% | 93% | 14,0 |
-| Trabajos/estaciones | 15% | 88% | 13,2 |
-| Pedidos/ítems | 10% | 80% | 8,0 |
-| Facturación | 15% | 85% | 12,8 |
-| Ciete Excel/Moderno | 10% | 82% | 8,2 |
-| Auditoría | 5% | 90% | 4,5 |
-| Documentación | 5% | 87% | 4,4 |
-| Rendimiento/seguridad/legacy | 5% | 90% | 4,5 |
+| Área                         | Peso | Avance interno | Ponderado |
+| ---------------------------- | ---: | -------------: | --------: |
+| BD/modelo negocio            |  20% |            83% |      16,6 |
+| Contextos/roles/permisos     |  15% |            93% |      14,0 |
+| Trabajos/estaciones          |  15% |            88% |      13,2 |
+| Pedidos/ítems                |  10% |            80% |       8,0 |
+| Facturación                  |  15% |            85% |      12,8 |
+| Ciete Excel/Moderno          |  10% |            82% |       8,2 |
+| Auditoría                    |   5% |            90% |       4,5 |
+| Documentación                |   5% |            87% |       4,4 |
+| Rendimiento/seguridad/legacy |   5% |            90% |       4,5 |
 
 **Total actual estimado:** 86,2%.
 
@@ -180,9 +221,9 @@ CIETE confirmó que una factura agrupa ítems siempre bajo contrato/tarifa compa
 
 **Archivos principales modificados:**
 
-- `database/migrations/2026_05_05_000130_create_contrato_empresas_facturadoras.php` *(nuevo)*
-- `app/Models/ContratoEmpresaFacturadora.php` *(nuevo)*
-- `database/seeders/ContratoEmpresasFacturadorasSeeder.php` *(nuevo)*
+- `database/migrations/2026_05_05_000130_create_contrato_empresas_facturadoras.php` _(nuevo)_
+- `app/Models/ContratoEmpresaFacturadora.php` _(nuevo)_
+- `database/seeders/ContratoEmpresasFacturadorasSeeder.php` _(nuevo)_
 - `app/Models/Contrato.php`
 - `app/Models/Empresa.php`
 - `app/Http/Controllers/Api/FacturaController.php`
@@ -544,11 +585,190 @@ Quedan alias de compatibilidad para permisos legacy hasta limpiar roles reales e
 
 ## 4. P1 - Necesario antes de demo/entrega seria
 
+### P1-13 - Alineación funcional integral basada en reunión/transcripción
+
+**Estado:** cerrada con auditoría y matriz  
+**Área:** documentación viva / backlog / gobierno funcional  
+**Prioridad:** P1
+
+**Motivo:**
+
+La documentación viva seguía sobredimensionando el papel de la síntesis de decisiones anterior. Desde la auditoría 2026-05-17 se fija que la reunión/transcripción es la autoridad funcional principal y que cualquier síntesis documental queda subordinada como interpretación operativa secundaria.
+
+**Qué se hizo:**
+
+- Crear matriz de alineación funcional por módulo en `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`.
+- Actualizar el backlog maestro con el nuevo orden de autoridad funcional.
+- Alinear `docs/README.md`, `docs/BIBLIA_DESARROLLO.md`, `docs/02_CLIENTE/README.md` y la cabecera de `DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md` para que no contradigan la reunión.
+
+**Criterio de aceptación:**
+
+- La reunión/transcripción queda declarada como fuente funcional principal en la documentación viva y backlog.
+- Existe una matriz reunión -> ERP actual -> gaps -> primera corrección por módulo.
+- El backlog maestro refleja la primera ola derivada de esa auditoría.
+
+### P1-14 - Auditoría de completitud de maestros por contexto
+
+**Estado:** cerrada sobre muestra local/demo; repetición sobre base post-importación real bloqueada por dry-run sin Excel  
+**Área:** maestros / contextos / contratos / sociedades / estaciones / OTROS CLIENTES  
+**Prioridad:** P1
+
+**Motivo:**
+
+Antes de endurecer formularios y validaciones hay que saber exactamente qué falta en el dato maestro real por contexto: contratos activos sin sociedad/CIF permitida, empresas activas sin CIF, contextos sin tarifarios operativos, estaciones incompletas, tipos insuficientes y viabilidad real de OTROS CLIENTES.
+
+**Criterio de aceptación:**
+
+- Existe un gap report por contexto con conteos y ejemplos de contratos activos sin sociedad permitida.
+- Se listan empresas activas sin CIF y maestros críticos incompletos.
+- Se identifica si el bloqueo está en dato maestro, validación, permisos, flujo UI o importación.
+- OTROS CLIENTES queda clasificado como listo, incompleto o bloqueado por dato real.
+
+**Evidencia especifica 2026-05-17:**
+
+- Informe emitido en `docs/02_CLIENTE/AUDITORIA_COMPLETITUD_MAESTROS_P1-14_2026-05-17.md`.
+- Resultado real de la muestra local `abaco_ciete`:
+    - MOEVE: 2/2 contratos activos bloqueados para facturar por sociedades activas sin CIF valido.
+    - REPSOL: 1/1 contrato activo bloqueado por ausencia de pivot contrato-sociedad facturadora.
+    - OTROS CLIENTES: clasificado como listo en dato maestro base para `Trabajo -> Pedido -> Factura`.
+- Contratos, tarifarios, lineas, unidades, estaciones y tipos quedan completos en la muestra auditada; el gap dominante es `contrato_empresas_facturadoras + CIF`.
+- Validaciones ejecutadas: consultas read-only via bootstrap Laravel, revisión de `routes/web.php`, `FacturaController`, `StoreTrabajoRequest`, `StorePedidoRequest`, `StoreFacturaRequest` y comprobación de drift `trabajos.activo` en la BD local.
+
+**Reconciliacion P1-12 vs P1-14 2026-05-18:**
+
+- Comprobacion solo lectura sobre `APP_ENV=local`, `DB_CONNECTION=mysql`, `DB_DATABASE=abaco_ciete`: 3 contextos, 50 trabajos, 40 pedidos, 40 `pedido_items`, 18 facturas, 20 `factura_items` y 0 importaciones registradas.
+- El desglose actual por contexto coincide con la muestra de P1-14: MOEVE 20 trabajos/17 pedidos/17 `pedido_items`, REPSOL 20/17/17 y OTROS CLIENTES 10/6/6.
+- Estos datos no coinciden con P1-12 post-importación real: 11.614 trabajos, 9.685 pedidos, 9.701 `pedido_items`, 2.733 facturas, 9.194 `factura_items` y 11 importaciones registradas.
+- Conclusión: P1-14 auditó una base local/demo reducida, no la base post-importación real. Su diagnóstico funcional se conserva como válido para esa muestra, pero sus números no deben usarse como verdad final de negocio hasta repetir la auditoría sobre la base post-importación real.
+
+**Intento de repeticion real 2026-05-18:**
+
+- Informe de bloqueo emitido en `docs/02_CLIENTE/AUDITORIA_COMPLETITUD_MAESTROS_P1-14_REAL_POST_IMPORTACION_2026-05-18.md`.
+- Entorno validado antes del reset: `APP_ENV=local`, `DB_CONNECTION=mysql`, `DB_DATABASE=abaco_ciete`; backup local creado en `database/backups/abaco_ciete_demo_reducida_pre_p1_14_real_20260518_002707.sql`.
+- Se ejecutó `migrate:fresh --seed`; el dry-run de `ciete:import-excels-actualizados --path=excelsactualizados --dry-run` devolvió `filas_con_error=1` y `No se encontraron Excel .xlsx para importar`.
+- No se ejecutó `--commit`; la base local final queda sembrada pero no post-importación real: 3 contextos, 0 trabajos, 0 pedidos, 0 `pedido_items`, 0 facturas, 0 `factura_items` y 0 importaciones.
+- P1-14 real post-importación queda pendiente hasta restaurar/ubicar los Excel reales o cargar una base local que coincida con P1-12. No bloquea el trabajo práctico P1-15/P1-16 sobre muestra controlada orientado al flujo diario. No se sube porcentaje global.
+
+### P1-15 - Diagnostico accionable de maestro faltante y listas vacias en operativa
+
+**Estado:** en curso con primer bloque funcional implementado  
+**Área:** facturas / maestros / UX operativa  
+**Prioridad:** P1
+
+**Motivo:**
+
+CIETE necesita que un listado vacio explique que maestro falta y como corregirlo. El caso visible actual es Sociedad/CIF en facturas, pero el mismo patron debe cubrir trabajos, pedidos y tarifarios cuando falten estaciones, trabajos, contratos o combinaciones permitidas.
+
+**Qué ya esta arrancado:**
+
+- Diagnostico visible en `Maestros/Index` para contratos activos sin sociedad facturadora valida y empresas activas sin CIF.
+- Mensajes accionables en facturas moderno/Excel cuando no hay sociedades disponibles para el contrato/contexto seleccionado.
+- Primer bloque practico: diagnosticos accionables en trabajos cuando faltan estaciones/contratos/tipos, diagnosticos en pedidos cuando no hay trabajos o lineas de tarifa, mensaje de items/sociedad en facturas y avisos de contratos en tarifarios.
+- Subtarea vinculada (P1-15A/P1-16A): correccion de navegacion inicial y cierre de acceso por rol (todos entran por Inicio comun, `contable` sin acceso a `Trabajos`, bloqueo por menu+ruta+test y paridad Moderno/Excel).
+- Ampliación transversal de acceso (P1-15B): validación de permisos y navegación extendida desde Trabajos a todas las pantallas ERP (admin, dirección, maestros, auditoría, soporte, mensajes, clientes, estaciones, pedidos, facturas, importaciones), con matriz global por pantalla y salida funcional de 403 con botón a Inicio.
+
+**Ejecución local 2026-05-18 (flujo diario controlado):**
+
+- Backup previo obligatorio creado: `database/backups/abaco_ciete_pre_muestra_flujo_diario_20260518_092239.sql`.
+- Muestra local cargada desde `database/manual/2026_05_18_insert_muestra_flujo_diario_controlado.sql`.
+- Cobertura cargada en `abaco_ciete`: 14 trabajos, 9 pedidos, 10 `pedido_items`, 4 facturas, 4 `factura_items`.
+- Casos controlados activos: MOEVE correcto y con contrato sin sociedad/CIF valida; REPSOL correcto y con contrato/sociedad no valida; OTROS correcto; terminado sin factura; pedido sin factura; factura parcial (`P-FD26-REP-001` total 2000 vs facturado 1200).
+
+**Archivos tocados en el primer bloque:**
+
+- `resources/js/Pages/Trabajos/Form.jsx`
+- `resources/js/Pages/Pedidos/Form.jsx`
+- `resources/js/Pages/Facturas/Form.jsx`
+- `resources/js/Pages/Tarifarios/Form.jsx`
+- `resources/js/Components/ui/ItemsTable.jsx`
+- `app/Http/Controllers/MaestroController.php`
+- `app/Http/Controllers/TarifarioController.php`
+- `app/Http/Requests/Api/StorePedidoRequest.php`
+- `app/Http/Requests/Api/UpdatePedidoRequest.php`
+- `routes/web.php`
+
+**Validaciones ejecutadas en el primer bloque:**
+
+- `php -l app/Http/Controllers/MaestroController.php`
+- `php -l app/Http/Controllers/TarifarioController.php`
+- `php -l app/Http/Requests/Api/StorePedidoRequest.php`
+- `php -l app/Http/Requests/Api/UpdatePedidoRequest.php`
+- `php artisan route:list`
+- `php artisan test --filter=TrabajoTest`
+- `php artisan test --filter=PedidoTest`
+- `php artisan test --filter=FacturaTest`
+- `php artisan test --filter=MaestrosTest`
+- `npm run build`
+
+**Nota de validación:**
+
+- `route:list` y `npm run build` en verde.
+- `php -l` en verde para `MaestroController`, `TarifarioController`, `StorePedidoRequest`, `UpdatePedidoRequest`.
+- Tests filtrados ejecutados con PHP XAMPP (`TrabajoTest`, `PedidoTest`, `FacturaTest`, `MaestrosTest`) con fallo técnico de entorno de testing en `abaco_ciete_testing` (tablas de migración/constraints en estado inconsistente), no atribuible a un error funcional puntual del bloque cargado en `abaco_ciete`.
+- Checklist manual diaria pendiente de validación en UI con Cesar sobre la muestra local cargada.
+- No se sube porcentaje global en este punto.
+
+**Criterio de aceptación:**
+
+- Un usuario nunca se queda con un selector vacio sin explicacion funcional.
+- La pantalla indica si falta pivot contrato-sociedad, CIF, contexto o maestro activo.
+- Existe acceso directo al módulo maestro que corrige el problema cuando el usuario tenga permiso.
+- El patron se replica al menos en trabajos, pedidos y tarifarios si el bloqueo es equivalente.
+
+### P1-16 - Cascadas funcionales en trabajos, pedidos y tarifarios
+
+**Estado:** en curso con primer bloque de cascadas implementado  
+**Área:** trabajos / pedidos / tarifarios / validación frontend-backend  
+**Prioridad:** P1
+
+**Motivo:**
+
+La reunion deja claro que el eje del ERP es el trabajo y que pedido/factura pueden llegar en momentos distintos, pero siempre dentro de contexto, contrato/tarifa y estaciones bien separadas. Hoy todavia existen formularios que permiten combinaciones poco guiadas o insuficientemente explicadas.
+
+**Criterio de aceptación:**
+
+- Trabajos obliga y limpia correctamente `Contexto -> Estacion/Contrato/Tipos`.
+- Pedidos obliga y limpia correctamente `Contexto -> Trabajo -> lineas/tarifa`.
+- Tarifarios obliga y limpia correctamente `Contexto -> Contrato -> Tarifario`.
+- Cambiar un nivel superior limpia los inferiores incompatibles y lo explica.
+- El backend rechaza igualmente combinaciones cruzadas aunque fallen los filtros de UI.
+
+**Primer bloque implementado:**
+
+- Trabajos explica la falta de estaciones, contratos MOEVE y catalogos REPSOL antes de bloquear al usuario.
+- Pedidos filtra lineas de tarifa por contexto/trabajo/contrato o tarifario y limpia items al cambiar contexto o trabajo.
+- Items de pedido seleccionan línea tarifaria y rellenan código, descripción y precio.
+- Facturas filtra items por trabajo seleccionado y limpia items/sociedad al cambiar trabajo.
+- Tarifarios muestra contexto activo y diagnostica ausencia de contratos activos.
+- Backend de pedidos rechaza lineas tarifarias de otro contexto, contrato o tarifario.
+- Backend de pedidos ahora exige `id_tarifario_linea` cuando existen lineas aplicables para el trabajo; la entrada manual queda solo para casos sin lineas disponibles.
+  `ItemsTable` bloquea edición manual de descripción/precio cuando hay líneas tarifarias operativas y guía a seleccionar línea.
+
+**Validación manual pendiente:**
+
+- Trabajos MOEVE: crear/editar, avisos de contrato/estacion y rechazo de combinaciones absurdas.
+- Trabajos REPSOL: tipos documento/tipos trabajo y aviso claro si falta catalogo.
+- Pedidos: elegir trabajo, comprobar filtro de líneas, cambiar trabajo y verificar limpieza de items, seleccionar tarifa y validar código/descripción/precio.
+- Facturas: elegir trabajo, comprobar filtro de items, cambiar trabajo y verificar limpieza de items/sociedad, revisar mensaje de sociedad/CIF.
+- Tarifarios: revisar contexto activo y aviso sin contratos activos.
+- Maestros: revisar diagnosticos de estaciones, contratos, tarifas/lineas y catalogos.
+
+**Seguimiento de cierre del bloque (2026-05-18):**
+
+- Estado: en curso / parcialmente cerrado en local para P1-15 y P1-16.
+- Muestra local de flujo diario cargada y util para pruebas operativas.
+- Validación automática parcial (lint/rutas/build ok; tests bloqueados por entorno `abaco_ciete_testing`).
+- Checklist funcional manual aun pendiente de cierre final en UI.
+
+**Nota de prioridad vigente:**
+
+La prioridad actual es flujo diario funcional en local. Exportaciones, XLSX/PDF, dashboards e importación masiva quedan fuera de esta fase inmediata.
+
 ### P1-03 - Pulir vista moderna de trabajos para no arrastrar estados legacy
 
 **Estado:** cerrada con evidencia específica  
 **Área:** Ciete Moderno  
-**Auditoría específica 2026-05-06:**  
+**Auditoría específica 2026-05-06:**
 
 - `Trabajos/Form.jsx` crea con `estado = en_curso` por defecto y el backend refuerza ese default en `StoreTrabajoRequest` y `TrabajoController::prepareTrabajoStateData()`.
 - `Trabajos/Form.jsx`, `Trabajos/Index.jsx` y `TrabajosExcelView.jsx` solo ofrecen estados vivos: `en_curso`, `terminado`, `pendiente_facturar`, `facturado`, `finalizado` y `cancelado`.
@@ -561,50 +781,358 @@ La vista moderna de trabajos ya no empuja al usuario a usar estados legacy, mant
 
 ## 5. P2 - Posterior, no bloqueante
 
-| ID | Tarea | Motivo |
-|---|---|---|
+| ID    | Tarea                                     | Motivo                                                                                                                                                     |
+| ----- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P2-01 | Importación Excel avanzada / UI de avisos | La carga real MOEVE/REPSOL queda validada por P1-12; queda automatizar detalle de errores, reintentos parciales y decisiones funcionales por columna/fila. |
-| P2-02 | Legalizaciones completas | Módulo posterior; no debe bloquear cierre operativo actual. |
-| P2-03 | Presupuestos/hoja de pedido | Fuera de alcance inmediato confirmado. |
-| P2-04 | Cobros | Otro departamento; el ERP CIETE termina en factura. |
-| P2-05 | Actualización automática de estaciones | Riesgo operativo alto; primero mantener maestro manual estable. |
-| P2-06 | Costes/imputación avanzada | No pertenece al flujo principal actual. |
-| P2-07 | Limpieza profunda de legacy no crítico | Solo para módulos no activos, documentación histórica o snapshots SQL antiguos que no alimentan el flujo vivo. |
+| P2-02 | Legalizaciones completas                  | Módulo posterior; no debe bloquear cierre operativo actual.                                                                                                |
+| P2-03 | Presupuestos/hoja de pedido               | Fuera de alcance inmediato confirmado.                                                                                                                     |
+| P2-04 | Cobros                                    | Otro departamento; el ERP CIETE termina en factura.                                                                                                        |
+| P2-05 | Actualización automática de estaciones    | Riesgo operativo alto; primero mantener maestro manual estable.                                                                                            |
+| P2-06 | Costes/imputación avanzada                | No pertenece al flujo principal actual.                                                                                                                    |
+| P2-07 | Limpieza profunda de legacy no crítico    | Solo para módulos no activos, documentación histórica o snapshots SQL antiguos que no alimentan el flujo vivo.                                             |
 
 ## 6. P3 - Futuro o mejoras
 
-| ID | Mejora | Motivo |
-|---|---|---|
-| P3-01 | Dashboards ejecutivos avanzados | Explotación posterior de datos ya consolidados. |
-| P3-02 | Estadísticas históricas | Valor analítico cuando haya datos estables. |
-| P3-03 | Automatizaciones | Reducir trabajo manual tras cerrar flujo base. |
-| P3-04 | Integraciones externas | Fase futura, no necesaria para demo. |
-| P3-05 | Virtualización avanzada de tablas | Solo si los listados crecen mucho. |
-| P3-06 | Exportaciones complejas | Posterior al listado plano y detalle individual. |
+| ID    | Mejora                            | Motivo                                           |
+| ----- | --------------------------------- | ------------------------------------------------ |
+| P3-01 | Dashboards ejecutivos avanzados   | Explotación posterior de datos ya consolidados.  |
+| P3-02 | Estadísticas históricas           | Valor analítico cuando haya datos estables.      |
+| P3-03 | Automatizaciones                  | Reducir trabajo manual tras cerrar flujo base.   |
+| P3-04 | Integraciones externas            | Fase futura, no necesaria para demo.             |
+| P3-05 | Virtualización avanzada de tablas | Solo si los listados crecen mucho.               |
+| P3-06 | Exportaciones complejas           | Posterior al listado plano y detalle individual. |
 
 ## 7. Legacy identificado
 
-| Legacy | Qué es | Qué hacemos ahora | Qué haremos después |
-|---|---|---|---|
-| `facturas.id_trabajo` | Cabecera antigua factura-trabajo | Mantener solo como campo derivado/auxiliar para filtros y ordenación; no es relación funcional ni fallback de exportación | Retirar cuando las vistas/importaciones ya no necesiten cabecera derivada |
-| `factura_pedidos` | Pivote antiguo factura-pedido | Eliminado del esquema demo y del flujo vivo por P1-11 | No reintroducir; usar siempre `factura_items` |
-| `borrador` | Estado antiguo | Eliminado de trabajos/pedidos vivos, seeders y UI; solo queda en migraciones correctivas y tests negativos que lo rechazan | No reintroducir |
-| `cerrado` | Cierre antiguo | Eliminado como estado vivo de trabajos/pedidos y de exportaciones; solo queda en migraciones correctivas, tests negativos y textos históricos/P2 | No reintroducir; usar `finalizado` |
-| `trabajos.cerrado`, `fecha_cierre`, `id_usuario_cierre` | Cierre antiguo de trabajos | Columnas retiradas del esquema demo y de la lógica viva por P1-11 | No reintroducir salvo migración histórica expresamente justificada |
-| Estados factura tipo `cobrada`, `vencida`, `cobrada_parcial` | Cobro fuera de alcance | No exponer | Revisar si futuro incluye cobros |
-| `cobros` | Módulo posterior | Ocultar flujo crítico | Fase futura |
-| `presupuestos` | Módulo posterior con columnas/estados propios todavía antiguos | Fuera alcance inmediato; no forma parte del flujo vivo cerrado por P1-11 | Fase futura/P2 antes de activar presupuestos |
-| `legalizaciones` | Módulo posterior | No bloquear demo | Fase futura |
-| `CEPSA` | Nombre histórico | Solo queda como referencia explicativa/documental; demo y flujo vivo usan MOEVE | Mapear si aparece en Excel real de entrada |
-| `OTRO` | Código interno antiguo de OTROS CLIENTES | Normalizado a `OTROS` en seeders/factories demo; `ContextGuard` sigue resolviendo por nombre/código de forma robusta | Mantener `OTROS CLIENTES` como nombre visible |
-| `obras/proyectos` | Nombres antiguos | Mantener históricos | Usar trabajos en vivo |
+| Legacy                                                       | Qué es                                                         | Qué hacemos ahora                                                                                                                                | Qué haremos después                                                       |
+| ------------------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| `facturas.id_trabajo`                                        | Cabecera antigua factura-trabajo                               | Mantener solo como campo derivado/auxiliar para filtros y ordenación; no es relación funcional ni fallback de exportación                        | Retirar cuando las vistas/importaciones ya no necesiten cabecera derivada |
+| `factura_pedidos`                                            | Pivote antiguo factura-pedido                                  | Eliminado del esquema demo y del flujo vivo por P1-11                                                                                            | No reintroducir; usar siempre `factura_items`                             |
+| `borrador`                                                   | Estado antiguo                                                 | Eliminado de trabajos/pedidos vivos, seeders y UI; solo queda en migraciones correctivas y tests negativos que lo rechazan                       | No reintroducir                                                           |
+| `cerrado`                                                    | Cierre antiguo                                                 | Eliminado como estado vivo de trabajos/pedidos y de exportaciones; solo queda en migraciones correctivas, tests negativos y textos históricos/P2 | No reintroducir; usar `finalizado`                                        |
+| `trabajos.cerrado`, `fecha_cierre`, `id_usuario_cierre`      | Cierre antiguo de trabajos                                     | Columnas retiradas del esquema demo y de la lógica viva por P1-11                                                                                | No reintroducir salvo migración histórica expresamente justificada        |
+| Estados factura tipo `cobrada`, `vencida`, `cobrada_parcial` | Cobro fuera de alcance                                         | No exponer                                                                                                                                       | Revisar si futuro incluye cobros                                          |
+| `cobros`                                                     | Módulo posterior                                               | Ocultar flujo crítico                                                                                                                            | Fase futura                                                               |
+| `presupuestos`                                               | Módulo posterior con columnas/estados propios todavía antiguos | Fuera alcance inmediato; no forma parte del flujo vivo cerrado por P1-11                                                                         | Fase futura/P2 antes de activar presupuestos                              |
+| `legalizaciones`                                             | Módulo posterior                                               | No bloquear demo                                                                                                                                 | Fase futura                                                               |
+| `CEPSA`                                                      | Nombre histórico                                               | Solo queda como referencia explicativa/documental; demo y flujo vivo usan MOEVE                                                                  | Mapear si aparece en Excel real de entrada                                |
+| `OTRO`                                                       | Código interno antiguo de OTROS CLIENTES                       | Normalizado a `OTROS` en seeders/factories demo; `ContextGuard` sigue resolviendo por nombre/código de forma robusta                             | Mantener `OTROS CLIENTES` como nombre visible                             |
+| `obras/proyectos`                                            | Nombres antiguos                                               | Mantener históricos                                                                                                                              | Usar trabajos en vivo                                                     |
 
 ## 8. Tareas cerradas
+
+### /ayuda — Segmentación en 3 categorías funcionales (Admin / Dirección-Cierre / Resto)
+
+**Estado:** cerrada
+**Área:** frontend / UX / visibilidad por perfil
+**Fecha:** 2026-05-19
+
+**Qué se hizo:**
+
+- Eliminado el modelo de 5 categorías de audiencia (`admin`, `direccion`, `ejecucion`, `contable`, `todos`) y sustituido por 3 categorías funcionales claras: `HELP_CAT_ADMIN = 'admin'`, `HELP_CAT_DIRECCION = 'direccion'`, `HELP_CAT_RESTO = 'resto'`.
+- Añadida función `getHelpCategory(user)` que normaliza `auth.user` a una única categoría: Admin si `can_access_admin_panel` o slug `admin`; Dirección si `is_director`, `can_access_direction_panel` o slugs `director`/`direccion`; Resto en cualquier otro caso (ejecución, contable, etc.).
+- `SECTION_AUDIENCE` actualizado: valores `'ejecucion'` y `'contable'` reemplazados por `'resto'`; `audit` corregida a `['admin','direccion']` (eliminado `'contable'` que no estaba validado funcionalmente).
+- Lógica de `visibleSections` simplificada: Admin hace cortocircuito devolviendo todas las secciones; el resto filtra por `allowed.includes(category)`.
+- Fila de 4 badges independientes eliminada y sustituida por un banner de categoría: un único `RoleBadge` + texto explicativo del alcance del manual, situado entre el bloque de título y el buscador.
+- Sección `roles` ES reescrita: elimina "El ERP tiene seis roles" y los bullet points con "Ejección" (typo); introduce 3 subsecciones con prop `body` para Admin, Dirección/Cierre y Resto de usuarios.
+- Sección `roles` EN actualizada con la misma estructura de 3 categorías (Admin, Direction/Closure, General users).
+- Build `npm run build` validado sin errores (2.04s).
+
+**Archivos tocados:**
+
+- `resources/js/Pages/Help.jsx`
+
+---
+
+### /ayuda — Segmentación por roles reales del ERP
+
+**Estado:** cerrada
+**Área:** frontend / UX / visibilidad por rol
+**Fecha:** 2026-05-19
+
+**Qué se hizo:**
+
+- Inspección completa de `auth.user` en `HandleInertiaRequests`: confirmados flags `can_access_admin_panel`, `is_director`, `can_access_direction_panel`, `is_execution`, `is_execution_moeve`, `is_execution_repsol`, `is_accounting`, `can_view_audit`, `can_manage_imports`, `can_access_closure`.
+- Revisión de `sidebar.js` para confirmar qué pantallas ve realmente cada rol (ejecución sí ve facturas; maestros solo dirección; cierre solo dirección; importaciones solo admin).
+- Añadido `SECTION_AUDIENCE` — mapa de visibilidad por sección (keyed por `section.id`) con categorías: `'admin'`, `'direccion'`, `'ejecucion'`, `'contable'`, `'todos'`.
+- Secciones restringidas: `maestros` → `['admin','direccion']`; `closure` → `['admin','direccion']`; `admin` → `['admin']`; `audit` → `['admin','direccion','contable']`; `imports` → `['admin']`. El resto: `todos`.
+- Reescrito `export default function Help()`: se calcula `userAudiences` desde los flags reales de `auth.user`. Admin recibe todas las categorías. No-admin recibe solo las que corresponden a su rol.
+- Añadido paso `visibleSections` antes de la búsqueda. El buscador opera exclusivamente sobre secciones visibles al usuario — no quedan anclas ni resultados de búsqueda sobre contenido no permitido.
+- Badges de rol actualizados: Admin, Dirección, Ejecución, Contabilidad (no más badge genérico "Usuario" para roles reconocidos).
+- Build `npm run build` ejecutado y validado sin errores (1.78s, 2991 módulos).
+
+**Archivos tocados:**
+
+- `resources/js/Pages/Help.jsx`
+
+---
+
+### /ayuda — Reconstrucción completa de la página de ayuda
+
+**Estado:** cerrada
+**Área:** frontend / documentación operativa / UX
+**Fecha:** 2026-05-28
+
+**Qué se hizo:**
+
+- Auditoría completa de módulos reales confirmados en código (Trabajos, Pedidos, Facturas, Tarifarios, Contratos, Maestros, Cierre, Mensajes, Soporte, Admin, Auditoría, Importaciones, Estaciones, Clientes, SociedadesFacturadoras).
+- Nueva sección `daily_flow` (flujo diario recomendado) añadida en ES y EN.
+- Nueva sección `tarifarios` (tarifarios y contratos, cascada contrato→tarifario→líneas) en ES y EN.
+- Nueva sección `maestros` (diagnóstico funcional, panel de alertas, antes de crear) en ES.
+- Nueva sección `states_diagnostics` (estados de trabajos, facturas, tickets de soporte; diagnóstico de Maestros; cascada tarifaria; limpieza automática en facturas) en ES y EN.
+- Sección `errors` renombrada a `best_practices` con contenido actualizado en ES y EN.
+- Sección `roles` actualizada con los 6 roles reales: Administrador, Ejecución, Ejecución MOEVE, Ejecución REPSOL, Dirección, Contabilidad.
+- Sección `works` actualizada con los 6 estados reales del trabajo.
+- Sección `orders` actualizada: subsección tarifario y cascada explicando filteredTarifarioLineas.
+- Sección `invoices` actualizada: warnings sobre cambio de trabajo (handleTrabajoChange).
+- Sección `support` actualizada: estados de ticket, cuándo usar soporte.
+- Sección `faq` reescrita con 9 preguntas prácticas por módulo y rol en ES; 8 en EN.
+- Build `npm run build` ejecutado y validado sin errores.
+
+**Archivos tocados:**
+
+- `resources/js/Pages/Help.jsx`
+
+---
+
+### Fase A.3 - Reajuste del administrador técnico y separación de responsabilidades
+
+**Estado:** cerrada en código, seeders, UX y tests; pendiente solo resincronización controlada de datos persistidos locales
+**Área:** permisos / rutas / navegación / administración técnica
+
+**Qué se cerró:**
+
+- `admin` deja de comportarse como superusuario funcional y pasa a ser un administrador técnico.
+- Se crean/usan capacidades técnicas explícitas para panel admin, soporte, auditoría, mantenimiento, avisos e importaciones.
+- `dashboard` y `cierre` quedan exclusivos de dirección.
+- La navegacion deja de inferir privilegios desde `is_admin` y pasa a flags compartidos de Inertia.
+- El panel admin se reorienta a soporte técnico: usuarios, soporte, auditoría, mantenimiento, avisos, importaciones y estado del sistema.
+- La sidebar del admin técnico queda limpia y deja de mezclar dirección, datos operativos y acciones que no le corresponden.
+- La lectura operativa principal pasa a modo solo lectura visible: se ocultan acciones de editar/cancelar cuando no existe permiso efectivo y se muestra aviso de soporte técnico.
+- `Estado del sistema` se rehace en doble capa: diagnóstico técnico rico para admin y resumen útil no sensible para el resto.
+- Se separa visualmente `Auditoría técnica` de `Registro de actividad operativa` en navegación y encabezados.
+- El runtime blinda al rol `admin` frente a slugs legacy de mutacion operativa y le inyecta las capacidades tecnicas efectivas aunque la base local antigua aun no este resincronizada.
+- Se añade cobertura automática específica para frontera admin técnico, mutación operativa, mantenimiento, avisos, importaciones y paridad Excel/Moderno.
+- Se corrige un defecto real en importaciones para MariaDB: ya no se reutiliza una query paginada dentro de un `IN` subquery.
+
+**Archivos principales tocados:**
+
+- `database/seeders/RolesSeeder.php`
+- `database/seeders/PermisosSeeder.php`
+- `database/seeders/RolPermisosSeeder.php`
+- `app/Models/User.php`
+- `app/Http/Middleware/HandleInertiaRequests.php`
+- `app/Http/Middleware/CheckMaintenanceMode.php`
+- `app/Http/Middleware/AuditAccessMiddleware.php`
+- `app/Http/Controllers/Admin/DashboardController.php`
+- `app/Http/Controllers/Admin/UserController.php`
+- `app/Http/Controllers/MaintenanceController.php`
+- `app/Http/Controllers/MessageController.php`
+- `app/Http/Controllers/StatusController.php`
+- `app/Http/Controllers/ImportacionController.php`
+- `routes/web.php`
+- `resources/js/Components/OperationalReadOnlyNotice.jsx`
+- `resources/js/navigation/sidebar.js`
+- `resources/js/Pages/Admin/Dashboard.jsx`
+- `resources/js/Pages/Admin/Users/Index.jsx`
+- `resources/js/Pages/Admin/Users/Form.jsx`
+- `resources/js/Pages/AuditLog/Index.jsx`
+- `resources/js/Pages/Dashboard.jsx`
+- `resources/js/Pages/Messages/Index.jsx`
+- `resources/js/Pages/Status.jsx`
+- `resources/js/Pages/Trabajos/Index.jsx`
+- `resources/js/Components/ui/TrabajosExcelView.jsx`
+- `resources/js/Pages/Pedidos/Index.jsx`
+- `resources/js/Pages/Facturas/Index.jsx`
+- `resources/js/Pages/Clientes/Index.jsx`
+- `resources/js/Pages/Estaciones/Index.jsx`
+- `tests/Feature/AdminAccessTest.php`
+- `tests/Feature/AdminDashboardTest.php`
+- `tests/Feature/AdminTechnicalMutationTest.php`
+- `tests/Feature/MaintenanceModeTest.php`
+- `tests/Feature/InternalCommunicationTest.php`
+- `tests/Feature/ImportacionesAccessTest.php`
+- `tests/Feature/ExcelModeAccessTest.php`
+- `tests/Feature/RoleModuleAccessTest.php`
+- `docs/02_CLIENTE/MATRIZ_ADMIN_TECNICO_ERP_CIETE_2026-05-18.md`
+
+**Validaciones ejecutadas:**
+
+- `npm run build`
+- `php artisan test --filter="AdminAccessTest|RoleModuleAccessTest|PermissionRoutesTest|MaintenanceModeTest|InternalCommunicationTest|ImportacionesAccessTest|ExcelModeAccessTest|ContextCreationGuardTest|AdminTechnicalMutationTest|AdminDashboardTest"`
+
+**Riesgo residual:**
+
+- La base local actual auditada en modo read-only no refleja todavía por completo la matriz A.3 en tablas persistidas. El admin técnico ya queda alineado en runtime por código, pero sigue pendiente una resincronización controlada de permisos/roles para dejar consistentes también dirección/contable y la persistencia local, sin tocar datos operativos.
+
+### Fase A.5 - Corrección de fallos residuales, archivos en rojo y barrido global previo a Fase B
+
+**Estado:** cerrada con validación completa en local  
+**Área:** requests API / validación técnica / documentación viva / suite final
+
+**Qué se cerró:**
+
+- Se revisaron los `FormRequest` API marcados en rojo en VS Code y se confirmó que el problema era de tipado estático, no de sintaxis.
+- `BaseApiRequest` añade `currentUser(): ?User` y se sustituyen accesos genéricos en `StoreFacturaRequest`, `UpdateFacturaRequest`, `StorePedidoRequest` y `UpdatePedidoRequest`, dejando esos archivos sin errores de editor.
+- `FacturaController` y `PedidoController` se ajustan para eliminar falsos positivos de tipado y mantener mensajes visibles consistentes.
+- `TrabajoTest` se realinea con la matriz A.3: los casos positivos sobre trabajos finalizados pasan a dirección y la frontera de `admin técnico` queda preservada en `AdminTechnicalMutationTest`.
+- Se completa el barrido global de residuos de depuración; no quedan `console.log`, `debugger`, `dd`, `dump`, `var_dump` ni `print_r` activos en archivos vivos del flujo actual.
+- Se corrigen restos de texto visible sin tildes en documentación viva, exportaciones CSV, validaciones API y vistas React.
+
+**Validaciones ejecutadas:**
+
+- `php -l` sobre rutas, requests, reglas, servicios y controladores tocados en A.5: PASS.
+- `TrabajoTest`, `AdminTechnicalMutationTest`, `RoleModuleAccessTest`, `PermissionRoutesTest`, `ContextCreationGuardTest`, `AdminAccessTest`, `FacturaTest` y `PedidoTest`: PASS.
+- Ajustes adicionales descubiertos durante la validación (`FacturaExportTest`, `MaestrosTest`, `ExcelImportTest` y `ClientesEstacionesApiTest`): PASS.
+- `npm run build`: PASS.
+- `php artisan test`: PASS (`95` tests, `411` assertions).
+
+**Riesgo residual:**
+
+- No queda KO técnico abierto en código/tests del bloque A.5. Se mantiene como deuda separada la resincronización controlada de permisos/roles persistidos de la base local ya registrada en A.3.
+
+### Fase A.6 - Revisión de `jsconfig` y normalización de campos numéricos previa a Fase B
+
+**Estado:** implementada y validada en el slice afectado  
+**Área:** frontend React / formularios operativos / alias editor VS Code
+
+**Qué se cerró:**
+
+- `jsconfig.json` mantiene `baseUrl` porque el proyecto sigue usando masivamente alias `@/*` y `ziggy-js`; se añade `ignoreDeprecations: "6.0"` para eliminar el aviso de VS Code sin romper resolución de imports.
+- La auditoría numérica confirma como **texto** y no como `number` los identificadores operativos y fiscales: `numero_pedido`, `numero_factura`, `numero_factura_ccp`, `numero_trabajo_operativo`, `numero_aviso`, `codigo_estacion`, `codigo_postal`, `cif` y teléfonos.
+- `numero_trabajo` se normaliza como **entero real en payload** en los dos flujos de alta revisados: formulario manual de trabajos y alta rápida Ciete Excel.
+- `cantidad` en líneas de pedido vuelve a **entero operativo** (`step=1` en UI y validación entera en request) porque la evidencia real auditada no justifica decimales por defecto: los seeders reales usan `1.000` y las líneas tarifarias reales revisadas llegan con `id_unidad = NULL`.
+- `unidades_solicitadas` vuelve a **entero operativo** (`step=1` en UI y validación entera en request) por el mismo motivo: hoy el formulario no conoce unidad/tarifa y el dato real revisado solo muestra `0.000` / `1.000`.
+- La edición inline de facturas diferencia correctamente decimal frente a entero: `total` usa precisión `0.01`, mientras `orden_factura` usa `step=1`, `min=1` y se envía como entero.
+- `factura_items.unidades_facturadas` **no** se endurece a entero: `FacturaTest` sigue cubriendo facturación parcial válida con `0.6`, `0.5`, `0.4` y `0.75`, así que ese decimal sí tiene evidencia funcional actual.
+- La revisión de clientes, estaciones, tarifarios y sociedades facturadoras no detecta necesidad de convertir códigos ni referencias visibles a tipos numéricos.
+- Matriz funcional detallada de A.6-R: `docs/02_CLIENTE/MATRIZ_TIPOS_NUMERICOS_CODIGOS_A6-R_2026-05-18.md`.
+
+**Archivos principales tocados:**
+
+- `jsconfig.json`
+- `resources/js/Pages/Trabajos/Form.jsx`
+- `resources/js/Components/ui/TrabajosExcelView.jsx`
+- `resources/js/Components/ui/ItemsTable.jsx`
+- `resources/js/Pages/Pedidos/Form.jsx`
+- `resources/js/Components/ui/PedidosExcelView.jsx`
+- `resources/js/Components/ui/FacturasExcelView.jsx`
+
+**Validaciones ejecutadas:**
+
+- `get_errors jsconfig.json`: PASS.
+- `php -l routes/web.php`: PASS.
+- `php -l routes/api.php`: PASS.
+- `npm run build`: PASS.
+- `php artisan test tests/Feature/TrabajoTest.php tests/Feature/Api/TrabajoRequestTest.php tests/Feature/PedidoTest.php tests/Feature/FacturaTest.php tests/Feature/Api/ClientesEstacionesApiTest.php tests/Feature/MaestrosTest.php tests/Feature/AdminTechnicalMutationTest.php tests/Feature/RoleModuleAccessTest.php tests/Feature/ContextCreationGuardTest.php`: PASS (`90` tests, `519` assertions).
+
+**Riesgo residual:**
+
+- La Fase A.7 cerró los fallos residuales de suite completa sin reabrir A.6-R: el portal sigue sin registro público ni confirmación pública de contraseña, `admin` mantiene frontera técnica sin acceso a `/cierre` ni a creación de estaciones, y el 404 corporativo autenticado conserva salida por `homeUrl`.
+
+### Fase A.7 - Cierre de suite completa antes de Fase B
+
+**Estado:** cerrada y validada  
+**Área:** suite completa / auth endurecida / fallback web / cierre / estaciones / error pages
+
+**Diagnóstico exacto:**
+
+- `PasswordConfirmationTest` y `RegistrationTest`: expectativa antigua; las rutas públicas siguen deshabilitadas, pero el fallback web devolvía `404` directo para invitados GET en lugar de redirigir a `/login`.
+- `ErrorPagesTest`: una aserción de `404` seguía esperando `accessDenied.backHomeLabel`, aunque esa prop solo corresponde al caso `403`; la salida clara en `404` ya existe por `homeUrl` y el copy interno de `Error.jsx`.
+- `ClosureDashboardTest`: expectativa antigua; `admin` técnico ya no puede entrar en `/cierre`, mientras `director` sí debe poder hacerlo.
+- `EstacionesTest`: expectativa antigua; `admin` técnico conserva lectura operativa, pero la creación web de estaciones corresponde a perfiles funcionales autorizados como `director`.
+
+**Corrección aplicada:**
+
+- `routes/web.php`: el `Route::fallback` ahora redirige a login solo a invitados en `GET`; para no-`GET` mantiene `404`, y para autenticados `GET` devuelve la página corporativa `Error` con `homeUrl`.
+- `tests/Feature/Auth/PasswordConfirmationTest.php`: se conserva la ausencia de ruta pública, con `GET` redirigido a `/login` y `POST` sin ruta (`405`).
+- `tests/Feature/ClosureDashboardTest.php`: se realinea la cobertura para que `admin` sea negativo y `director` positivo en `/cierre`.
+- `tests/Feature/ErrorPagesTest.php`: el `404` valida `component/status/homeUrl`; el `403` valida además `accessDenied.backHomeLabel`.
+- `tests/Feature/EstacionesTest.php`: el positivo de creación pasa a `director` y se añade negativo explícito para `admin` técnico.
+
+**Validación ejecutada:**
+
+- `tests/Feature/Auth/PasswordConfirmationTest.php`: PASS.
+- `tests/Feature/Auth/RegistrationTest.php`: PASS.
+- `tests/Feature/ClosureDashboardTest.php`: PASS.
+- `tests/Feature/ErrorPagesTest.php`: PASS.
+- `tests/Feature/EstacionesTest.php`: PASS.
+- Batería conjunta de los cinco grupos: PASS (`20` tests).
+- Suite completa `php artisan test`: PASS (`218` tests, `1286` assertions).
+- `npm run build`: PASS.
+
+**Impacto en reglas funcionales:**
+
+- No se activa registro público.
+- No se reactiva confirmación pública de contraseña.
+- No se devuelve a `admin` capacidad funcional sobre cierre o creación de estaciones.
+- Fase B ya no queda bloqueada por la suite completa.
+
+### Fase A.8 - Modularización controlada de rutas web antes de Fase B
+
+**Estado:** cerrada y validada  
+**Área:** arquitectura de rutas Laravel / mantenimiento / diagnóstico editor
+
+**Motivo:**
+
+- `routes/web.php` había crecido hasta mezclar inicio, contexto, administración, dirección, operativa, maestros, soporte, comunicaciones, importaciones, estado, fallback y closures auxiliares de facturación.
+- El archivo grande hacía más difícil auditar permisos/rutas y favorecía falsos positivos de VS Code/Intelephense por helpers dinámicos de Laravel y closures internas.
+- La fase no añade funcionalidad: solo mueve rutas conservando URLs, names, middlewares, controladores, props Inertia y lógica vigente.
+
+**Estructura nueva:**
+
+- `routes/web.php` queda como índice de carga.
+- `routes/web/public.php`: `locale.update`, `/`, perfil y ayuda.
+- `routes/web/contexto.php`: cambio de contexto activo.
+- `routes/web/operativa.php`: trabajos, pedidos, facturas y closures auxiliares de facturación.
+- `routes/web/maestros.php`: clientes, estaciones, contratos, sociedades facturadoras, tarifarios y líneas.
+- `routes/web/direccion.php`: dashboard de dirección y cierre.
+- `routes/web/admin.php`: panel admin, mantenimiento, avisos admin, usuarios, soporte admin y auditoría.
+- `routes/web/soporte.php`: soporte de usuario.
+- `routes/web/comunicaciones.php`: mensajes internos y broadcast.
+- `routes/web/importaciones.php`: vistas y acciones de importación.
+- `routes/web/estado.php`: estado del sistema.
+- `routes/web/fallback.php`: preview local/testing de errores y fallback final.
+
+**Decisiones conservadoras:**
+
+- `auth.php` se mantiene cargado desde `routes/web.php`.
+- `fallback.php` se carga al final.
+- El fallback conserva el comportamiento de A.7: invitado + GET desconocido redirige a login, autenticado + GET desconocido devuelve 404 corporativo y no-GET desconocido mantiene 404.
+- Se cambia `auth()->check()` por `Auth::check()` en `routes/web/fallback.php` para evitar el falso positivo del helper dinámico.
+- Las closures auxiliares grandes de facturación no se convierten en servicios en esta fase: se mueven junto a Facturas en `routes/web/operativa.php` para no refactorizar lógica de negocio.
+
+**Validación ejecutada:**
+
+- `php -l routes/web.php`: PASS antes y después.
+- `php -l` sobre todos los módulos `routes/web/*.php`: PASS.
+- `php artisan route:list > storage/app/route-list-before-a8.txt`.
+- `php artisan route:list > storage/app/route-list-after-a8.txt`.
+- Comparación `diff` antes/después: sin diferencias; rutas desaparecidas `0`, names cambiados `0`, salida `route:list` mantiene `137` líneas y `133` rutas mostradas.
+- Tests focalizados de fallback/auth/accesos/admin: PASS.
+- Tests focalizados de trabajos, pedidos, facturas, clientes/estaciones, maestros, cierre y estaciones: PASS.
+- Suite completa `php artisan test`: PASS (`218` tests, `1286` assertions).
+- `npm run build`: PASS; solo warning de timing del plugin `laravel`.
+
+**Diagnóstico editor:**
+
+- `routes/web.php` queda sin closures ni llamadas a helpers Laravel dinámicos; solo requiere módulos.
+- `routes/web/fallback.php` ya no usa `auth()->check()`.
+- No hay CLI de Intelephense disponible en este entorno, por lo que la confirmación se limita a revisión estática y validación PHP/tests.
+- Si quedase algún aviso residual, debería estar concentrado en closures Laravel legítimas dentro de `routes/web/operativa.php`, no en el índice `web.php`.
+
+**Impacto funcional:**
+
+- No cambian URLs públicas.
+- No cambian nombres de ruta.
+- No cambian permisos ni middlewares funcionales.
+- No cambia base de datos, seeders, importaciones, exportaciones, producción, Git/GitHub ni ramas.
+- No se hizo commit.
 
 ### Gobierno mínimo de Maestros: contratos, sociedades facturadoras y tarifarios
 
 **Estado:** cerrada con CRUD mínimo separado  
-**Área:** datos maestros / contratos / tarifarios / permisos / auditoría  
+**Área:** datos maestros / contratos / tarifarios / permisos / auditoría
 
 **Qué se cerró:**
 
@@ -668,7 +1196,7 @@ Sube `BD/modelo negocio` a **83%**, `Contextos/roles/permisos` a **93%**, `Ciete
 ### P1-12 - Importación real controlada desde Excel actualizados MOEVE / REPSOL
 
 **Estado:** cerrada con importación real controlada  
-**Área:** importaciones / datos reales / validación integral  
+**Área:** importaciones / datos reales / validación integral
 
 **Comprobación previa de entorno:**
 
@@ -687,15 +1215,15 @@ Sube `BD/modelo negocio` a **83%**, `Contextos/roles/permisos` a **93%**, `Ciete
 
 - `docs/Abaco/excelsactualizados/Mapeo_Moeve_Repsol_Envolvente.xlsx`: hoja `Hoja1`, documento auxiliar de mapeo, no importable como contexto operativo.
 - MOEVE:
-  - `01 Control de Trabajos Moeve.xlsx`: hojas `Trabajos`, `Hoja2`, `FACTURAS EMITIDAS`, `Control`, `Hoja1`.
-  - `02 Listado EESS España y Portugal 16-03-26.xlsx`: hojas `España 16-03-26`, `España 25-08-2025`, `España y Portugal 26-06-2024`, `Hoja1`, `Hoja3`.
-  - `Contrato 772 MOEVE - Tarifario.xlsx`: hoja `TARIFARIO`.
+    - `01 Control de Trabajos Moeve.xlsx`: hojas `Trabajos`, `Hoja2`, `FACTURAS EMITIDAS`, `Control`, `Hoja1`.
+    - `02 Listado EESS España y Portugal 16-03-26.xlsx`: hojas `España 16-03-26`, `España 25-08-2025`, `España y Portugal 26-06-2024`, `Hoja1`, `Hoja3`.
+    - `Contrato 772 MOEVE - Tarifario.xlsx`: hoja `TARIFARIO`.
 - REPSOL:
-  - `01 Control Trabajos DISEÑO REPSOL.xlsx`: `AUTOFACTURACION`, `ALFONSO PCN`, `Rangos`, `LISTADO EESS`, `TARIFA 23-27`.
-  - `02 Control Trabajos EDIFICACIÓN.xlsx`: `AUTOFACTURACION`, `Rangos`, `LISTADO EESS`, `TARIFA 23-27`.
-  - `03 Control Trabajos OBRAS REPSOL Z10.xlsx`: `AUTOFACTURACION REPSOL`, `OTROS`, `Rangos`, `LISTADO EESS`, `TARIFA 23-27`.
-  - `03 Control Trabajos OBRAS REPSOL Z50.xlsx`: `Rangos`, `AUTOFACTURACION`, `LISTADO EESS`, `TARIFA 23-27`, `Adjud. 2023-2027`.
-  - `05 Control Trabajos LICENCIAS REPSOL.xlsx`, `09 Control Trabajos FV REPSOL.xlsx`, `10 Control Trabajos ESTRUCTURAS Y VERTIDOS REPSOL.xlsx`, `12 Control Trabajos MTO REPSOL.xlsx`, `13 Control Trabajos PUNTOS DE RECARGA.xlsx`: hojas operativas `AUTOFACTURACION`, `LISTADO EESS`, `TARIFA 23-27` y hojas auxiliares `Rangos`/vacías según archivo.
+    - `01 Control Trabajos DISEÑO REPSOL.xlsx`: `AUTOFACTURACION`, `ALFONSO PCN`, `Rangos`, `LISTADO EESS`, `TARIFA 23-27`.
+    - `02 Control Trabajos EDIFICACIÓN.xlsx`: `AUTOFACTURACION`, `Rangos`, `LISTADO EESS`, `TARIFA 23-27`.
+    - `03 Control Trabajos OBRAS REPSOL Z10.xlsx`: `AUTOFACTURACION REPSOL`, `OTROS`, `Rangos`, `LISTADO EESS`, `TARIFA 23-27`.
+    - `03 Control Trabajos OBRAS REPSOL Z50.xlsx`: `Rangos`, `AUTOFACTURACION`, `LISTADO EESS`, `TARIFA 23-27`, `Adjud. 2023-2027`.
+    - `05 Control Trabajos LICENCIAS REPSOL.xlsx`, `09 Control Trabajos FV REPSOL.xlsx`, `10 Control Trabajos ESTRUCTURAS Y VERTIDOS REPSOL.xlsx`, `12 Control Trabajos MTO REPSOL.xlsx`, `13 Control Trabajos PUNTOS DE RECARGA.xlsx`: hojas operativas `AUTOFACTURACION`, `LISTADO EESS`, `TARIFA 23-27` y hojas auxiliares `Rangos`/vacías según archivo.
 
 **Mapeo aplicado:**
 
@@ -798,7 +1326,7 @@ Falta decisión funcional sobre las filas ignoradas/con aviso, columnas sin dest
 ### P1-11 - Limpieza estructural de legacy, reseteo demo alineado y preparación para datos reales
 
 **Estado:** cerrada con limpieza estructural  
-**Área:** base de datos / seeders / tests / legacy  
+**Área:** base de datos / seeders / tests / legacy
 
 **Comprobación previa de entorno:**
 
@@ -869,7 +1397,7 @@ La demo ya puede reconstruirse desde cero con seeders coherentes con el modelo v
 ### P1-10 - Revisión responsive final de Ciete Excel y Ciete Moderno
 
 **Estado:** cerrada  
-**Área:** frontend / layout / UX operativa  
+**Área:** frontend / layout / UX operativa
 
 **Qué se revisó:**
 
@@ -916,7 +1444,7 @@ La tarea cierra el responsive operativo de esta fase, pero sigue siendo recomend
 ### P1-09 - Revisión rendimiento tras cerrar facturación
 
 **Estado:** cerrada  
-**Área:** rendimiento / facturación / cierre  
+**Área:** rendimiento / facturación / cierre
 
 **Qué se revisó:**
 
@@ -948,7 +1476,7 @@ La exportación CSV ya trabaja por chunks, pero XLSX/PDF complejos siguen fuera 
 ### P1-08 - Exportación individual de factura con detalle
 
 **Estado:** cerrada  
-**Área:** facturas  
+**Área:** facturas
 
 **Qué se hizo:**
 
@@ -967,7 +1495,7 @@ La exportación CSV ya trabaja por chunks, pero XLSX/PDF complejos siguen fuera 
 ### P1-07 - Exportación de listado de facturas filtrado/seleccionado
 
 **Estado:** cerrada  
-**Área:** facturas  
+**Área:** facturas
 
 **Qué se hizo:**
 
@@ -1109,11 +1637,11 @@ La lógica viva del panel de cierre ya no depende de `trabajos.cerrado` para fin
 
 - Se auditó el uso real de `delete()`/`destroy` en backend, rutas, tests y frontend.
 - Las entidades principales del flujo vivo quedan consolidadas sin hard delete peligroso:
-  - trabajos: cancelar,
-  - pedidos: cancelar,
-  - facturas: anular,
-  - estaciones: desactivar,
-  - clientes/empresas: desactivar.
+    - trabajos: cancelar,
+    - pedidos: cancelar,
+    - facturas: anular,
+    - estaciones: desactivar,
+    - clientes/empresas: desactivar.
 - Se añadió auditoría explícita de desactivación para estaciones y clientes/empresas.
 - La UI deja de vender estas acciones como “Eliminar” y las nombra según el comportamiento real: cancelar, anular o desactivar.
 - La limpieza de Auditoría sigue siendo controlada por Dirección y deja rastro propio fuera de la operación eliminada.
@@ -1241,42 +1769,42 @@ No ha hecho falta crear migraciones: se reutilizan `poblacion`, `provincia`, `ac
 - La mejora cierra el módulo de estaciones en esta fase y queda integrada en la revisión responsive global ya cerrada en P1-10.
 - La actualización automática de estaciones sigue fuera de alcance y permanece en P2.
 
-| Tarea | Estado | Nota |
-|---|---|---|
-| Documentación estructural limpia | cerrado | La estructura documental viva ya está organizada. |
-| Fuente de verdad funcional creada | cerrado | `DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`. |
-| Historial de decisiones creado | cerrado | `HISTORIAL_DECISIONES_ERP_CIETE.md`. |
-| Raíz de `docs/` limpia | cerrado | Solo documentos de entrada general y carpetas. |
-| Contexto activo backend en sesión | cerrado/parcial | Base correcta; queda revisar métodos de creación contextuales. |
-| Selector/indicador de contexto | cerrado | Usuario monocontexto con indicador; multicontexto con selector. |
-| Auditoría visible para Dirección/admin | cerrado | Visible, filtrable y validada con export/limpieza operativas sin contaminar la vista por defecto con preferencias visuales nuevas. |
-| Auditoría operativa filtrable | cerrado | El filtro por defecto muestra actividad operativa real; clientes y estaciones auditados en flujo vivo, logs legacy visuales fuera de la vista operativa. |
-| Ciete Excel de trabajos | parcial avanzado | Tabla densa, columnas clave, edición por campo y nueva fila. |
-| Observaciones en modal | cerrado | Implementado en Ciete Excel de trabajos. |
-| Control optimista por campo en trabajos | cerrado/parcial | Implementado en trabajos; no extendido a todos los módulos. |
-| Filtros de estaciones por municipio/provincia/código | cerrado | La API y las vistas Ciete Excel/Ciete Moderno ya buscan y filtran por código, municipio, provincia y estado operativo con cliente/contexto visible; validado con `ClientesEstacionesApiTest` y build. |
-| P0-03 - `pedido_items` estables por ID | cerrado | `syncItems()` actualiza por `id_pedido_item`, crea nuevos y conserva facturados; archivos principales: `PedidoController`, requests/resource de pedidos, `Pedidos/Form.jsx`, `ItemsTable.jsx`; validado con `php -l`, `PedidoTest`, `route:list` y `npm.cmd run build`; sociedades permitidas quedan gobernables desde Maestros. |
-| P0-01 - Facturación real por `factura_items` | cerrado | Facturas crean/actualizan `factura_items`, conservan IDs de líneas existentes, calculan asignado/diferencia/cuadre y bloquean sobre-facturación; archivos principales: `FacturaController`, requests/resource de facturas, `Pedido`, rutas web, `Facturas/Form.jsx`, `Facturas/Index.jsx`, `FacturasExcelView.jsx`, `FacturaTest`; validado con `php -l`, `FacturaTest`, `route:list` y `npm.cmd run build`; integrado con P0-02 para sociedad/CIF permitida. |
-| P0-02 - Sociedad/CIF validada por contrato/tarifa | cerrado | Se endureció la validación por `contrato_empresas_facturadoras`: sociedad/CIF obligatoria en facturas por ítems, CIF informado, contexto correcto y pivot activa; frontend filtra sociedades/ítems compatibles; archivos principales: `FacturaController`, requests/resource de facturas, `routes/web.php`, `Facturas/Form.jsx`, `Facturas/Index.jsx`, `FacturasExcelView.jsx`, `DatabaseSeeder`, `FacturaTest`; validado con `php -l`, `migrate:status`, `route:list`, `FacturaTest` y `npm.cmd run build`; la pivot ya tiene gobierno mínimo desde Maestros y queda pendiente cargar datos reales de OTROS CLIENTES. |
-| P0-04 - Bloqueo uniforme de creación desde TODOS | cerrado | `ContextGuard` bloquea altas desde TODOS y mantiene edición de existentes si el contexto real es accesible; cubre trabajos, pedidos, facturas, estaciones, clientes e importaciones; archivos principales: `ContextGuard`, middleware Inertia, `ActiveContextController`, requests de trabajos/facturas/importaciones, formularios y `ContextCreationGuardTest`; validado con `php -l`, `route:list`, `ContextCreationGuardTest`, `TrabajoTest`, `PedidoTest`, `FacturaTest` y `npm.cmd run build`; `EstacionesTest` queda bloqueado por Excel fuente ausente, no por contexto. |
-| P0-05 - OTROS CLIENTES contexto real completo | cerrado | OTROS CLIENTES se presenta como contexto real; tras P1-11 el código demo queda normalizado a `OTROS`; puede crear cliente, estación, trabajo, pedido y factura si tiene contrato/sociedad permitida; las validaciones MOEVE/REPSOL no se aplican automáticamente a OTROS; archivos principales: `ContextGuard`, middleware Inertia, requests de trabajos/facturas, `ContextosClienteSeeder`, formularios y locales; validado con tests de contexto/factura/trabajo/pedido y build; riesgo pendiente: cargar datos maestros reales de OTROS. |
-| P0-06 - Estados reales de trabajos y eliminación de legacy visible | cerrado | Altas de trabajos en `en_curso`, requests/controlador bloquean `borrador`/`cerrado` como estados nuevos, marcado `terminado` rellena `fecha_terminacion`, `ClosureDashboardService` finaliza con `finalizado` y legalizaciones informativas; tras P1-11 los enums/seeders/demo ya no conservan esos estados ni las columnas antiguas de cierre de trabajos; archivos principales: `TrabajoController`, requests/resource/modelo de trabajos, `ClosureDashboardService`, `Trabajos/Form.jsx`, `Trabajos/Index.jsx`, `TrabajosExcelView.jsx`, `Cierre/Dashboard.jsx`, locales y tests; validado con `php -l`, `route:list`, `TrabajoTest`, `ClosureDashboardTest`, `TrabajoRequestTest`, `ContextCreationGuardTest`, `PedidoTest`, `FacturaTest`, `EstacionesTest` y `npm.cmd run build`; riesgo pendiente: solo documentación histórica o módulos P2. |
-| P0-07 - Permisos/rutas mutables y seeders | cerrado | Rutas web/API separadas por acción (`ver`, `crear`, `editar`, `eliminar/cancelar/anular`), permisos faltantes sembrados, roles funcionales alineados y hard delete mitigado en trabajos, pedidos, facturas, estaciones y clientes; tras P1-11 se eliminan alias legacy vivos en `User::hasPermission()`; archivos principales: `routes/api.php`, `routes/web.php`, `User`, `PermisosSeeder`, `RolPermisosSeeder`, controladores API, sidebar/listados Excel y `PermissionRoutesTest`; validado con `php -l`, `route:list`, tests de permisos/contexto/trabajos/pedidos/facturas/estaciones/cierre/clientes/auditoría y `npm.cmd run build`; riesgo pendiente: CRUD/gobierno de roles-permisos reales. |
-| Estabilización de validaciones recurrentes | cerrado | Se corrigió la ruta del Excel `Contrato 772 MOEVE - Tarifario.xlsx` desde la raíz antigua de `docs/` a `docs/02_CLIENTE/materiales/`; se alineó `EstacionesTest` con los permisos sembrados (`ejecucion_moeve` puede ver estaciones pero no gestionarlas) y con el usuario real `contable@ciete.es`; se validó con `php -l`, `route:list`, `EstacionesTest`, `ContextCreationGuardTest`, `TrabajoTest`, `PedidoTest`, `FacturaTest` y `npm.cmd run build` fuera del sandbox tras EPERM; archivos principales: `DemoCieteOperativaSeeder`, `ContratosBaseSeeder`, `tests/Feature/EstacionesTest.php`, `docs/02_CLIENTE/materiales/README.md`; no sube porcentaje porque estabiliza entorno/tests sin añadir funcionalidad ERP. |
-| `factura_items` creado estructuralmente | cerrado | Estructura y flujo funcional cerrados por P0-01; validación fiscal cerrada por P0-02. |
-| `interface_mode` creado estructuralmente | cerrado | Existe como preferencia UX, pero ya no genera eventos nuevos de Auditoría operativa; los logs legacy visuales quedan ocultos por defecto. |
+| Tarea                                                              | Estado           | Nota                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentación estructural limpia                                   | cerrado          | La estructura documental viva ya está organizada.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Sintesis interpretativa secundaria creada                          | cerrado          | `DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Historial de decisiones creado                                     | cerrado          | `HISTORIAL_DECISIONES_ERP_CIETE.md`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Raíz de `docs/` limpia                                             | cerrado          | Solo documentos de entrada general y carpetas.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Contexto activo backend en sesión                                  | cerrado/parcial  | Base correcta; queda revisar métodos de creación contextuales.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Selector/indicador de contexto                                     | cerrado          | Usuario monocontexto con indicador; multicontexto con selector.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Auditoría visible para Dirección/admin                             | cerrado          | Visible, filtrable y validada con export/limpieza operativas sin contaminar la vista por defecto con preferencias visuales nuevas.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Auditoría operativa filtrable                                      | cerrado          | El filtro por defecto muestra actividad operativa real; clientes y estaciones auditados en flujo vivo, logs legacy visuales fuera de la vista operativa.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Ciete Excel de trabajos                                            | parcial avanzado | Tabla densa, columnas clave, edición por campo y nueva fila.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Observaciones en modal                                             | cerrado          | Implementado en Ciete Excel de trabajos.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Control optimista por campo en trabajos                            | cerrado/parcial  | Implementado en trabajos; no extendido a todos los módulos.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Filtros de estaciones por municipio/provincia/código               | cerrado          | La API y las vistas Ciete Excel/Ciete Moderno ya buscan y filtran por código, municipio, provincia y estado operativo con cliente/contexto visible; validado con `ClientesEstacionesApiTest` y build.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| P0-03 - `pedido_items` estables por ID                             | cerrado          | `syncItems()` actualiza por `id_pedido_item`, crea nuevos y conserva facturados; archivos principales: `PedidoController`, requests/resource de pedidos, `Pedidos/Form.jsx`, `ItemsTable.jsx`; validado con `php -l`, `PedidoTest`, `route:list` y `npm.cmd run build`; sociedades permitidas quedan gobernables desde Maestros.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| P0-01 - Facturación real por `factura_items`                       | cerrado          | Facturas crean/actualizan `factura_items`, conservan IDs de líneas existentes, calculan asignado/diferencia/cuadre y bloquean sobre-facturación; archivos principales: `FacturaController`, requests/resource de facturas, `Pedido`, rutas web, `Facturas/Form.jsx`, `Facturas/Index.jsx`, `FacturasExcelView.jsx`, `FacturaTest`; validado con `php -l`, `FacturaTest`, `route:list` y `npm.cmd run build`; integrado con P0-02 para sociedad/CIF permitida.                                                                                                                                                                                                                                                                                                                                                                                        |
+| P0-02 - Sociedad/CIF validada por contrato/tarifa                  | cerrado          | Se endureció la validación por `contrato_empresas_facturadoras`: sociedad/CIF obligatoria en facturas por ítems, CIF informado, contexto correcto y pivot activa; frontend filtra sociedades/ítems compatibles; archivos principales: `FacturaController`, requests/resource de facturas, `routes/web.php`, `Facturas/Form.jsx`, `Facturas/Index.jsx`, `FacturasExcelView.jsx`, `DatabaseSeeder`, `FacturaTest`; validado con `php -l`, `migrate:status`, `route:list`, `FacturaTest` y `npm.cmd run build`; la pivot ya tiene gobierno mínimo desde Maestros y queda pendiente cargar datos reales de OTROS CLIENTES.                                                                                                                                                                                                                               |
+| P0-04 - Bloqueo uniforme de creación desde TODOS                   | cerrado          | `ContextGuard` bloquea altas desde TODOS y mantiene edición de existentes si el contexto real es accesible; cubre trabajos, pedidos, facturas, estaciones, clientes e importaciones; archivos principales: `ContextGuard`, middleware Inertia, `ActiveContextController`, requests de trabajos/facturas/importaciones, formularios y `ContextCreationGuardTest`; validado con `php -l`, `route:list`, `ContextCreationGuardTest`, `TrabajoTest`, `PedidoTest`, `FacturaTest` y `npm.cmd run build`; `EstacionesTest` queda bloqueado por Excel fuente ausente, no por contexto.                                                                                                                                                                                                                                                                      |
+| P0-05 - OTROS CLIENTES contexto real completo                      | cerrado          | OTROS CLIENTES se presenta como contexto real; tras P1-11 el código demo queda normalizado a `OTROS`; puede crear cliente, estación, trabajo, pedido y factura si tiene contrato/sociedad permitida; las validaciones MOEVE/REPSOL no se aplican automáticamente a OTROS; archivos principales: `ContextGuard`, middleware Inertia, requests de trabajos/facturas, `ContextosClienteSeeder`, formularios y locales; validado con tests de contexto/factura/trabajo/pedido y build; riesgo pendiente: cargar datos maestros reales de OTROS.                                                                                                                                                                                                                                                                                                          |
+| P0-06 - Estados reales de trabajos y eliminación de legacy visible | cerrado          | Altas de trabajos en `en_curso`, requests/controlador bloquean `borrador`/`cerrado` como estados nuevos, marcado `terminado` rellena `fecha_terminacion`, `ClosureDashboardService` finaliza con `finalizado` y legalizaciones informativas; tras P1-11 los enums/seeders/demo ya no conservan esos estados ni las columnas antiguas de cierre de trabajos; archivos principales: `TrabajoController`, requests/resource/modelo de trabajos, `ClosureDashboardService`, `Trabajos/Form.jsx`, `Trabajos/Index.jsx`, `TrabajosExcelView.jsx`, `Cierre/Dashboard.jsx`, locales y tests; validado con `php -l`, `route:list`, `TrabajoTest`, `ClosureDashboardTest`, `TrabajoRequestTest`, `ContextCreationGuardTest`, `PedidoTest`, `FacturaTest`, `EstacionesTest` y `npm.cmd run build`; riesgo pendiente: solo documentación histórica o módulos P2. |
+| P0-07 - Permisos/rutas mutables y seeders                          | cerrado          | Rutas web/API separadas por acción (`ver`, `crear`, `editar`, `eliminar/cancelar/anular`), permisos faltantes sembrados, roles funcionales alineados y hard delete mitigado en trabajos, pedidos, facturas, estaciones y clientes; tras P1-11 se eliminan alias legacy vivos en `User::hasPermission()`; archivos principales: `routes/api.php`, `routes/web.php`, `User`, `PermisosSeeder`, `RolPermisosSeeder`, controladores API, sidebar/listados Excel y `PermissionRoutesTest`; validado con `php -l`, `route:list`, tests de permisos/contexto/trabajos/pedidos/facturas/estaciones/cierre/clientes/auditoría y `npm.cmd run build`; riesgo pendiente: CRUD/gobierno de roles-permisos reales.                                                                                                                                                |
+| Estabilización de validaciones recurrentes                         | cerrado          | Se corrigió la ruta del Excel `Contrato 772 MOEVE - Tarifario.xlsx` desde la raíz antigua de `docs/` a `docs/02_CLIENTE/materiales/`; se alineó `EstacionesTest` con los permisos sembrados (`ejecucion_moeve` puede ver estaciones pero no gestionarlas) y con el usuario real `contable@ciete.es`; se validó con `php -l`, `route:list`, `EstacionesTest`, `ContextCreationGuardTest`, `TrabajoTest`, `PedidoTest`, `FacturaTest` y `npm.cmd run build` fuera del sandbox tras EPERM; archivos principales: `DemoCieteOperativaSeeder`, `ContratosBaseSeeder`, `tests/Feature/EstacionesTest.php`, `docs/02_CLIENTE/materiales/README.md`; no sube porcentaje porque estabiliza entorno/tests sin añadir funcionalidad ERP.                                                                                                                        |
+| `factura_items` creado estructuralmente                            | cerrado          | Estructura y flujo funcional cerrados por P0-01; validación fiscal cerrada por P0-02.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `interface_mode` creado estructuralmente                           | cerrado          | Existe como preferencia UX, pero ya no genera eventos nuevos de Auditoría operativa; los logs legacy visuales quedan ocultos por defecto.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## 9. Tareas descartadas o fuera de alcance
 
-| Tarea | Decisión |
-|---|---|
-| Cobros en fase actual | Fuera de alcance. El ERP CIETE termina en factura. |
-| Presupuestos en fase actual | Fuera de alcance inmediato. |
-| Legalizaciones completas en fase actual | No bloquear flujo crítico. |
+| Tarea                                                  | Decisión                                                                                                 |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Cobros en fase actual                                  | Fuera de alcance. El ERP CIETE termina en factura.                                                       |
+| Presupuestos en fase actual                            | Fuera de alcance inmediato.                                                                              |
+| Legalizaciones completas en fase actual                | No bloquear flujo crítico.                                                                               |
 | Importación Excel avanzada antes de cerrar facturación | La carga real controlada queda cerrada por P1-12; queda como P2 la automatización avanzada/UI de avisos. |
-| Actualización automática de estaciones | P2. |
-| Borrado físico de estaciones | Descartado por histórico. |
-| Reapertura normal de trabajos finalizados | Descartada como flujo normal; si aparece algo nuevo, se crea otro trabajo. |
+| Actualización automática de estaciones                 | P2.                                                                                                      |
+| Borrado físico de estaciones                           | Descartado por histórico.                                                                                |
+| Reapertura normal de trabajos finalizados              | Descartada como flujo normal; si aparece algo nuevo, se crea otro trabajo.                               |
 
 ## 10. Checklist final de aceptación
 
@@ -1303,3 +1831,171 @@ No ha hecho falta crear migraciones: se reutilizan `poblacion`, `provincia`, `ac
 - [x] Ciete Moderno limpio.
 - [x] Documentación viva alineada.
 - [x] Legacy documentado y no usado para lógica nueva.
+
+### Fase B.1 - Carga real controlada desde Excel a `abaco_ciete`
+
+**Estado:** B.1 completada sobre base local real  
+**Fecha ejecucion:** 2026-05-19  
+**Documento de evidencia:** `docs/02_CLIENTE/FASE_B1_IMPORTACION_REAL_EXCEL_2026-05-18.md`
+
+- Entorno confirmado: `APP_ENV=local`, `DB_CONNECTION=mysql`, `DB_DATABASE=abaco_ciete`, `DB_USERNAME=root`.
+- Backup previo creado con `mysqldump.exe`: `database/backups/abaco_ciete_pre_fase_b_import_real_20260519_032311.sql` (138.838 bytes).
+- Fuente real usada: `C:/Users/kampe/Documents/Abaco/excelsactualizados`.
+- Excel inventariados: 12; importaciones operativas registradas: 11. `Mapeo_Moeve_Repsol_Envolvente.xlsx` queda como auxiliar no importable.
+- Se detecto contaminacion FD26/demo (`FD26 MOEVE CLIENTE` con CIF `A28003119`) que bloqueaba el dry-run por clave unica. Tras backup se limpio solo dato operativo/demo, preservando contextos, usuarios, roles y permisos; no se ejecuto `migrate:fresh`.
+- Dry-run final: 53.055 filas leidas, 51.288 importadas/actualizadas, 1.767 ignoradas, 3.726 con aviso, 0 errores.
+- Commit real: PASS con los mismos conteos y 0 errores fatales.
+- Reconciliacion P1-12: 11.614 trabajos, 9.685 pedidos, 9.701 `pedido_items`, 2.733 facturas, 9.194 `factura_items` y 11 importaciones registradas.
+- Integridad basica: 0 huerfanos criticos, 0 contextos mezclados, 0 estados desconocidos contra enums reales. Quedan avisos de calidad de datos: 1.356 trabajos sin estacion, 2 pedidos/items negativos MOEVE, 6 fechas imposibles en trabajos y 4 en pedidos.
+- Validacion tecnica minima: `ImportacionesAccessTest`, `ClientesEstacionesApiTest`, `MaestrosTest`, `TrabajoTest`, `PedidoTest`, `FacturaTest` PASS; `npm run build` PASS con warning no bloqueante de timing del plugin `laravel`.
+- No se tocaron produccion, GitHub, ramas, exportaciones ni Fase B.2; no se hizo commit.
+
+**Siguiente paso:** pasar a B.2 para validacion funcional completa sobre base real cargada, llevando como insumos los avisos de calidad de datos documentados.
+
+### Fase B.1.1 - Ajuste visual Trabajos + auditoría de cobertura real (post-importación)
+
+**Estado:** cerrada (lista para B.2)  
+**Fecha ejecución:** 2026-05-19  
+**Documento de evidencia:** `docs/02_CLIENTE/B1_1_AJUSTES_VISUALES_Y_AUDITORIA_COBERTURA_DATOS_2026-05-19.md`
+
+**Alcance ejecutado:**
+
+- Ajuste visual de zona de cuenta/sidebar: `Mi perfil` visible para todos los roles (incluido admin técnico) sin reintroducir `Perfil` en `sidebar.js`.
+- Integración de avatar de cuenta con fallback sin imagen rota en desktop y móvil.
+- Corrección visual de tabla moderna de trabajos para evitar solapamiento `Nº` vs `Descripción` con valores largos (ej. `865.66666666666697`) sin alterar datos.
+- Auditoría read-only completa sobre base real: `importaciones`, `importacion_filas`, maestros, relaciones y controles de integridad extendida.
+
+**Archivos principales tocados:**
+
+- `resources/js/Components/UserAccountAvatar.jsx` (nuevo)
+- `resources/js/Layouts/AuthenticatedLayout.jsx`
+- `resources/js/Components/MobileSidebarDrawer.jsx`
+- `resources/js/Pages/Trabajos/Index.jsx`
+- `docs/02_CLIENTE/B1_1_AJUSTES_VISUALES_Y_AUDITORIA_COBERTURA_DATOS_2026-05-19.md` (nuevo)
+- `docs/02_CLIENTE/tareasComparar.md`
+- `docs/02_CLIENTE/VALIDACION_OPERATIVA_KO_EVIDENCIAS_ERP_CIETE_2026-05-18.md`
+
+**Validación ejecutada:**
+
+- PASS: `ImportacionesAccessTest`, `ClientesEstacionesApiTest`, `MaestrosTest`, `TrabajoTest`, `PedidoTest`, `FacturaTest`, `RoleModuleAccessTest`, `ExcelModeAccessTest`, `ContextCreationGuardTest`.
+- PASS: `npm run build` (warning no bloqueante de timings en plugin `laravel`).
+
+**Conclusión funcional B.1.1:**
+
+- Sí, conteos clave y relaciones principales están cargados y coherentes.
+- No, no se puede afirmar que todas las columnas auxiliares/avisos estén resueltos; quedan decisiones CIETE sobre avisos de fuente.
+- Sin KO crítico/mayor nuevo en esta fase; queda **estado previo a B.2: listo**.
+
+**Nota de porcentaje global:**
+
+- No se actualiza porcentaje global en esta fase; B.1.1 consolida evidencia y ajustes visuales post-importación.
+
+### Fase B.1.2 - Revisión global de tablas, casos B2 y versión (2026-05-19)
+
+**Estado:** cerrada - lista para B.2  
+**Documento de evidencia:** `docs/02_CLIENTE/B1_2_REVISION_GLOBAL_TABLAS_CASOS_DEMO_Y_VERSION_2026-05-19.md`
+
+Resumen de ejecución:
+
+- Revisión visual global con datos reales en listados principales (trabajos, pedidos, facturas y maestros).
+- Corrección quirúrgica del caso activo en Facturas (`Nº FACTURA` largo invadiendo `FECHA`) en modo moderno y modo Excel.
+- Refuerzo preventivo en Pedidos moderno para referencias largas.
+- Revisión/completado del control de conflicto de edición por celda en Trabajos Excel con mensaje específico de "modificado recientemente" y preservación de borrador.
+- Preparación de muestra local reversible B2 solo para OTROS (contexto sin datos reales importados) con marca:
+    - `[muestra-b2-validacion-2026-05-19]`
+- Scripts creados:
+    - `database/manual/2026_05_19_insert_muestra_b2_validacion_flujo_diario.sql`
+    - `database/manual/2026_05_19_delete_muestra_b2_validacion_flujo_diario.sql`
+- Versión visible en código activo: `ERP CIETE v2.1.0`. (B.1.2 documentó `v2.1.0-rc1` internamente; B.2 confirma que el código activo ya está en `v2.1.0` sin sufijo.)
+
+Validación técnica ejecutada:
+
+- `php -l` en PHP tocados: PASS.
+- Tests objetivo: PASS (`TrabajoTest`, `PedidoTest`, `FacturaTest`, `ClientesEstacionesApiTest`, `MaestrosTest`, `RoleModuleAccessTest`, `ExcelModeAccessTest`, `ContextCreationGuardTest`, `AdminTechnicalMutationTest`).
+- `npm run build`: PASS.
+
+Nota técnica de ejecución:
+
+- Se detectó estado inconsistente inicial en `abaco_ciete_testing` por colisión de migraciones al lanzar filtros de test en paralelo.
+- Se saneó exclusivamente la DB de pruebas (`DROP/CREATE abaco_ciete_testing`) y se repitieron los filtros fallidos.
+- `abaco_ciete` real no se alteró en ese saneamiento.
+
+Criterio de estado:
+
+- Sin KO crítico/mayor funcional nuevo en B.1.2.
+- Quedan avisos de fuente ya heredados (B.1/B.1.1) para validación funcional en B.2.
+
+### Fase B.2 - Validación funcional completa post-importación (2026-05-19)
+
+**Estado:** validado técnicamente con KOs menores (pendiente cierre visual manual en navegador)  
+**Documento de evidencia:** `docs/02_CLIENTE/FASE_B2_VALIDACION_FUNCIONAL_COMPLETA_POST_IMPORTACION_2026-05-19.md`
+
+Resumen B.2:
+
+- `artisan test` completo: PASS (`218` tests, `1286` assertions).
+- `npm run build`: PASS (warning no bloqueante de timings plugin `laravel`).
+- `route:list`: PASS (`133` rutas).
+- Batería focalizada solicitada (11 filtros): PASS.
+- Cobertura adicional por rol/módulo (admin, dirección, contable, ejecución, error pages, soporte/comunicaciones, mantenimiento, auditoría): PASS.
+- Casos B2 OTROS verificados en base local con marca `[muestra-b2-validacion-2026-05-19]`.
+- Sin KO crítico/mayor nuevo; persisten avisos de fuente heredados de B.1/B.1.1.
+
+Notas de ejecución:
+
+- Se detectó inestabilidad puntual de `abaco_ciete_testing` al ejecutar tests de forma paralela (colisiones de migraciones/FK en entorno de pruebas).
+- Mitigación aplicada: reset exclusivo de DB de pruebas y reejecución secuencial; sin impacto en `abaco_ciete` real.
+
+Propuesta:
+
+- Base técnicamente validada. Pendiente pasada visual manual final (B.2.1) para cierre formal. Versión vigente: `ERP CIETE v2.1.0`; sin cambio de versión hasta completar B.2.1.
+
+**B.2.1 COMPLETADA (2026-05-19):** `v2.1.0 validada con KOs menores`. KO mayor de paginación corregido (Trabajos/Pedidos/Facturas). KOs menores: badge "VERSIÓN 2.0" en hero (cosmético). Todos los módulos y roles validados visualmente.
+
+**B.2.2 COMPLETADA (2026-05-19):** Badge `badgeVersion` → `'v2.1.0'` en `es.js`/`en.js` (KO menor B.2.1 cerrado). Componente `PaginationControls` creado y aplicado en 14 archivos de listado (Primera/Anterior/Siguiente/Última + "Ir a página"). Migración `home_notices` ejecutada, seeder con 10 mensajes bilingües v2.1.0 cargados, `HomeNoticeAdminTest` (4 tests) PASS. Build PASS. **`v2.1.0 validada`.**
+
+### Mensajes de inicio administrables (2026-05-19)
+
+**Estado:** implementado y validado. Migración ejecutada en B.2.2; seeder actualizado con 10 mensajes v2.1.0; `HomeNoticeAdminTest` (4 tests, 40 aserciones) PASS.
+
+**Alcance cerrado:**
+
+- Los mensajes de la pantalla de inicio dejan de depender del JSON editable y pasan a tabla `home_notices`.
+- Se prepara contenido bilingüe realista para Inicio: mensaje destacado de reunión CIETE, 3 avisos internos no destacados, 3 actualizaciones del sistema y 3 novedades de empresa.
+- El Inicio solo lee mensajes activos y no expone creación/edición.
+- La administración permite crear, editar, activar/desactivar, categorizar y marcar/quitar destacado.
+- Al marcar un mensaje como destacado, el backend desmarca cualquier destacado anterior.
+- Las operaciones administrativas relevantes se registran en `audit_log` mediante `AuditLogger`.
+
+**Archivos tocados:**
+
+- `database/migrations/2026_05_19_000170_create_home_notices_table.php`
+- `app/Models/HomeNotice.php`
+- `database/seeders/HomeNoticeSeeder.php`
+- `database/seeders/DatabaseSeeder.php`
+- `app/Support/HomeNoticeCatalog.php`
+- `app/Http/Controllers/Admin/NoticeController.php`
+- `app/Http/Controllers/Admin/DashboardController.php`
+- `routes/web/admin.php`
+- `routes/web/public.php`
+- `resources/js/Pages/Admin/Dashboard.jsx`
+- `resources/js/Pages/Welcome.jsx`
+- `resources/js/Components/WelcomeHome/InstitutionalHero.jsx`
+- `resources/js/Components/WelcomeHome/InstitutionalInfoBlocks.jsx`
+- `resources/js/i18n/locales/es.js`
+- `resources/js/i18n/locales/en.js`
+- `tests/Feature/HomeNoticeAdminTest.php`
+- `docs/02_CLIENTE/tareasComparar.md`
+
+**Validaciones ejecutadas:**
+
+- `npm run build`: PASS. Warning no bloqueante de timings en plugin `laravel`.
+- `php artisan test --filter=HomeNoticeAdminTest`: PASS (4 tests, 40 aserciones) — ejecutado en B.2.2 con PHP disponible.
+- `git diff --check`: no limpio por trailing whitespace preexistente en este documento; no se normaliza para evitar cambios documentales ajenos al alcance.
+
+**Nota funcional:**
+
+Los mensajes de inicio se gestionan desde administración, dentro del bloque "Mensajes de la pantalla de inicio". El dashboard de inicio queda como superficie de lectura y no contiene textos hardcodeados ni acciones de edición.
+
+**Porcentaje de avance:**
+
+No se recalcula ni se sube el porcentaje global en esta entrada: aunque el CRUD administrativo y el build son verificables, queda pendiente ejecutar `php artisan test` completo en un entorno con PHP disponible.

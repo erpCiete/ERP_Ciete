@@ -9,10 +9,11 @@ class MaintenanceController extends Controller
 {
     /**
      * Toggle maintenance mode on/off.
-     * Only accessible by admin role.
      */
     public function toggle(Request $request): RedirectResponse
     {
+        abort_unless($request->user()?->canManageMaintenance(), 403, 'No tienes permisos para gestionar mantenimiento.');
+
         $file = storage_path('framework/maintenance_mode');
 
         if (file_exists($file)) {

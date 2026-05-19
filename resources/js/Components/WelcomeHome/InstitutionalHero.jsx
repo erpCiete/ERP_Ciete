@@ -14,8 +14,11 @@ export default function InstitutionalHero({ shouldReduceMotion = false, featured
         t('welcome.home.hero.badgeVersion'),
     ];
     const featuredLabel = featuredNotice ? (t('welcome.home.hero.featuredBadge')) : null;
+    const featuredTitle = featuredNotice
+        ? (featuredNotice[`title_${locale}`] || featuredNotice.title_es || featuredNotice.title_en || '')
+        : '';
     const featuredMessage = featuredNotice
-        ? (featuredNotice[locale] || featuredNotice.es || featuredNotice.en || '')
+        ? (featuredNotice[`body_${locale}`] || featuredNotice.body_es || featuredNotice.body_en || featuredNotice[locale] || featuredNotice.es || '')
         : '';
 
     return (
@@ -110,6 +113,11 @@ export default function InstitutionalHero({ shouldReduceMotion = false, featured
                                     {t(`welcome.home.${featuredNotice.category}.title`)}
                                 </span>
                             </div>
+                            {featuredTitle ? (
+                                <p className="mt-3 text-sm font-semibold text-text-main sm:text-[15px]">
+                                    {featuredTitle}
+                                </p>
+                            ) : null}
                             <p className="mt-3 text-sm leading-relaxed text-text-main sm:text-[15px]">
                                 {featuredMessage}
                             </p>

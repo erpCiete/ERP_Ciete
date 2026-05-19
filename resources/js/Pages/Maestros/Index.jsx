@@ -25,7 +25,7 @@ const modules = [
     {
         key: 'usuarios',
         title: 'Usuarios',
-        description: 'Usuarios reales, roles, contexto principal y activacion de acceso.',
+        description: 'Usuarios reales, roles, contexto principal y activación de acceso.',
         routeName: 'admin.users.index',
         permissionKey: 'usuarios',
         icon: Users,
@@ -33,7 +33,7 @@ const modules = [
     {
         key: 'empresas',
         title: 'Empresas / clientes',
-        description: 'Clientes y empresas base que se seleccionan en trabajos, contratos y facturacion.',
+        description: 'Clientes y empresas base que se seleccionan en trabajos, contratos y facturación.',
         routeName: 'clientes.index',
         permissionKey: 'clientes',
         icon: Building2,
@@ -41,7 +41,7 @@ const modules = [
     {
         key: 'estaciones',
         title: 'Estaciones',
-        description: 'Codigo, nombre, municipio y provincia de estaciones por contexto.',
+        description: 'Código, nombre, municipio y provincia de estaciones por contexto.',
         routeName: 'estaciones.index',
         permissionKey: 'estaciones',
         icon: MapPin,
@@ -72,15 +72,15 @@ const modules = [
     },
     {
         key: 'lineas_tarifario',
-        title: 'Lineas de tarifario',
-        description: 'Codigos, actuaciones, importes y unidades facturables.',
+        title: 'Líneas de tarifario',
+        description: 'Códigos, actuaciones, importes y unidades facturables.',
         routeName: 'maestros.tarifario-lineas.index',
         permissionKey: 'lineas',
         icon: ListChecks,
     },
     {
         key: 'catalogos',
-        title: 'Catalogos auxiliares',
+        title: 'Catálogos auxiliares',
         description: 'Unidades, tipos de documento y tipos de trabajo en lectura de apoyo.',
         routeName: null,
         permissionKey: null,
@@ -88,7 +88,7 @@ const modules = [
     },
 ];
 
-export default function MaestrosIndex({ summary = {}, can = {} }) {
+export default function MaestrosIndex({ summary = {}, diagnostics = [], can = {} }) {
     const { auth } = usePage().props;
     const activeContext = auth?.user?.active_context;
 
@@ -117,6 +117,63 @@ export default function MaestrosIndex({ summary = {}, can = {} }) {
                         Este panel gobierna empresas, estaciones, contratos, sociedades, tarifarios y catalogos. Trabajos,
                         pedidos, facturas, cierre y auditoria siguen en sus modulos operativos.
                     </p>
+                </section>
+
+                <section className="mb-6 rounded-lg border border-border bg-surface px-4 py-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 className="text-sm font-semibold text-text-main">Diagnostico funcional</h3>
+                            <p className="mt-1 text-sm text-text-muted">
+                                Antes de tocar la operativa, revisa los huecos de maestro que pueden dejar formularios sin opciones validas.
+                            </p>
+                        </div>
+                        <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-text-main">
+                            {diagnostics.length === 0 ? 'Sin alertas prioritarias' : `${diagnostics.length} alertas activas`}
+                        </span>
+                    </div>
+
+                    {diagnostics.length === 0 ? (
+                        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                            No se han detectado huecos maestros prioritarios en el contexto activo para contrato-sociedad o CIF.
+                        </div>
+                    ) : (
+                        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                            {diagnostics.map((diagnostic) => {
+                                const canView = diagnostic.permissionKey ? Boolean(can[diagnostic.permissionKey]?.view) : true;
+                                const href = diagnostic.routeName && canView && hasRoute(diagnostic.routeName)
+                                    ? route(diagnostic.routeName)
+                                    : null;
+                                const tone = diagnostic.severity === 'critical'
+                                    ? 'border-red-200 bg-red-50 text-red-800'
+                                    : 'border-amber-200 bg-amber-50 text-amber-800';
+
+                                return (
+                                    <article key={diagnostic.key} className={`rounded-lg border px-4 py-4 ${tone}`}>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-semibold">{diagnostic.title}</h4>
+                                                <p className="mt-1 text-sm opacity-90">{diagnostic.description}</p>
+                                            </div>
+                                            <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-text-main shadow-sm">
+                                                {diagnostic.count}
+                                            </span>
+                                        </div>
+
+                                        {href && (
+                                            <div className="mt-4">
+                                                <Link
+                                                    href={href}
+                                                    className="inline-flex items-center rounded-md border border-current px-3 py-2 text-xs font-semibold uppercase tracking-widest transition hover:bg-white/60"
+                                                >
+                                                    {diagnostic.actionLabel}
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    )}
                 </section>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

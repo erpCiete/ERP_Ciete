@@ -13,7 +13,8 @@ use Tests\TestCase;
  * Acceso al modulo Estaciones por rol.
  *
  * Verifica que:
- *   - Admin puede acceder y gestionar estaciones.
+ *   - Admin técnico puede consultar estaciones, pero no crear.
+ *   - Dirección puede crear estaciones.
  *   - El usuario execution_moeve puede ver la lista.
  *   - El usuario execution_moeve no puede crear estaciones.
  *   - Contabilidad no puede acceder a estaciones.
@@ -50,11 +51,18 @@ class EstacionesTest extends TestCase
         $this->actingAs($admin)->get('/estaciones')->assertOk();
     }
 
-    public function test_admin_can_access_create_estacion(): void
+    public function test_director_can_access_create_estacion(): void
+    {
+        $director = User::where('email', 'cesar@ciete.es')->firstOrFail();
+
+        $this->actingAs($director)->get('/estaciones/crear')->assertOk();
+    }
+
+    public function test_admin_cannot_access_create_estacion(): void
     {
         $admin = User::where('email', 'admin@ciete.es')->firstOrFail();
 
-        $this->actingAs($admin)->get('/estaciones/crear')->assertOk();
+        $this->actingAs($admin)->get('/estaciones/crear')->assertForbidden();
     }
 
     public function test_execution_moeve_can_list_estaciones(): void

@@ -9,7 +9,7 @@ trait ApiResponse
 {
     protected function successResponse(
         mixed $data = null,
-        string $message = 'Operacion exitosa',
+        string $message = 'Operación exitosa',
         int $code = 200,
         array $meta = []
     ): JsonResponse {

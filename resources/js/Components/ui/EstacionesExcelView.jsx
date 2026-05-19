@@ -129,7 +129,7 @@ export default function EstacionesExcelView({
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-border shadow-sm">
-                <table className="w-full min-w-[920px] divide-y divide-border text-xs">
+                <table className="ciete-excel-table w-full min-w-[920px] divide-y divide-border text-xs">
                     <thead className="bg-surface-2">
                         <tr>
                             {columns.map((column) => (

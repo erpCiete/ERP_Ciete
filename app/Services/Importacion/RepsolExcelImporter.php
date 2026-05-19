@@ -181,7 +181,7 @@ final class RepsolExcelImporter
                     $relative,
                     $sheet,
                     (int) $row['row'],
-                    'Fila REPSOL sin numero de trabajo usable.',
+                    'Fila REPSOL sin número de trabajo usable.',
                     'work_missing_number',
                     'acceptable',
                     'Mantener fuera si es cabecera repetida, subtotal o linea auxiliar.'
@@ -201,7 +201,7 @@ final class RepsolExcelImporter
                     $relative,
                     $sheet,
                     (int) $row['row'],
-                    'Trabajo REPSOL con importe pero sin numero de pedido; no se crea pedido_item.',
+                    'Trabajo REPSOL con importe pero sin número de pedido; no se crea pedido_item.',
                     'work_amount_without_order',
                     'functional_decision',
                     'Confirmar con CIETE si estos trabajos deben quedar sin pedido o requieren otra fuente para completar el pedido.'
@@ -465,9 +465,9 @@ final class RepsolExcelImporter
         }
 
         if ($this->isWorkSheet($sheet, $map)) {
-            return 'Revisar normalizacion de cabeceras y codigos antes de ampliar el modelo de trabajo/pedido.';
+            return 'Revisar normalización de cabeceras y códigos antes de ampliar el modelo de trabajo/pedido.';
         }
 
-        return 'Hoja auxiliar o tecnica; puede seguir fuera del flujo vivo si no aporta dato operativo.';
+        return 'Hoja auxiliar o técnica; puede seguir fuera del flujo vivo si no aporta dato operativo.';
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Database\Seeders\DatabaseSeeder;
@@ -22,7 +24,34 @@ class ImportacionesAccessTest extends TestCase
         $this->actingAs($admin)
             ->get(route('importaciones.index'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Importaciones/Index'));
+            ->assertInertia(fn(Assert $page) => $page->component('Importaciones/Index'));
+
+        $this->actingAs($admin)
+            ->get(route('importaciones.create'))
+            ->assertOk();
+    }
+
+    public function test_director_cannot_access_importaciones_without_explicit_permission(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $director = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
+
+        $this->actingAs($director)
+            ->get(route('importaciones.index'))
+            ->assertForbidden();
+    }
+
+    public function test_non_admin_user_with_explicit_import_permission_can_access_importaciones(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $user = $this->createUserWithImportPermissions(['importaciones.ver']);
+
+        $this->actingAs($user)
+            ->get(route('importaciones.index'))
+            ->assertOk()
+            ->assertInertia(fn(Assert $page) => $page->component('Importaciones/Index'));
     }
 
     public function test_importaciones_index_exposes_grouped_warning_summary(): void
@@ -30,7 +59,7 @@ class ImportacionesAccessTest extends TestCase
         $this->seed(DatabaseSeeder::class);
 
         $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
-        $contextoId = DB::table('contextos_cliente')->where('codigo', 'MOEVE')->value('id_contexto');
+        $contextoId = $admin->id_contexto;
 
         $importId = DB::table('importaciones')->insertGetId([
             'id_contexto' => $contextoId,
@@ -73,14 +102,43 @@ class ImportacionesAccessTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get(route('importaciones.index'))
+            ->get(route('importaciones.index', ['detalle' => $importId]))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
+            ->assertInertia(fn(Assert $page) => $page
                 ->component('Importaciones/Index')
                 ->has('resumen')
                 ->has('agrupaciones.avisosPorArchivo')
                 ->has('detalleFilas.data', 1)
                 ->where('detalleFilas.data.0.codigo', 'work_amount_without_order')
                 ->where('detalleFilas.data.0.clasificacion', 'functional_decision'));
+    }
+
+    /**
+     * @param  array<int, string>  $permissionSlugs
+     */
+    private function createUserWithImportPermissions(array $permissionSlugs): User
+    {
+        $role = Role::query()->create([
+            'nombre' => 'Importaciones ' . now()->timestamp,
+            'slug' => 'importaciones-' . now()->timestamp,
+            'activo' => true,
+        ]);
+
+        foreach ($permissionSlugs as $slug) {
+            $permission = Permission::query()->firstOrCreate(
+                ['slug' => $slug],
+                ['nombre' => $slug, 'activo' => true],
+            );
+
+            $role->permissions()->syncWithoutDetaching([$permission->id_permiso]);
+        }
+
+        $user = User::factory()->create(['id_contexto' => 1]);
+        $user->roles()->sync([$role->id_rol]);
+        $user->contextos()->sync([
+            1 => ['es_contexto_principal' => true, 'activo' => true],
+        ]);
+
+        return $user;
     }
 }

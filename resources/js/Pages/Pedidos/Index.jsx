@@ -1,6 +1,7 @@
 import PedidosExcelView from '@/Components/ui/PedidosExcelView';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import OperationalReadOnlyNotice from '@/Components/OperationalReadOnlyNotice';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
 import { useTheme } from '@/theme';
@@ -8,6 +9,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { usePedidos } from '@/Hooks/usePedidos';
 import BadgePedido from '@/Components/ui/BadgePedidos'; // Asegúrate de que la ruta coincide con tu archivo
+import PaginationControls from '@/Components/ui/PaginationControls';
 
 // ─── Opciones de estado para el filtro ───────────────────────────────────────
 const ESTADO_OPTIONS = ['pendiente', 'solicitado', 'recibido', 'facturado_parcial', 'facturado', 'cancelado'];
@@ -40,7 +42,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     const rows  = pedidos?.data  ?? [];
-    const total = pedidos?.meta?.pagination?.total ?? rows.length;
+    const total = pedidos?.meta?.total ?? rows.length;
     const hasFilters = search !== '' || estado !== '' || fechaDesde !== '' || fechaHasta !== '';
 
     // Número de columnas total — para colSpan dinámico
@@ -91,7 +93,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
     // ── Cancelar pedido ───────────────────────────────────────────────────────
     const handleDelete = () => {
         if (!deleteTarget) return;
-    
+
         eliminarPedido(deleteTarget.id_pedido, () => {
             setDeleteTarget(null);
         });
@@ -142,6 +144,8 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                     ) : null}
                 />
 
+                <OperationalReadOnlyNotice />
+
                 {canCreatePedidos && activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                         No puedes crear registros desde TODOS. Selecciona primero un contexto real: MOEVE, REPSOL u OTROS CLIENTES.
@@ -157,7 +161,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                         canCreate={canCreate}
                         canEdit={canEditPedidos}
                         canDelete={canDeletePedidos}
-                        pagination={pedidos?.meta?.pagination}
+                        pagination={pedidos?.meta}
                         isRepsol={isRepsol}
                         trabajos={trabajos}
                     />
@@ -253,14 +257,14 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                 <section className="ciete-table-card">
                     <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
                     <div className="ciete-table-scroll">
-                        <table className="min-w-[900px] w-full divide-y divide-border text-sm">
+                        <table className="min-w-[980px] w-full table-fixed divide-y divide-border text-sm">
                             <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                                 <tr>
                                     {/* Columnas siempre visibles */}
-                                    <th className="px-5 py-3 whitespace-nowrap">{t('pedidos.columns.number')}</th>
+                                    <th className="w-[13rem] max-w-[13rem] px-5 py-3 whitespace-nowrap">{t('pedidos.columns.number')}</th>
                                     <th className="px-5 py-3">{t('pedidos.columns.status')}</th>
-                                    <th className="px-5 py-3">{t('pedidos.columns.requestedAt')}</th>
-                                    <th className="px-5 py-3 text-right">{t('pedidos.columns.totalAmount')}</th>
+                                    <th className="w-32 px-5 py-3 whitespace-nowrap">{t('pedidos.columns.requestedAt')}</th>
+                                    <th className="px-5 py-3 text-right whitespace-nowrap">{t('pedidos.columns.totalAmount')}</th>
 
                                     {/* Columnas REPSOL — indicadas con badge rojo */}
                                     {isRepsol && (
@@ -329,8 +333,11 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                     <tr key={pedido.id_pedido} className="hover:bg-surface-2/60">
 
                                         {/* Nº pedido */}
-                                        <td className="px-5 py-4 align-top">
-                                            <span className="font-mono text-xs font-semibold text-(--ciete-red)">
+                                        <td className="w-[13rem] max-w-[13rem] px-5 py-4 align-top">
+                                            <span
+                                                className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--ciete-red)"
+                                                title={pedido.numero_pedido || undefined}
+                                            >
                                                 {pedido.numero_pedido || '—'}
                                             </span>
                                         </td>
@@ -341,7 +348,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                         </td>
 
                                         {/* Fecha Solicitud */}
-                                        <td className="px-5 py-4 align-top whitespace-nowrap text-text-muted">
+                                        <td className="w-32 px-5 py-4 align-top whitespace-nowrap text-text-muted">
                                             {pedido.fecha_solicitud_pedido || pedido.fecha_solicitud
                                                 ? new Date(pedido.fecha_solicitud_pedido || pedido.fecha_solicitud).toLocaleDateString('es-ES')
                                                 : '—'}
@@ -376,7 +383,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                                         {t('common.actions.edit')}
                                                     </button>
                                                 )}
-                                                
+
                                                 {canDeletePedidos && (
                                                     <button
                                                         type="button"
@@ -395,35 +402,10 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                     </div>
 
                     {/* ── Paginación ─────────────────────────────────────────── */}
-                    {pedidos?.meta?.pagination?.last_page > 1 && (
-                        <div className="flex flex-col gap-3 border-t border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs text-text-hint">
-                                {t('pedidos.pagination.summary', {
-                                    page: pedidos.meta.pagination.current_page,
-                                    lastPage: pedidos.meta.pagination.last_page,
-                                    total,
-                                })}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    disabled={pedidos.meta.pagination.current_page <= 1}
-                                    onClick={() => aplicarFiltros({ page: pedidos.meta.pagination.current_page - 1 })}
-                                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
-                                >
-                                    {t('pedidos.pagination.previous')}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={pedidos.meta.pagination.current_page >= pedidos.meta.pagination.last_page}
-                                    onClick={() => aplicarFiltros({ page: pedidos.meta.pagination.current_page + 1 })}
-                                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
-                                >
-                                    {t('pedidos.pagination.next')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <PaginationControls
+                        pagination={pedidos?.meta}
+                        onPageChange={(p) => aplicarFiltros({ page: p })}
+                    />
                 </section>
             </>
             )}

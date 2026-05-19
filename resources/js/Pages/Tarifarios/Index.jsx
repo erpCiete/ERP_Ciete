@@ -1,5 +1,6 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
@@ -28,12 +29,17 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
     const [search, setSearch] = useState(filters.search ?? '');
     const [activo, setActivo] = useState(filters.activo ?? '');
     const [deactivateTarget, setDeactivateTarget] = useState(null);
+    const currentPage = tarifarios?.current_page ?? 1;
+    const lastPage = tarifarios?.last_page ?? 1;
+    const total = tarifarios?.total ?? (tarifarios?.data?.length ?? 0);
+    const from = tarifarios?.from ?? (total === 0 ? 0 : 1);
+    const to = tarifarios?.to ?? (total === 0 ? 0 : (tarifarios?.data?.length ?? 0));
     const canEdit = auth?.user?.is_director || hasPermission(auth?.user, 'tarifarios.editar');
     const canDelete = auth?.user?.is_director || hasPermission(auth?.user, 'tarifarios.eliminar');
 
     const applyFilters = (event) => {
         event.preventDefault();
-        router.get(route('maestros.tarifarios.index'), { search, activo }, { preserveState: true });
+        router.get(route('maestros.tarifarios.index'), { search, activo, page: 1 }, { preserveState: true });
     };
 
     const deactivate = () => {
@@ -45,6 +51,14 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
             preserveScroll: true,
             onSuccess: () => setDeactivateTarget(null),
         });
+    };
+
+    const goToPage = (page) => {
+        if (page < 1 || page > lastPage || page === currentPage) {
+            return;
+        }
+
+        router.get(route('maestros.tarifarios.index'), { search, activo, page }, { preserveState: true, preserveScroll: true });
     };
 
     return (
@@ -176,6 +190,11 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
                         </table>
                     </div>
                 </section>
+
+                <PaginationControls
+                    pagination={{ current_page: currentPage, last_page: lastPage, total, from, to }}
+                    onPageChange={goToPage}
+                />
             </div>
         </AuthenticatedLayout>
     );

@@ -10,17 +10,20 @@ const ACTIVE_CLASS_BY_CONTEXT = {
     todos: 'bg-secondary text-white hover:bg-secondary',
 };
 
-export default function ContextSelector({ compact = false, className = '' }) {
+export default function ContextSelector({ compact = false, className = '', allowAllContexts = false }) {
     const { t } = useI18n();
     const { workspaceContext, setWorkspaceContext } = useTheme();
     const { auth } = usePage().props;
     const [processingValue, setProcessingValue] = useState(null);
 
     const activeContext = auth?.user?.active_context ?? null;
-    const availableContexts = useMemo(
-        () => (Array.isArray(auth?.user?.available_contexts) ? auth.user.available_contexts : []),
-        [auth?.user?.available_contexts]
-    );
+    const availableContexts = useMemo(() => {
+        const options = Array.isArray(auth?.user?.available_contexts) ? auth.user.available_contexts : [];
+
+        return allowAllContexts
+            ? options
+            : options.filter((option) => option?.workspace_key !== 'todos' && String(option?.value) !== 'all');
+    }, [allowAllContexts, auth?.user?.available_contexts]);
 
     const resolvedActiveValue = String(activeContext?.value ?? '');
     const canSwitch = availableContexts.length > 1;

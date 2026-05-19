@@ -60,10 +60,10 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
 
                 {/* BOTONES DE ACCIÓN */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                    {user.can_access_direction_panel && (
+                    {user.can_access_closure && (
                         <Link href={route('cierre.dashboard')} className="ciete-btn-secondary w-full sm:w-auto">{t('nav.closurePanel')}</Link>
                     )}
-                    {user.is_admin && (
+                    {user.can_access_admin_panel && (
                         <Link href={route('admin.dashboard')} className="ciete-btn-primary w-full sm:w-auto">{t('dashboard.adminPanel')}</Link>
                     )}
                 </div>
@@ -86,7 +86,7 @@ export default function Dashboard({ obras = [], pedidos = [], legalizaciones = [
 
                 {/* CUADRÍCULA DE TABLAS (Aquí está la magia) */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    
+
                     {/* COLUMNA IZQUIERDA: OBRAS */}
                     <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
                         <div className="border-b border-border px-4 py-3 flex justify-between items-center bg-surface-2">

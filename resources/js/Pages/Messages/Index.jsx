@@ -40,7 +40,7 @@ function PriorityBadge({ priority, t }) {
     );
 }
 
-function ComposeModal({ users, isAdmin, onClose, t }) {
+function ComposeModal({ users, canBroadcastNotices, onClose, t }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         id_destinatario: '',
         asunto: '',
@@ -52,7 +52,7 @@ function ComposeModal({ users, isAdmin, onClose, t }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (isBroadcast && isAdmin) {
+        if (isBroadcast && canBroadcastNotices) {
             router.post(route('messages.broadcast'), {
                 asunto: data.asunto,
                 cuerpo: data.cuerpo,
@@ -83,7 +83,7 @@ function ComposeModal({ users, isAdmin, onClose, t }) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
-                    {isAdmin && (
+                    {canBroadcastNotices && (
                         <label className="flex items-center gap-2 text-xs text-text-muted">
                             <input
                                 type="checkbox"
@@ -185,6 +185,7 @@ function ComposeModal({ users, isAdmin, onClose, t }) {
 export default function MessagesIndex({ messages, tab = 'inbox', unreadCount = 0, users = [] }) {
     const { t } = useI18n();
     const user = usePage().props.auth.user;
+    const canBroadcastNotices = Boolean(user?.can_manage_notices);
     const [showCompose, setShowCompose] = useState(false);
 
     const switchTab = (newTab) => {
@@ -294,7 +295,7 @@ export default function MessagesIndex({ messages, tab = 'inbox', unreadCount = 0
             {showCompose && (
                 <ComposeModal
                     users={users}
-                    isAdmin={user?.is_admin}
+                    canBroadcastNotices={canBroadcastNotices}
                     onClose={() => setShowCompose(false)}
                     t={t}
                 />

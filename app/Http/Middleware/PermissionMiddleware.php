@@ -20,7 +20,7 @@ class PermissionMiddleware
         }
 
         if ($permissions === [] || ! $user->hasAnyPermission($permissions)) {
-            abort(403, 'No tienes permisos suficientes para acceder a este recurso.');
+            abort(403, 'No tienes permiso para acceder a este módulo.');
         }
 
         return $next($request);

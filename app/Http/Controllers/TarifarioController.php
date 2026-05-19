@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contrato;
+use App\Models\ContextoCliente;
 use App\Models\Tarifario;
 use App\Services\AuditLogger;
 use App\Support\ContextGuard;
@@ -53,7 +54,7 @@ class TarifarioController extends Controller
             ->when($activo !== '', fn ($query) => $query->where('activo', $activo === '1'))
             ->orderBy('id_contexto')
             ->orderBy('nombre')
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Tarifarios/Index', [
@@ -78,6 +79,7 @@ class TarifarioController extends Controller
         return Inertia::render('Tarifarios/Form', [
             'tarifario' => null,
             'contratos' => $this->contratoOptions($request),
+            'activeContext' => $this->contextPayload(ContextGuard::activeContextIdForCreate($request->user())),
         ]);
     }
 
@@ -105,6 +107,7 @@ class TarifarioController extends Controller
         return Inertia::render('Tarifarios/Form', [
             'tarifario' => $this->tarifarioPayload($tarifario->load('contrato')),
             'contratos' => $this->contratoOptions($request, (int) $tarifario->id_contexto),
+            'activeContext' => $this->contextPayload((int) $tarifario->id_contexto),
         ]);
     }
 
@@ -210,6 +213,28 @@ class TarifarioController extends Controller
                 'nombre' => $contrato->nombre,
             ])
             ->all();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function contextPayload(?int $contextId): ?array
+    {
+        if (! $contextId) {
+            return null;
+        }
+
+        $context = ContextoCliente::query()->find($contextId, ['id_contexto', 'nombre', 'codigo']);
+
+        if (! $context) {
+            return null;
+        }
+
+        return [
+            'id_contexto' => (int) $context->id_contexto,
+            'nombre' => $context->nombre,
+            'codigo' => $context->codigo,
+        ];
     }
 
     /**

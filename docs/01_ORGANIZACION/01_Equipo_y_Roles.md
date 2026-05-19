@@ -2,24 +2,24 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
 Estado: documento vivo resumido.
 
-Fuente funcional:
+Referencia de autoridad:
 
-`docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`
+`docs/02_CLIENTE/reunionCieteCompletaFormato.txt`, aterrizada en `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md` y priorizada en `docs/02_CLIENTE/tareasComparar.md`
 
 ## Roles funcionales vigentes
 
-| Rol | Uso |
-|---|---|
-| Direccion | Rol funcional operativo, supervision, usuarios y Auditoria |
-| Ejecucion | Operativa general de trabajos/pedidos segun permisos |
-| Ejecucion MOEVE | Operativa limitada al contexto MOEVE |
-| Ejecucion REPSOL | Operativa limitada al contexto REPSOL |
-| Contabilidad | Facturas y control economico |
-| Soporte/admin tecnico | Soporte, mantenimiento y tareas tecnicas |
+| Rol                   | Uso                                                        |
+| --------------------- | ---------------------------------------------------------- |
+| Direccion             | Rol funcional operativo, supervision, usuarios y Auditoria |
+| Ejecucion             | Operativa general de trabajos/pedidos segun permisos       |
+| Ejecucion MOEVE       | Operativa limitada al contexto MOEVE                       |
+| Ejecucion REPSOL      | Operativa limitada al contexto REPSOL                      |
+| Contabilidad          | Facturas y control economico                               |
+| Soporte/admin tecnico | Soporte, mantenimiento y tareas tecnicas                   |
 
 ## Reglas
 

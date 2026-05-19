@@ -2,7 +2,7 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
 ## Objetivo
 

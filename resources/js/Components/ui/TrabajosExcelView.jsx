@@ -1,6 +1,7 @@
 import Modal from '@/Components/Modal';
 import WorkspaceContextIndicator from '@/Components/WorkspaceContextIndicator';
 import BadgeTrabajo from '@/Components/ui/BadgeTrabajo';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import { useOptimisticField } from '@/Hooks/useOptimisticField';
 import { router, usePage } from '@inertiajs/react';
 import axios from 'axios';
@@ -27,33 +28,36 @@ const FIELD_LABELS = {
     observaciones: 'Observaciones',
     numero_trabajo: 'Nº trabajo',
     numero_trabajo_operativo: 'Nº trabajo CIETE',
-    codigo_estacion: 'Codigo estacion',
-    nombre_estacion: 'Nombre estacion',
+    codigo_estacion: 'Código estación',
+    nombre_estacion: 'Nombre estación',
     municipio: 'Municipio',
     provincia: 'Provincia',
-    categoria: 'Categoria',
+    categoria: 'Categoría',
+    id_pedido_principal: 'Nº pedido',
+    id_tipo_documento: 'Tipo documental',
+    id_tipo_trabajo: 'Tipo de trabajo',
 };
 
 const TABLE_COLUMNS = [
-    { label: 'Nº CIETE / interno', width: 'w-40' },
-    { label: 'Código estación', width: 'w-28' },
-    { label: 'Nombre estación', width: 'w-48' },
-    { label: 'Municipio', width: 'w-32' },
-    { label: 'Provincia', width: 'w-28' },
-    { label: 'Tipo / categoría de trabajo', width: 'w-44' },
-    { label: 'Descripción', width: 'w-64' },
-    { label: 'Nº pedido', width: 'w-32' },
-    { label: 'Contrato / tarifa', width: 'w-48' },
+    { label: 'Nº CIETE / interno', width: 'w-44' },
+    { label: 'Código estación', width: 'w-32' },
+    { label: 'Nombre estación', width: 'w-56' },
+    { label: 'Municipio', width: 'w-36' },
+    { label: 'Provincia', width: 'w-32' },
+    { label: 'Tipo / categoría de trabajo', width: 'w-48' },
+    { label: 'Descripción', width: 'w-72' },
+    { label: 'Nº pedido', width: 'w-40' },
+    { label: 'Contrato / tarifa', width: 'w-56' },
     { label: 'Importe pedido', width: 'w-32 text-right' },
     { label: 'Importe solicitado', width: 'w-36 text-right' },
     { label: 'Importe facturado', width: 'w-36 text-right' },
-    { label: 'Estado', width: 'w-44' },
-    { label: 'Responsable', width: 'w-44' },
+    { label: 'Estado', width: 'w-48' },
+    { label: 'Responsable', width: 'w-48' },
     { label: 'Fecha encargo', width: 'w-32' },
     { label: 'Fecha solicitud pedido', width: 'w-40' },
     { label: 'Fecha terminación', width: 'w-36' },
-    { label: 'Observaciones', width: 'w-56' },
-    { label: 'Acciones', width: 'w-28' },
+    { label: 'Observaciones', width: 'w-64' },
+    { label: 'Acciones', width: 'w-32' },
 ];
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -100,7 +104,12 @@ function fmtMoney(value) {
     if (value === null || value === undefined || value === '') return '—';
     const amount = Number(value);
     if (Number.isNaN(amount)) return '—';
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
+    return new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(amount);
 }
 
 function toDateInput(value) {
@@ -139,6 +148,24 @@ function contractTariff(trabajo) {
 function responsableName(responsables, value) {
     if (!value) return null;
     return responsables.find((responsable) => String(responsable.id) === String(value))?.nombre ?? null;
+}
+
+function pedidoLabel(pedido) {
+    if (!pedido) return null;
+
+    const parts = [
+        pedido.numero,
+        pedido.id_trabajo ? `Trabajo ${pedido.id_trabajo}` : null,
+        pedido.fecha_solicitud,
+    ].filter(Boolean);
+
+    return parts.join(' - ');
+}
+
+function stationLabel(estacion) {
+    if (!estacion) return null;
+
+    return `${estacion.codigo ? `${estacion.codigo} - ` : ''}${estacion.nombre ?? 'Sin nombre'}`;
 }
 
 function formatConflictValue(fieldName, value, responsables = []) {
@@ -201,14 +228,18 @@ function ConflictDialog({
     onKeepMine,
 }) {
     const fieldLabel = FIELD_LABELS[fieldName] ?? conflict?.campo ?? 'Campo';
+    const conflictMessage = conflict?.message ?? 'Este campo fue modificado por otro usuario.';
+    const conflictHint = conflict?.modificadoRecientemente
+        ? 'Este campo fue modificado recientemente por otro usuario. Revisa los valores antes de sobrescribir.'
+        : 'Revisa los valores antes de continuar para no sobrescribir cambios recientes.';
 
     return (
         <Modal show={Boolean(conflict)} maxWidth="lg" closeable={!isSaving} onClose={onCancel}>
             <div className="bg-surface">
                 <div className="border-b border-border px-6 py-5">
-                    <h3 className="text-lg font-semibold text-text-main">Este campo fue modificado por otro usuario.</h3>
+                    <h3 className="text-lg font-semibold text-text-main">{conflictMessage}</h3>
                     <p className="mt-2 text-sm text-text-muted">
-                        Revisa los valores antes de continuar para no sobrescribir cambios recientes.
+                        {conflictHint}
                     </p>
                 </div>
 
@@ -278,7 +309,15 @@ function ConflictDialog({
     );
 }
 
-function EditableTextCell({ trabajo, fieldName, onPatched, canEdit = false, fallbackValue = null }) {
+function EditableTextCell({
+    trabajo,
+    fieldName,
+    onPatched,
+    canEdit = false,
+    fallbackValue = null,
+    maxWidthClass = 'max-w-[250px]',
+    textClassName = 'text-text-muted',
+}) {
     const [editing, setEditing] = useState(false);
     const { value, setValue, isSaving, error, conflict, save, cancel, resolveConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
@@ -303,7 +342,7 @@ function EditableTextCell({ trabajo, fieldName, onPatched, canEdit = false, fall
         const displayValue = trabajo[fieldName] || fallbackValue;
 
         return (
-            <span className="block max-w-[250px] truncate text-text-muted" title={displayValue ?? trabajo[fieldName]}>
+            <span className={`block ${maxWidthClass} truncate ${textClassName}`} title={displayValue ?? trabajo[fieldName]}>
                 {fmt(displayValue)}
             </span>
         );
@@ -340,17 +379,17 @@ function EditableTextCell({ trabajo, fieldName, onPatched, canEdit = false, fall
                         if (event.key === 'Enter') commit();
                         if (event.key === 'Escape') rollback();
                     }}
-                    className="h-7 w-full rounded-md border border-(--ciete-red) bg-surface px-2 text-xs text-text-main outline-none ring-1 ring-(--ciete-red)"
+                    className="h-9 w-full rounded-lg border border-(--ciete-red) bg-surface px-3 text-sm text-text-main outline-none ring-1 ring-(--ciete-red)"
                 />
             ) : (
                 <button
                     type="button"
                     onClick={() => setEditing(true)}
                     disabled={isSaving}
-                    className="group flex max-w-[250px] items-center rounded px-1 py-0.5 text-left text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:cursor-wait"
+                    className={`group flex ${maxWidthClass} items-center rounded-md px-1.5 py-1 text-left transition hover:bg-surface-2 hover:text-text-main disabled:cursor-wait`}
                     title={String(displayValue || 'Editar campo')}
                 >
-                    <span className="truncate">{fmt(displayValue)}</span>
+                    <span className={`truncate ${textClassName}`}>{fmt(displayValue)}</span>
                     <SavingMark show={isSaving} />
                     <FieldError message={error && !conflict ? error : null} />
                 </button>
@@ -415,7 +454,7 @@ function EditableDateCell({ trabajo, onPatched, canEdit = false }) {
                         if (event.key === 'Enter') commit();
                         if (event.key === 'Escape') rollback();
                     }}
-                    className="h-7 rounded-md border border-(--ciete-red) bg-surface px-2 text-xs text-text-main outline-none ring-1 ring-(--ciete-red)"
+                    className="h-9 rounded-lg border border-(--ciete-red) bg-surface px-3 text-sm text-text-main outline-none ring-1 ring-(--ciete-red)"
                 />
             ) : (
                 <button
@@ -486,7 +525,7 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
                     onKeyDown={(event) => {
                         if (event.key === 'Escape') rollback();
                     }}
-                    className="h-7 rounded-md border border-(--ciete-red) bg-surface px-2 text-xs text-text-main outline-none ring-1 ring-(--ciete-red)"
+                    className="h-9 min-w-[12rem] rounded-lg border border-(--ciete-red) bg-surface px-3 pr-9 text-sm text-text-main outline-none ring-1 ring-(--ciete-red)"
                 >
                     {ESTADO_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -529,7 +568,7 @@ function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdi
 
     if (!canEdit || !hasResponsables) {
         return (
-            <span className="block max-w-[170px] truncate text-text-muted" title={trabajo.nombre_responsable}>
+            <span className="block max-w-[220px] truncate text-text-muted" title={trabajo.nombre_responsable}>
                 {fmt(trabajo.nombre_responsable)}
             </span>
         );
@@ -569,7 +608,7 @@ function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdi
                     onKeyDown={(event) => {
                         if (event.key === 'Escape') rollback();
                     }}
-                    className="h-7 max-w-[180px] rounded-md border border-(--ciete-red) bg-surface px-2 text-xs text-text-main outline-none ring-1 ring-(--ciete-red)"
+                    className="h-9 w-full max-w-[14rem] rounded-lg border border-(--ciete-red) bg-surface px-3 pr-9 text-sm text-text-main outline-none ring-1 ring-(--ciete-red)"
                 >
                     <option value="">Sin responsable</option>
                     {responsables.map((responsable) => (
@@ -581,7 +620,7 @@ function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdi
                     type="button"
                     onClick={() => setEditing(true)}
                     disabled={isSaving}
-                    className="flex max-w-[170px] items-center rounded px-1 py-0.5 text-left text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:cursor-wait"
+                    className="flex max-w-[220px] items-center rounded-md px-1.5 py-1 text-left text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:cursor-wait"
                     title={trabajo.nombre_responsable ?? 'Asignar responsable'}
                 >
                     <span className="truncate">{fmt(responsableName(responsables, value) ?? trabajo.nombre_responsable)}</span>
@@ -589,6 +628,258 @@ function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdi
                     <FieldError message={error && !conflict ? error : null} />
                 </button>
             )}
+        </>
+    );
+}
+
+function EditablePedidoCell({ trabajo, pedidos = [], onPatched, canEdit = false }) {
+    const fieldName = 'id_pedido_principal';
+    const contextOptions = pedidos.filter((pedido) => String(pedido.id_contexto) === String(trabajo.id_contexto));
+    const hasCurrentPedido = contextOptions.some((pedido) => String(pedido.id) === String(trabajo.id_pedido_principal));
+    const options = !hasCurrentPedido && trabajo.id_pedido_principal
+        ? [
+            {
+                id: trabajo.id_pedido_principal,
+                id_contexto: trabajo.id_contexto,
+                id_trabajo: trabajo.id_trabajo,
+                numero: trabajo.numero_pedido_principal,
+                fecha_solicitud: trabajo.fecha_solicitud_pedido,
+            },
+            ...contextOptions,
+        ]
+        : contextOptions;
+    const selectedPedido = options.find((pedido) => String(pedido.id) === String(trabajo.id_pedido_principal)) ?? null;
+    const selectedLabel = pedidoLabel(selectedPedido) ?? trabajo.numero_pedido_principal;
+    const { value, isSaving, error, conflict, save, resolveConflict } = useOptimisticField({
+        entityId: trabajo.id_trabajo,
+        entityUpdatedAt: trabajo.updated_at,
+        fieldName,
+        initialValue: trabajo.id_pedido_principal ?? '',
+        patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
+        onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, fieldName),
+    });
+
+    if (!canEdit) {
+        return (
+            <span className="block max-w-[190px] truncate font-mono text-text-muted" title={selectedLabel ?? trabajo.numero_pedido_principal}>
+                {fmt(trabajo.numero_pedido_principal)}
+            </span>
+        );
+    }
+
+    return (
+        <>
+            <ConflictDialog
+                conflict={conflict}
+                fieldName={fieldName}
+                canKeepMine={canEdit}
+                isSaving={isSaving}
+                onReload={() => resolveConflict('reload')}
+                onCancel={() => resolveConflict('cancel')}
+                onKeepMine={() => resolveConflict('keepMine')}
+            />
+            <div className="flex items-center">
+                <select
+                    value={value}
+                    onChange={(event) => save(event.target.value)}
+                    disabled={isSaving || options.length === 0}
+                    className={`h-9 w-full min-w-[14rem] rounded-lg border bg-surface px-3 pr-9 font-mono text-sm leading-5 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-hint ${
+                        error ? 'border-red-300 bg-red-50/40' : 'border-border'
+                    }`}
+                    title={error ?? selectedLabel ?? 'Selecciona pedido'}
+                >
+                    <option value="" disabled>{options.length === 0 ? 'Sin pedidos disponibles' : 'Selecciona pedido'}</option>
+                    {options.map((pedido) => (
+                        <option key={pedido.id} value={pedido.id}>
+                            {pedidoLabel(pedido)}
+                        </option>
+                    ))}
+                </select>
+                <SavingMark show={isSaving} />
+                <FieldError message={error} />
+            </div>
+        </>
+    );
+}
+
+function EditableStationCell({ trabajo, estaciones = [], onPatched, canEdit = false }) {
+    const fieldName = 'id_estacion_servicio';
+    const contextOptions = estaciones.filter((estacion) => String(estacion.id_contexto) === String(trabajo.id_contexto));
+    const hasCurrentStation = contextOptions.some((estacion) => String(estacion.id) === String(trabajo.id_estacion_servicio));
+    const options = !hasCurrentStation && trabajo.id_estacion_servicio
+        ? [
+            {
+                id: trabajo.id_estacion_servicio,
+                id_contexto: trabajo.id_contexto,
+                codigo: trabajo.codigo_estacion,
+                nombre: trabajo.nombre_estacion,
+                municipio: trabajo.municipio,
+                provincia: trabajo.provincia,
+            },
+            ...contextOptions,
+        ]
+        : contextOptions;
+    const selectedStation = options.find((estacion) => String(estacion.id) === String(trabajo.id_estacion_servicio)) ?? null;
+    const selectedLabel = stationLabel(selectedStation) ?? trabajo.codigo_estacion;
+    const { value, isSaving, error, conflict, save, resolveConflict } = useOptimisticField({
+        entityId: trabajo.id_trabajo,
+        entityUpdatedAt: trabajo.updated_at,
+        fieldName,
+        initialValue: trabajo.id_estacion_servicio ?? '',
+        patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
+        onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, fieldName),
+    });
+
+    if (!canEdit) {
+        return (
+            <span className="block max-w-[190px] truncate font-mono text-(--ciete-red)" title={selectedLabel ?? trabajo.codigo_estacion}>
+                {fmt(trabajo.codigo_estacion)}
+            </span>
+        );
+    }
+
+    return (
+        <>
+            <ConflictDialog
+                conflict={conflict}
+                fieldName={fieldName}
+                canKeepMine={canEdit}
+                isSaving={isSaving}
+                onReload={() => resolveConflict('reload')}
+                onCancel={() => resolveConflict('cancel')}
+                onKeepMine={() => resolveConflict('keepMine')}
+            />
+            <div className="flex items-center">
+                <select
+                    value={value}
+                    onChange={(event) => save(event.target.value)}
+                    disabled={isSaving || options.length === 0}
+                    className={`h-9 w-full min-w-[15rem] rounded-lg border bg-surface px-3 pr-9 font-mono text-sm leading-5 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-hint ${
+                        error ? 'border-red-300 bg-red-50/40' : 'border-border'
+                    }`}
+                    title={error ?? selectedLabel ?? 'Selecciona estacion'}
+                >
+                    <option value="" disabled>{options.length === 0 ? 'Sin estaciones disponibles' : 'Selecciona estacion'}</option>
+                    {options.map((estacion) => (
+                        <option key={estacion.id} value={estacion.id}>
+                            {stationLabel(estacion)}
+                        </option>
+                    ))}
+                </select>
+                <SavingMark show={isSaving} />
+                <FieldError message={error} />
+            </div>
+        </>
+    );
+}
+
+function EditableCategoriaCell({
+    trabajo,
+    tiposDocumento = [],
+    tiposTrabajo = [],
+    onPatched,
+    canEdit = false,
+}) {
+    const isRepsol = Number(trabajo.id_contexto) === 2;
+    const contextDocumentTypes = tiposDocumento.filter((tipo) => String(tipo.id_contexto) === String(trabajo.id_contexto));
+    const contextWorkTypes = tiposTrabajo.filter((tipo) => String(tipo.id_contexto) === String(trabajo.id_contexto));
+    const documentField = useOptimisticField({
+        entityId: trabajo.id_trabajo,
+        entityUpdatedAt: trabajo.updated_at,
+        fieldName: 'id_tipo_documento',
+        initialValue: trabajo.id_tipo_documento ?? '',
+        patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
+        onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, 'id_tipo_documento'),
+    });
+    const workTypeField = useOptimisticField({
+        entityId: trabajo.id_trabajo,
+        entityUpdatedAt: trabajo.updated_at,
+        fieldName: 'id_tipo_trabajo',
+        initialValue: trabajo.id_tipo_trabajo ?? '',
+        patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
+        onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, 'id_tipo_trabajo'),
+    });
+
+    if (!isRepsol) {
+        return (
+            <EditableTextCell
+                trabajo={trabajo}
+                fieldName="categoria"
+                onPatched={onPatched}
+                canEdit={canEdit}
+            />
+        );
+    }
+
+    if (!canEdit) {
+        return (
+            <span className="block max-w-[220px] truncate text-text-muted" title={trabajo.tipo_trabajo_nombre}>
+                {fmt(trabajo.tipo_trabajo_nombre)}
+            </span>
+        );
+    }
+
+    const selectedDocumentId = documentField.value || trabajo.id_tipo_documento || '';
+    const availableWorkTypes = selectedDocumentId
+        ? contextWorkTypes.filter((tipo) => String(tipo.id_tipo_documento) === String(selectedDocumentId))
+        : contextWorkTypes;
+    const isSaving = documentField.isSaving || workTypeField.isSaving;
+    const error = documentField.error || workTypeField.error;
+
+    return (
+        <>
+            <ConflictDialog
+                conflict={documentField.conflict}
+                fieldName="id_tipo_documento"
+                canKeepMine={canEdit}
+                isSaving={documentField.isSaving}
+                onReload={() => documentField.resolveConflict('reload')}
+                onCancel={() => documentField.resolveConflict('cancel')}
+                onKeepMine={() => documentField.resolveConflict('keepMine')}
+            />
+            <ConflictDialog
+                conflict={workTypeField.conflict}
+                fieldName="id_tipo_trabajo"
+                canKeepMine={canEdit}
+                isSaving={workTypeField.isSaving}
+                onReload={() => workTypeField.resolveConflict('reload')}
+                onCancel={() => workTypeField.resolveConflict('cancel')}
+                onKeepMine={() => workTypeField.resolveConflict('keepMine')}
+            />
+            <div className="grid min-w-52 gap-1.5">
+                <select
+                    value={documentField.value}
+                    onChange={(event) => documentField.save(event.target.value)}
+                    disabled={isSaving || contextDocumentTypes.length === 0}
+                    className={`h-9 rounded-lg border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:bg-surface-2 disabled:text-text-hint ${
+                        documentField.error ? 'border-red-300 bg-red-50/40' : 'border-border'
+                    }`}
+                    title={documentField.error ?? 'Tipo documental'}
+                >
+                    <option value="" disabled>Tipo doc...</option>
+                    {contextDocumentTypes.map((tipo) => (
+                        <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                    ))}
+                </select>
+                <div className="flex items-center">
+                    <select
+                        value={workTypeField.value}
+                        onChange={(event) => workTypeField.save(event.target.value)}
+                        disabled={isSaving || availableWorkTypes.length === 0}
+                        className={`h-9 w-full rounded-lg border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:bg-surface-2 disabled:text-text-hint ${
+                            workTypeField.error ? 'border-red-300 bg-red-50/40' : 'border-border'
+                        }`}
+                        title={workTypeField.error ?? 'Tipo de trabajo'}
+                    >
+                        <option value="" disabled>Tipo trabajo...</option>
+                        {availableWorkTypes.map((tipo) => (
+                            <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
+                        ))}
+                    </select>
+                    <SavingMark show={isSaving} />
+                    <FieldError message={error} />
+                </div>
+            </div>
         </>
     );
 }
@@ -629,7 +920,7 @@ function ObservacionesModal({ trabajo, onClose, onPatched, canEdit = false }) {
 
     return (
         <>
-            <Modal show maxWidth="2xl" closeable={!isSaving} onClose={handleCancel}>
+            <Modal show maxWidth="2xl" closeable={false} onClose={handleCancel}>
                 <div className="bg-surface">
                     <div className="border-b border-border px-6 py-5">
                         <h3 className="text-lg font-semibold text-text-main">Editar observaciones</h3>
@@ -740,7 +1031,7 @@ function NewObservacionesModal({ value, onClose, onSave }) {
     const [draft, setDraft] = useState(value ?? '');
 
     return (
-        <Modal show maxWidth="2xl" onClose={onClose}>
+        <Modal show maxWidth="2xl" closeable={false} onClose={onClose}>
             <div className="bg-surface">
                 <div className="border-b border-border px-6 py-5">
                     <h3 className="text-lg font-semibold text-text-main">Editar observaciones</h3>
@@ -835,17 +1126,18 @@ function NewTrabajoRow({
         ? tiposTrabajo.filter((item) => String(item.id_tipo_documento) === String(row.id_tipo_documento))
         : tiposTrabajo;
 
-    const cellInput = (field) => `h-8 w-full rounded-md border bg-surface px-2 text-xs text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) ${
+    const cellInput = (field) => `h-11 w-full rounded-lg border bg-surface px-3 text-sm leading-5 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) ${
         errors?.[field] ? 'border-red-300 bg-red-50/40' : 'border-border'
     }`;
-    const readOnlyCell = 'block max-w-[190px] truncate text-text-hint';
+    const cellSelect = (field) => `${cellInput(field)} pr-10`;
+    const readOnlyCell = 'block max-w-[220px] truncate text-[12px] leading-5 text-text-muted';
 
     return (
-        <tr className="border-y border-(--ciete-red)/20 bg-(--ciete-red)/[0.035] align-middle">
-            <td className="whitespace-nowrap px-2 py-2 align-middle">
-                <div className="grid gap-1">
-                    <div className="flex items-center gap-2">
-                        <span className="rounded-full border border-(--ciete-red)/20 bg-(--ciete-red)/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-(--ciete-red)">
+        <tr className="border-y border-(--ciete-red)/30 bg-(--ciete-red)/[0.06] align-middle shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <td className="whitespace-nowrap px-3 py-3 align-top">
+                <div className="grid gap-2.5">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <span className="rounded-full border border-(--ciete-red)/25 bg-(--ciete-red)/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-(--ciete-red)">
                             Nuevo
                         </span>
                         <input
@@ -853,7 +1145,7 @@ function NewTrabajoRow({
                             autoFocus
                             value={row.numero_trabajo}
                             onChange={(event) => onChange('numero_trabajo', event.target.value)}
-                            className={`${cellInput('numero_trabajo')} max-w-24 font-mono`}
+                            className={`${cellInput('numero_trabajo')} max-w-28 font-mono`}
                             placeholder="Interno"
                         />
                     </div>
@@ -865,11 +1157,11 @@ function NewTrabajoRow({
                     />
                 </div>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <select
                     value={row.id_estacion_servicio}
                     onChange={(event) => onChange('id_estacion_servicio', event.target.value)}
-                    className={cellInput('id_estacion_servicio')}
+                    className={cellSelect('id_estacion_servicio')}
                 >
                     <option value="">Estacion...</option>
                     {estaciones.map((estacion) => (
@@ -879,25 +1171,25 @@ function NewTrabajoRow({
                     ))}
                 </select>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <span className={readOnlyCell} title={selectedStation?.nombre}>{fmt(selectedStation?.nombre)}</span>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <span className={readOnlyCell}>{fmt(selectedStation?.municipio)}</span>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <span className={readOnlyCell}>{fmt(selectedStation?.provincia)}</span>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 {isRepsol ? (
-                    <div className="grid gap-1">
+                    <div className="grid gap-2">
                         <select
                             value={row.id_tipo_documento}
                             onChange={(event) => {
                                 onChange('id_tipo_documento', event.target.value);
                                 onChange('id_tipo_trabajo', '');
                             }}
-                            className={cellInput('id_tipo_documento')}
+                            className={cellSelect('id_tipo_documento')}
                         >
                             <option value="">Tipo doc...</option>
                             {tiposDocumento.map((tipo) => (
@@ -907,7 +1199,7 @@ function NewTrabajoRow({
                         <select
                             value={row.id_tipo_trabajo}
                             onChange={(event) => onChange('id_tipo_trabajo', event.target.value)}
-                            className={cellInput('id_tipo_trabajo')}
+                            className={cellSelect('id_tipo_trabajo')}
                         >
                             <option value="">Tipo trabajo...</option>
                             {availableWorkTypes.map((tipo) => (
@@ -924,7 +1216,7 @@ function NewTrabajoRow({
                     />
                 )}
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <input
                     value={row.descripcion_trabajo}
                     onChange={(event) => onChange('descripcion_trabajo', event.target.value)}
@@ -932,13 +1224,13 @@ function NewTrabajoRow({
                     placeholder="Descripcion"
                 />
             </td>
-            <td className="px-2 py-2 align-middle text-text-hint">-</td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top text-text-hint">-</td>
+            <td className="px-3 py-3 align-top">
                 {isMoeve ? (
                     <select
                         value={row.id_contrato}
                         onChange={(event) => onChange('id_contrato', event.target.value)}
-                        className={cellInput('id_contrato')}
+                        className={cellSelect('id_contrato')}
                     >
                         <option value="">Contrato...</option>
                         {contratos.map((contrato) => (
@@ -946,30 +1238,30 @@ function NewTrabajoRow({
                         ))}
                     </select>
                 ) : (
-                    <span className="rounded border border-border bg-surface-2 px-2 py-1 text-[11px] text-text-hint" title="Campo bloqueado para este contexto">
+                    <span className="rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[11px] text-text-hint" title="Campo bloqueado para este contexto">
                         No aplica
                     </span>
                 )}
             </td>
-            <td className="px-2 py-2 text-right align-middle text-text-hint">-</td>
-            <td className="px-2 py-2 text-right align-middle text-text-hint">-</td>
-            <td className="px-2 py-2 text-right align-middle text-text-hint">-</td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 text-right align-top text-text-hint">-</td>
+            <td className="px-3 py-3 text-right align-top text-text-hint">-</td>
+            <td className="px-3 py-3 text-right align-top text-text-hint">-</td>
+            <td className="px-3 py-3 align-top">
                 <select
                     value={row.estado}
                     onChange={(event) => onChange('estado', event.target.value)}
-                    className={cellInput('estado')}
+                    className={cellSelect('estado')}
                 >
                     {ESTADO_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                 </select>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <select
                     value={row.id_responsable_ciete}
                     onChange={(event) => onChange('id_responsable_ciete', event.target.value)}
-                    className={cellInput('id_responsable_ciete')}
+                    className={cellSelect('id_responsable_ciete')}
                 >
                     <option value="">Sin responsable</option>
                     {responsables.map((responsable) => (
@@ -977,7 +1269,7 @@ function NewTrabajoRow({
                     ))}
                 </select>
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <input
                     type="date"
                     value={toDateInput(row.fecha_encargo)}
@@ -985,8 +1277,8 @@ function NewTrabajoRow({
                     className={cellInput('fecha_encargo')}
                 />
             </td>
-            <td className="px-2 py-2 align-middle text-text-hint">-</td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top text-text-hint">-</td>
+            <td className="px-3 py-3 align-top">
                 <input
                     type="date"
                     value={toDateInput(row.fecha_terminacion)}
@@ -994,16 +1286,16 @@ function NewTrabajoRow({
                     className={cellInput('fecha_terminacion')}
                 />
             </td>
-            <td className="px-2 py-2 align-middle">
+            <td className="px-3 py-3 align-top">
                 <NewObservacionesCell value={row.observaciones} onChange={(value) => onChange('observaciones', value)} />
             </td>
-            <td className="px-2 py-2 align-middle">
-                <div className="flex min-w-36 flex-col gap-1.5">
+            <td className="px-3 py-3 align-top">
+                <div className="flex min-w-40 flex-col gap-2">
                     <button
                         type="button"
                         onClick={onSave}
                         disabled={isSaving}
-                        className="rounded-md bg-(--ciete-red) px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-50"
+                        className="rounded-md bg-(--ciete-red) px-3 py-2.5 text-xs font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-50"
                     >
                         {isSaving ? 'Guardando...' : 'Guardar'}
                     </button>
@@ -1011,7 +1303,7 @@ function NewTrabajoRow({
                         type="button"
                         onClick={onCancel}
                         disabled={isSaving}
-                        className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:opacity-50"
+                        className="rounded-md border border-border bg-surface px-3 py-2.5 text-xs font-medium text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:opacity-50"
                     >
                         Cancelar
                     </button>
@@ -1032,6 +1324,10 @@ export default function TrabajosExcelView({
 }) {
     const { auth } = usePage().props;
     const activeContext = auth?.user?.active_context;
+    const pedidos = creationCatalogs?.pedidos ?? [];
+    const estaciones = creationCatalogs?.estaciones ?? [];
+    const tiposDocumento = creationCatalogs?.tiposDocumento ?? [];
+    const tiposTrabajo = creationCatalogs?.tiposTrabajo ?? [];
     const canCreateInContext = canCreate && !activeContext?.is_all;
     const [rows, setRows] = useState(trabajos);
     const [search, setSearch] = useState(filters.search ?? '');
@@ -1130,11 +1426,11 @@ export default function TrabajosExcelView({
         const errors = {};
         const allowedStates = new Set(ESTADO_OPTIONS.map((option) => option.value));
 
-        if (!String(newRow?.numero_trabajo ?? '').trim()) errors.numero_trabajo = 'El numero de trabajo es obligatorio.';
-        if (!String(newRow?.id_estacion_servicio ?? '').trim()) errors.id_estacion_servicio = 'La estacion es obligatoria.';
-        if (!String(newRow?.descripcion_trabajo ?? '').trim()) errors.descripcion_trabajo = 'La descripcion es obligatoria.';
+        if (!String(newRow?.numero_trabajo ?? '').trim()) errors.numero_trabajo = 'El número de trabajo es obligatorio.';
+        if (!String(newRow?.id_estacion_servicio ?? '').trim()) errors.id_estacion_servicio = 'La estación es obligatoria.';
+        if (!String(newRow?.descripcion_trabajo ?? '').trim()) errors.descripcion_trabajo = 'La descripción es obligatoria.';
         if (!String(newRow?.fecha_encargo ?? '').trim()) errors.fecha_encargo = 'La fecha de encargo es obligatoria.';
-        if (newRow?.estado && !allowedStates.has(newRow.estado)) errors.estado = 'Estado no valido.';
+        if (newRow?.estado && !allowedStates.has(newRow.estado)) errors.estado = 'Estado no válido.';
         if (isMoeveContext(activeContext) && !String(newRow?.id_contrato ?? '').trim()) errors.id_contrato = 'El contrato es obligatorio para MOEVE.';
         if (isRepsolContext(activeContext) && !String(newRow?.id_tipo_documento ?? '').trim()) errors.id_tipo_documento = 'El tipo documental es obligatorio para REPSOL.';
         if (isRepsolContext(activeContext) && !String(newRow?.id_tipo_trabajo ?? '').trim()) errors.id_tipo_trabajo = 'El tipo de trabajo es obligatorio para REPSOL.';
@@ -1145,7 +1441,7 @@ export default function TrabajosExcelView({
     function buildNewRowPayload() {
         return {
             id_contexto: activeContext?.id_contexto ? Number(activeContext.id_contexto) : undefined,
-            numero_trabajo: String(newRow.numero_trabajo).trim(),
+            numero_trabajo: Number(newRow.numero_trabajo),
             numero_trabajo_operativo: String(newRow.numero_trabajo_operativo ?? '').trim() || null,
             id_estacion_servicio: Number(newRow.id_estacion_servicio),
             descripcion_trabajo: String(newRow.descripcion_trabajo).trim(),
@@ -1249,7 +1545,7 @@ export default function TrabajosExcelView({
                         setEstado(event.target.value);
                         doFilter({ estado: event.target.value });
                     }}
-                    className="h-8 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
+                    className="h-9 min-w-[11rem] rounded-md border border-border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
                 >
                     <option value="">Todos los estados</option>
                     {ESTADO_OPTIONS.map((option) => (
@@ -1264,7 +1560,7 @@ export default function TrabajosExcelView({
                             setResponsableId(event.target.value);
                             doFilter({ id_responsable_ciete: event.target.value });
                         }}
-                        className="h-8 max-w-48 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
+                        className="h-9 min-w-[12rem] max-w-56 rounded-md border border-border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
                     >
                         <option value="">Todos los responsables</option>
                         {responsables.map((responsable) => (
@@ -1352,7 +1648,7 @@ export default function TrabajosExcelView({
             </div>
 
             {newRow && (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--ciete-red)/20 bg-(--ciete-red)/[0.035] px-3 py-2">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--ciete-red)/20 bg-(--ciete-red)/[0.045] px-4 py-3">
                     <div>
                         <p className="text-sm font-semibold text-text-main">Trabajo nuevo sin guardar</p>
                         <p className="text-xs text-text-muted">
@@ -1391,13 +1687,13 @@ export default function TrabajosExcelView({
             )}
 
             <div className="overflow-x-auto rounded-xl border border-border shadow-sm">
-                <table className="w-full min-w-[2350px] divide-y divide-border text-xs">
+                <table className="ciete-excel-table w-full min-w-[2500px] divide-y divide-border text-xs">
                     <thead className="bg-surface-2">
                         <tr>
                             {TABLE_COLUMNS.map((column) => (
                                 <th
                                     key={column.label}
-                                    className={`${column.width} whitespace-nowrap px-2 py-2 text-left font-semibold uppercase tracking-wide text-text-hint`}
+                                    className={`${column.width} whitespace-nowrap border-b border-border/70 px-3 py-3 text-left font-semibold uppercase tracking-wide text-text-hint`}
                                 >
                                     {column.label}
                                 </th>
@@ -1434,80 +1730,74 @@ export default function TrabajosExcelView({
                             return (
                                 <tr
                                     key={trabajo.id_trabajo}
-                                    className={`transition hover:bg-surface-2/60 ${isCancelled ? 'bg-surface-2/35 opacity-70' : ''}`}
+                                    className={`transition hover:bg-surface-2/65 ${isCancelled ? 'bg-surface-2/35 opacity-70' : ''}`}
                                 >
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle font-mono font-semibold text-(--ciete-red)">
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top font-mono font-semibold text-(--ciete-red)">
                                         <EditableTextCell
                                             trabajo={trabajo}
                                             fieldName="numero_trabajo_operativo"
                                             onPatched={onPatched}
                                             canEdit={canEditRow}
                                             fallbackValue={formatWorkNumber(trabajo.numero_trabajo)}
+                                            maxWidthClass="max-w-[170px]"
                                         />
                                     </td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle font-mono font-semibold text-(--ciete-red)">
-                                        <EditableTextCell
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top font-mono font-semibold text-(--ciete-red)">
+                                        <EditableStationCell
                                             trabajo={trabajo}
-                                            fieldName="codigo_estacion"
+                                            estaciones={estaciones}
                                             onPatched={onPatched}
                                             canEdit={canEditRow}
                                         />
                                     </td>
-                                    <td className="max-w-[190px] truncate px-2 py-1.5 align-middle font-medium text-text-main" title={trabajo.nombre_estacion}>
-                                        <EditableTextCell
+                                    <td className="max-w-[260px] px-3 py-2.5 align-top font-medium text-text-main" title={trabajo.nombre_estacion}>
+                                        <span className="block max-w-[260px] truncate leading-5 text-text-main">{fmt(trabajo.nombre_estacion)}</span>
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top text-text-muted">
+                                        <span className="block max-w-[170px] truncate leading-5 text-text-muted">{fmt(trabajo.municipio)}</span>
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top text-text-muted">
+                                        <span className="block max-w-[170px] truncate leading-5 text-text-muted">{fmt(trabajo.provincia)}</span>
+                                    </td>
+                                    <td className="max-w-[230px] px-3 py-2.5 align-top text-text-muted" title={trabajo.tipo_trabajo_nombre ?? trabajo.categoria}>
+                                        <EditableCategoriaCell
                                             trabajo={trabajo}
-                                            fieldName="nombre_estacion"
+                                            tiposDocumento={tiposDocumento}
+                                            tiposTrabajo={tiposTrabajo}
                                             onPatched={onPatched}
                                             canEdit={canEditRow}
                                         />
                                     </td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle text-text-muted">
-                                        <EditableTextCell
-                                            trabajo={trabajo}
-                                            fieldName="municipio"
-                                            onPatched={onPatched}
-                                            canEdit={canEditRow}
-                                        />
-                                    </td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle text-text-muted">
-                                        <EditableTextCell
-                                            trabajo={trabajo}
-                                            fieldName="provincia"
-                                            onPatched={onPatched}
-                                            canEdit={canEditRow}
-                                        />
-                                    </td>
-                                    <td className="max-w-[180px] truncate px-2 py-1.5 align-middle text-text-muted" title={trabajo.tipo_trabajo_nombre ?? trabajo.categoria}>
-                                        {trabajo.categoria !== undefined && trabajo.categoria !== null ? (
-                                            <EditableTextCell
-                                                trabajo={trabajo}
-                                                fieldName="categoria"
-                                                onPatched={onPatched}
-                                                canEdit={canEditRow}
-                                            />
-                                        ) : (
-                                            fmt(trabajo.tipo_trabajo_nombre)
-                                        )}
-                                    </td>
-                                    <td className="px-2 py-1.5 align-middle">
+                                    <td className="px-3 py-2.5 align-top">
                                         <EditableTextCell
                                             trabajo={trabajo}
                                             fieldName="descripcion_trabajo"
                                             onPatched={onPatched}
                                             canEdit={canEditRow}
+                                            maxWidthClass="max-w-[380px]"
+                                            textClassName="text-text-main"
                                         />
                                     </td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle font-mono text-text-muted">{fmt(trabajo.numero_pedido_principal)}</td>
-                                    <td className="max-w-[190px] truncate px-2 py-1.5 align-middle text-text-muted" title={contractTariff(trabajo)}>
-                                        {fmt(contractTariff(trabajo))}
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top">
+                                        <EditablePedidoCell
+                                            trabajo={trabajo}
+                                            pedidos={pedidos}
+                                            onPatched={onPatched}
+                                            canEdit={canEditRow}
+                                        />
                                     </td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 text-right align-middle text-text-muted">{fmtMoney(trabajo.importe_pedido_total)}</td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 text-right align-middle text-text-muted">{fmtMoney(trabajo.importe_solicitado_total)}</td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 text-right align-middle text-text-muted">{fmtMoney(trabajo.importe_facturado_total)}</td>
-                                    <td className="px-2 py-1.5 align-middle">
+                                    <td className="max-w-[260px] px-3 py-2.5 align-top text-text-muted" title={contractTariff(trabajo)}>
+                                        <span className="block max-w-[260px] truncate leading-5 text-text-main/90">
+                                            {fmt(contractTariff(trabajo))}
+                                        </span>
+                                    </td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 text-right align-top text-text-muted">{fmtMoney(trabajo.importe_pedido_total)}</td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 text-right align-top text-text-muted">{fmtMoney(trabajo.importe_solicitado_total)}</td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 text-right align-top text-text-muted">{fmtMoney(trabajo.importe_facturado_total)}</td>
+                                    <td className="px-3 py-2.5 align-top">
                                         <EditableEstadoCell trabajo={trabajo} onPatched={onPatched} canEdit={canEditRow} />
                                     </td>
-                                    <td className="px-2 py-1.5 align-middle">
+                                    <td className="px-3 py-2.5 align-top">
                                         <EditableResponsableCell
                                             trabajo={trabajo}
                                             responsables={responsables}
@@ -1515,22 +1805,28 @@ export default function TrabajosExcelView({
                                             canEdit={canEditRow}
                                         />
                                     </td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle text-text-muted">{fmtDate(trabajo.fecha_encargo)}</td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle text-text-muted">{fmtDate(trabajo.fecha_solicitud_pedido)}</td>
-                                    <td className="whitespace-nowrap px-2 py-1.5 align-middle">
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top text-text-muted">{fmtDate(trabajo.fecha_encargo)}</td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top text-text-muted">{fmtDate(trabajo.fecha_solicitud_pedido)}</td>
+                                    <td className="whitespace-nowrap px-3 py-2.5 align-top">
                                         <EditableDateCell trabajo={trabajo} onPatched={onPatched} canEdit={canEditRow} />
                                     </td>
-                                    <td className="px-2 py-1.5 align-middle">
+                                    <td className="px-3 py-2.5 align-top">
                                         <ObservacionesCell trabajo={trabajo} onPatched={onPatched} canEdit={canEditRow} />
                                     </td>
-                                    <td className="px-2 py-1.5 align-middle">
-                                        <button
-                                            type="button"
-                                            onClick={() => router.visit(route('trabajos.edit', trabajo.id_trabajo))}
-                                            className="rounded-md border border-border px-2.5 py-1 text-xs font-medium text-text-muted transition hover:bg-surface-2 hover:text-(--ciete-red)"
-                                        >
-                                            Abrir ficha
-                                        </button>
+                                    <td className="px-3 py-2.5 align-top">
+                                        {canEditRow ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => router.visit(route('trabajos.edit', trabajo.id_trabajo))}
+                                                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-text-muted transition hover:bg-surface-2 hover:text-(--ciete-red)"
+                                            >
+                                                Abrir ficha
+                                            </button>
+                                        ) : (
+                                            <span className="text-[11px] font-medium uppercase tracking-widest text-text-hint">
+                                                Solo lectura
+                                            </span>
+                                        )}
                                     </td>
                                 </tr>
                             );
@@ -1539,29 +1835,11 @@ export default function TrabajosExcelView({
                 </table>
             </div>
 
-            {pagination && pagination.last_page > 1 && (
-                <div className="flex items-center justify-between text-xs text-text-muted">
-                    <span>Pág. {pagination.current_page} / {pagination.last_page}</span>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            disabled={pagination.current_page <= 1}
-                            onClick={() => doFilter({ page: pagination.current_page - 1 })}
-                            className="rounded-md border border-border px-3 py-1.5 transition hover:bg-surface-2 disabled:opacity-40"
-                        >
-                            Anterior
-                        </button>
-                        <button
-                            type="button"
-                            disabled={pagination.current_page >= pagination.last_page}
-                            onClick={() => doFilter({ page: pagination.current_page + 1 })}
-                            className="rounded-md border border-border px-3 py-1.5 transition hover:bg-surface-2 disabled:opacity-40"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
+            <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => doFilter({ page: p })}
+                entityLabel="trabajos"
+            />
         </div>
     );
 }

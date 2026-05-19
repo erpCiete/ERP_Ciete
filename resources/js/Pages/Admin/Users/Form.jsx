@@ -19,6 +19,8 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
         contextos: user?.contextos?.map((c) => c.id_contexto) ?? [],
     });
 
+    const selectedRoles = roles.filter((role) => data.roles.includes(role.id_rol));
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isEditing) {
@@ -170,6 +172,7 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
 
                     <section className="rounded-[12px] border border-border bg-surface p-5 space-y-4">
                         <h3 className="text-sm font-medium text-text-main">{t('adminUsers.sections.roles')}</h3>
+                        <p className="text-xs text-text-hint">{t('adminUsers.permissionsInheritedNote')}</p>
                         <div className="flex flex-wrap gap-2">
                             {roles.map((role) => (
                                 <button
@@ -187,14 +190,74 @@ export default function UsersForm({ user = null, roles = [], contextos = [] }) {
                             ))}
                         </div>
                         {errors.roles && <p className="mt-1 text-[10px] text-state-blocked-text">{errors.roles}</p>}
+
+                        <div className="space-y-3 rounded-[10px] border border-border bg-surface-2 p-3">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">
+                                {t('adminUsers.roleScopeTitle')}
+                            </p>
+                            {selectedRoles.length === 0 ? (
+                                <p className="text-xs text-text-hint">{t('adminUsers.noRoleSelected')}</p>
+                            ) : (
+                                selectedRoles.map((role) => (
+                                    <div key={role.id_rol} className="rounded-lg border border-border bg-surface p-3">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent">
+                                                {role.nombre}
+                                            </span>
+                                            <span className="text-[10px] uppercase tracking-widest text-text-hint">{role.slug}</span>
+                                        </div>
+                                        <p className="mt-2 text-xs text-text-muted">{role.descripcion}</p>
+
+                                        <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('adminUsers.scopeTechnical')}</p>
+                                                <ul className="mt-1 space-y-1 text-xs text-text-muted">
+                                                    {(role.scope_summary?.technical ?? []).length === 0 ? (
+                                                        <li>{t('adminUsers.noPermissionsInScope')}</li>
+                                                    ) : (
+                                                        (role.scope_summary?.technical ?? []).map((permission) => (
+                                                            <li key={`${role.id_rol}-${permission.slug}`}>{permission.nombre}</li>
+                                                        ))
+                                                    )}
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('adminUsers.scopeOperationalRead')}</p>
+                                                <ul className="mt-1 space-y-1 text-xs text-text-muted">
+                                                    {(role.scope_summary?.operational_read ?? []).length === 0 ? (
+                                                        <li>{t('adminUsers.noPermissionsInScope')}</li>
+                                                    ) : (
+                                                        (role.scope_summary?.operational_read ?? []).map((permission) => (
+                                                            <li key={`${role.id_rol}-${permission.slug}`}>{permission.nombre}</li>
+                                                        ))
+                                                    )}
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold uppercase tracking-widest text-text-hint">{t('adminUsers.scopeOperationalMutation')}</p>
+                                                <ul className="mt-1 space-y-1 text-xs text-text-muted">
+                                                    {(role.scope_summary?.operational_mutation ?? []).length === 0 ? (
+                                                        <li>{t('adminUsers.noPermissionsInScope')}</li>
+                                                    ) : (
+                                                        (role.scope_summary?.operational_mutation ?? []).map((permission) => (
+                                                            <li key={`${role.id_rol}-${permission.slug}`}>{permission.nombre}</li>
+                                                        ))
+                                                    )}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </section>
 
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <Link
-                            href={route('maestros.index')}
+                            href={route('admin.users.index')}
                             className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-main transition hover:bg-surface-2"
                         >
-                            Volver a maestros
+                            {t('adminUsers.backToList')}
                         </Link>
                         <button type="submit" disabled={processing} className="ciete-btn-primary w-full text-xs sm:w-auto">
                             {processing ? t('adminUsers.saving') : isEditing ? t('adminUsers.updateUser') : t('adminUsers.createUser')}

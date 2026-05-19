@@ -19,14 +19,15 @@ export const EMPTY_ITEM = {
 // ─── Helper: formato € europeo ────────────────────────────────────────────────
 export function formatEur(value) {
     return Number(value ?? 0).toLocaleString('es-ES', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     }) + ' €';
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
-export default function ItemsTable({ items = [], onChange, errors = {}, disabled = false }) {
+export default function ItemsTable({ items = [], onChange, errors = {}, disabled = false, tarifarioLineas = [] }) {
     const { t } = useI18n();
+    const hasTarifarioLineas = tarifarioLineas.length > 0;
 
     // ── Actualizar un campo de una línea y recalcular total ───────────────────
     const actualizarLinea = (index, campo, valor) => {
@@ -37,6 +38,38 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
             actualizado.total_linea =
                 Number(actualizado.cantidad) * Number(actualizado.precio_unitario);
             return actualizado;
+        }));
+    };
+
+    const seleccionarTarifa = (index, idTarifarioLinea) => {
+        const selected = tarifarioLineas.find((linea) => String(linea.id_tarifario_linea) === String(idTarifarioLinea));
+
+        onChange(prev => prev.map((item, i) => {
+            if (i !== index) return item;
+            if (!selected) {
+                return {
+                    ...item,
+                    id_tarifario_linea: null,
+                    codigo_servicio: '',
+                    numero_tarifa: '',
+                    descripcion_servicio: '',
+                    precio_unitario: 0,
+                    total_linea: 0,
+                };
+            }
+
+            const cantidad = Number(item.cantidad) || 1;
+            const precio = Number(selected.tarifa_aplicada ?? selected.tarifa_base ?? 0);
+
+            return {
+                ...item,
+                id_tarifario_linea: selected.id_tarifario_linea,
+                codigo_servicio: selected.codigo_tarifa ?? '',
+                numero_tarifa: selected.codigo_tarifa ?? '',
+                descripcion_servicio: selected.actuacion ?? selected.descripcion ?? '',
+                precio_unitario: precio,
+                total_linea: cantidad * precio,
+            };
         }));
     };
 
@@ -68,8 +101,8 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                 <table className="min-w-[760px] w-full divide-y divide-border text-sm">
                     <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                         <tr>
-                            <th className="px-3 py-2 w-32">
-                                {t('pedidos.fields.codigoServicio') ?? 'Código'}
+                            <th className="px-3 py-2 w-56">
+                                Tarifa / codigo
                             </th>
                             <th className="px-3 py-2">
                                 {t('pedidos.fields.descripcionServicio') ?? 'Descripción'}
@@ -105,30 +138,66 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
 
                         {items.map((item, index) => {
                             const errLinea = errors[`items.${index}`] ?? {};
+                            const fieldError = (field) => errLinea[field] ?? errors[`items.${index}.${field}`];
                             const isFacturado = Boolean(
                                 item.esta_facturado || Number(item.factura_items_count ?? 0) > 0,
                             );
+                            const selectedTarifa = hasTarifarioLineas
+                                ? tarifarioLineas.find((linea) => String(linea.id_tarifario_linea) === String(item.id_tarifario_linea))
+                                : null;
+                            const disableManualFields = hasTarifarioLineas;
 
                             return (
                                 <tr key={item.id_pedido_item ?? index} className="group">
-                                    {/* Código de servicio */}
+                                    {/* Tarifa / codigo de servicio */}
                                     <td className="px-3 py-2 align-top">
-                                        <input
-                                            type="text"
-                                            value={item.codigo_servicio}
-                                            disabled={disabled}
-                                            onChange={e => actualizarLinea(index, 'codigo_servicio', e.target.value)}
-                                            placeholder="G-1"
-                                            className={`w-full rounded-md border px-2 py-1.5 text-sm bg-surface text-text-main
-                                                focus:outline-none focus:ring-1
-                                                disabled:bg-surface-2 disabled:text-text-hint
-                                                ${errLinea.codigo_servicio
+                                        {hasTarifarioLineas ? (
+                                            <select
+                                                value={item.id_tarifario_linea ?? ''}
+                                                disabled={disabled || isFacturado}
+                                                onChange={e => seleccionarTarifa(index, e.target.value)}
+                                                className={`w-full rounded-md border px-2 py-1.5 text-sm bg-surface text-text-main
+                                                    focus:outline-none focus:ring-1
+                                                    disabled:bg-surface-2 disabled:text-text-hint
+                                                    ${fieldError('id_tarifario_linea') || fieldError('codigo_servicio')
+                                                        ? 'border-red-400 focus:ring-red-300'
+                                                        : 'border-border focus:border-(--ciete-red) focus:ring-(--ciete-red)/30'}`}
+                                            >
+                                                <option value="">Selecciona tarifa</option>
+                                                {tarifarioLineas.map((linea) => (
+                                                    <option key={linea.id_tarifario_linea} value={linea.id_tarifario_linea}>
+                                                        {linea.codigo_tarifa} - {linea.actuacion}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={item.codigo_servicio}
+                                                disabled={disabled}
+                                                onChange={e => actualizarLinea(index, 'codigo_servicio', e.target.value)}
+                                                placeholder="G-1"
+                                                className={`w-full rounded-md border px-2 py-1.5 text-sm bg-surface text-text-main
+                                                    focus:outline-none focus:ring-1
+                                                    disabled:bg-surface-2 disabled:text-text-hint
+                                                ${fieldError('codigo_servicio')
                                                     ? 'border-red-400 focus:ring-red-300'
                                                     : 'border-border focus:border-(--ciete-red) focus:ring-(--ciete-red)/30'}`}
-                                        />
-                                        {errLinea.codigo_servicio && (
+                                            />
+                                        )}
+                                        {fieldError('id_tarifario_linea') && (
                                             <p className="mt-0.5 text-[10px] text-red-600">
-                                                {errLinea.codigo_servicio}
+                                                {fieldError('id_tarifario_linea')}
+                                            </p>
+                                        )}
+                                        {fieldError('codigo_servicio') && (
+                                            <p className="mt-0.5 text-[10px] text-red-600">
+                                                {fieldError('codigo_servicio')}
+                                            </p>
+                                        )}
+                                        {hasTarifarioLineas && !selectedTarifa && !fieldError('id_tarifario_linea') && (
+                                            <p className="mt-0.5 text-[10px] text-text-hint">
+                                                Selecciona una linea para cargar descripcion y precio.
                                             </p>
                                         )}
                                     </td>
@@ -138,19 +207,19 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                                         <input
                                             type="text"
                                             value={item.descripcion_servicio}
-                                            disabled={disabled}
+                                            disabled={disabled || disableManualFields}
                                             onChange={e => actualizarLinea(index, 'descripcion_servicio', e.target.value)}
                                             placeholder="Descripción del servicio..."
                                             className={`w-full rounded-md border px-2 py-1.5 text-sm bg-surface text-text-main
                                                 focus:outline-none focus:ring-1
                                                 disabled:bg-surface-2 disabled:text-text-hint
-                                                ${errLinea.descripcion_servicio
+                                                ${fieldError('descripcion_servicio')
                                                     ? 'border-red-400 focus:ring-red-300'
                                                     : 'border-border focus:border-(--ciete-red) focus:ring-(--ciete-red)/30'}`}
                                         />
-                                        {errLinea.descripcion_servicio && (
+                                        {fieldError('descripcion_servicio') && (
                                             <p className="mt-0.5 text-[10px] text-red-600">
-                                                {errLinea.descripcion_servicio}
+                                                {fieldError('descripcion_servicio')}
                                             </p>
                                         )}
                                     </td>
@@ -159,21 +228,21 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                                     <td className="px-3 py-2 align-top">
                                         <input
                                             type="number"
-                                            min="0"
-                                            step="0.01"
+                                            min="1"
+                                            step="1"
                                             value={item.cantidad}
                                             disabled={disabled}
                                             onChange={e => actualizarLinea(index, 'cantidad', e.target.value)}
                                             className={`w-full rounded-md border px-2 py-1.5 text-sm text-right bg-surface text-text-main
                                                 focus:outline-none focus:ring-1
                                                 disabled:bg-surface-2 disabled:text-text-hint
-                                                ${errLinea.cantidad
+                                                ${fieldError('cantidad')
                                                     ? 'border-red-400 focus:ring-red-300'
                                                     : 'border-border focus:border-(--ciete-red) focus:ring-(--ciete-red)/30'}`}
                                         />
-                                        {errLinea.cantidad && (
+                                        {fieldError('cantidad') && (
                                             <p className="mt-0.5 text-[10px] text-red-600">
-                                                {errLinea.cantidad}
+                                                {fieldError('cantidad')}
                                             </p>
                                         )}
                                     </td>
@@ -186,12 +255,12 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                                                 min="0"
                                                 step="0.01"
                                                 value={item.precio_unitario}
-                                                disabled={disabled}
+                                                disabled={disabled || disableManualFields}
                                                 onChange={e => actualizarLinea(index, 'precio_unitario', e.target.value)}
                                                 className={`w-full rounded-md border px-2 py-1.5 pr-6 text-sm text-right bg-surface text-text-main
                                                     focus:outline-none focus:ring-1
                                                     disabled:bg-surface-2 disabled:text-text-hint
-                                                    ${errLinea.precio_unitario
+                                                    ${fieldError('precio_unitario')
                                                         ? 'border-red-400 focus:ring-red-300'
                                                         : 'border-border focus:border-(--ciete-red) focus:ring-(--ciete-red)/30'}`}
                                             />
@@ -199,9 +268,9 @@ export default function ItemsTable({ items = [], onChange, errors = {}, disabled
                                                 €
                                             </span>
                                         </div>
-                                        {errLinea.precio_unitario && (
+                                        {fieldError('precio_unitario') && (
                                             <p className="mt-0.5 text-[10px] text-red-600">
-                                                {errLinea.precio_unitario}
+                                                {fieldError('precio_unitario')}
                                             </p>
                                         )}
                                     </td>

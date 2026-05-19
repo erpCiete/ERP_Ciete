@@ -105,7 +105,11 @@ export default function Welcome({ homeNotices = {}, featuredNotice = null }) {
     const showDeferredSections = useDeferredLandingSections();
 
     const lang = locale === 'en' ? 'en' : 'es';
-    const pick = (items) => (items || []).map((item) => item[lang] || item.es || '');
+    const pick = (items) => (items || []).map((item) => ({
+        id: item.id,
+        title: item[`title_${lang}`] || item.title_es || item.title_en || '',
+        body: item[`body_${lang}`] || item.body_es || item.body_en || item[lang] || item.es || '',
+    })).filter((item) => item.title || item.body);
 
     const internalNotices = pick(homeNotices.notices);
     const systemUpdates = pick(homeNotices.updates);

@@ -6,7 +6,6 @@ use App\Models\Factura;
 use App\Models\PedidoItem;
 use App\Models\Trabajo;
 use App\Support\ContextGuard;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -99,7 +98,7 @@ class StoreFacturaRequest extends BaseApiRequest
 
     public function rules(): array
     {
-        $user = Auth::user();
+        $user = $this->currentUser();
         $accessibleContextIds = $user?->getActiveContextIds() ?? [];
         $targetContextId = $this->resolveTargetContextId($accessibleContextIds);
         $items = $this->input('items', []);
@@ -113,25 +112,25 @@ class StoreFacturaRequest extends BaseApiRequest
                 'required_without:items',
                 'integer',
                 Rule::exists('trabajos', 'id_trabajo')
-                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
+                    ->where(fn($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'id_empresa_cliente' => [
                 'nullable',
                 'integer',
                 Rule::exists('empresas', 'id_empresa')
-                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'id_contrato' => [
                 'nullable',
                 'integer',
                 Rule::exists('contratos', 'id_contrato')
-                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'id_empresa_facturadora' => [
                 'nullable',
                 'integer',
                 Rule::exists('empresas', 'id_empresa')
-                    ->when($targetContextId !== null, fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
             'numero_factura' => [
                 'nullable',
@@ -157,7 +156,7 @@ class StoreFacturaRequest extends BaseApiRequest
                 'integer',
                 'distinct',
                 Rule::exists('pedido_items', 'id_pedido_item')
-                    ->where(fn ($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
+                    ->where(fn($query) => $query->whereIn('id_contexto', $accessibleContextIds)),
             ],
             'items.*.unidades_facturadas' => ['nullable', 'numeric', 'min:0'],
             'items.*.importe_facturado' => ['required_with:items', 'numeric', 'min:0'],
@@ -170,7 +169,7 @@ class StoreFacturaRequest extends BaseApiRequest
                 'string',
                 'max:100',
                 Rule::unique('facturas', 'numero_factura_ccp')
-                    ->where(fn ($query) => $query->where('id_contexto', $targetContextId)),
+                    ->where(fn($query) => $query->where('id_contexto', $targetContextId)),
             ];
             $rules['orden_factura'] = ['nullable', 'integer', 'min:1'];
         } elseif (ContextGuard::isRepsolContextId($targetContextId ? (int) $targetContextId : null)) {
@@ -179,7 +178,7 @@ class StoreFacturaRequest extends BaseApiRequest
                 'integer',
                 'min:1',
                 Rule::unique('facturas', 'orden_factura')
-                    ->where(fn ($query) => $query->where('id_trabajo', $trabajoId)
+                    ->where(fn($query) => $query->where('id_trabajo', $trabajoId)
                         ->where('id_contexto', $targetContextId)),
             ];
             $rules['numero_factura_ccp'] = ['nullable', 'string', 'max:100'];
@@ -198,14 +197,14 @@ class StoreFacturaRequest extends BaseApiRequest
             $numeroFactura = $this->normalizeNullableString($this->input('numero_factura'));
 
             if (in_array($estado, ['emitida', 'enviada'], true) && $numeroFactura === null) {
-                $validator->errors()->add('numero_factura', 'El numero de factura es obligatorio para facturas emitidas o enviadas.');
+                $validator->errors()->add('numero_factura', 'El número de factura es obligatorio para facturas emitidas o enviadas.');
             }
 
             if ($numeroFactura === null) {
                 return;
             }
 
-            $accessibleContextIds = $this->user()?->getActiveContextIds() ?? [];
+            $accessibleContextIds = $this->currentUser()?->getActiveContextIds() ?? [];
             $targetContextId = $this->resolveTargetContextId($accessibleContextIds);
             $empresaFacturadoraId = $this->input('id_empresa_facturadora');
 
@@ -221,7 +220,7 @@ class StoreFacturaRequest extends BaseApiRequest
                 ->exists();
 
             if ($exists) {
-                $validator->errors()->add('numero_factura', 'Ya existe una factura con ese numero para el contexto y sociedad facturadora seleccionados.');
+                $validator->errors()->add('numero_factura', 'Ya existe una factura con ese número para el contexto y sociedad facturadora seleccionados.');
             }
         });
     }

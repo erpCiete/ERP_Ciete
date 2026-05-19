@@ -1,4 +1,5 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useTheme } from '@/theme';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -340,27 +341,6 @@ function FiltrosBar({ localFiltros, setLocalFiltros, aplicarFiltros, exportar, c
     );
 }
 
-// ─── Paginación compartida ─────────────────────────────────────────────────────
-
-function Paginacion({ currentPage, lastPage, total, aplicarFiltros }) {
-    if (lastPage <= 1) return null;
-    return (
-        <div className="mt-4 flex flex-col gap-3 text-sm text-text-muted sm:flex-row sm:items-center sm:justify-between">
-            <span>Página {currentPage} de {lastPage} · {total} registros</span>
-            <div className="flex flex-wrap gap-2">
-                <button type="button" disabled={currentPage <= 1} onClick={() => aplicarFiltros({ page: currentPage - 1 })}
-                    className="rounded-md border border-border px-3 py-1.5 hover:bg-surface-2 disabled:opacity-40">
-                    Anterior
-                </button>
-                <button type="button" disabled={currentPage >= lastPage} onClick={() => aplicarFiltros({ page: currentPage + 1 })}
-                    className="rounded-md border border-border px-3 py-1.5 hover:bg-surface-2 disabled:opacity-40">
-                    Siguiente
-                </button>
-            </div>
-        </div>
-    );
-}
-
 // ─── Vista Ciete Excel — tabla densa tipo hoja de cálculo ────────────────────
 
 const ACCION_COLORS_EXCEL = {
@@ -458,7 +438,7 @@ function ExcelView({ rows, currentPage, lastPage, total, aplicarFiltros }) {
                     </tbody>
                 </table>
             </div>
-            <Paginacion currentPage={currentPage} lastPage={lastPage} total={total} aplicarFiltros={aplicarFiltros} />
+            <PaginationControls pagination={{ current_page: currentPage, last_page: lastPage, total }} onPageChange={(p) => aplicarFiltros({ page: p })} />
         </>
     );
 }
@@ -567,7 +547,7 @@ function ModernoView({ rows, currentPage, lastPage, total, aplicarFiltros }) {
                     </section>
                 ))}
             </div>
-            <Paginacion currentPage={currentPage} lastPage={lastPage} total={total} aplicarFiltros={aplicarFiltros} />
+            <PaginationControls pagination={{ current_page: currentPage, last_page: lastPage, total }} onPageChange={(p) => aplicarFiltros({ page: p })} />
         </>
     );
 }
@@ -617,12 +597,12 @@ export default function AuditLogIndex({
 
     return (
         <AuthenticatedLayout>
-            <Head title="Auditoría" />
+            <Head title="Registro de actividad operativa" />
 
             <div className={`ciete-page ${isCieteExcel ? 'ciete-page-full' : 'ciete-page-wide'}`}>
                 <ContextualPageHeader
-                    eyebrow="Administración"
-                    title="Auditoría"
+                    eyebrow="Operaciones"
+                    title="Registro de actividad operativa"
                     description={`Registro de actividad operativa · ${total} registros`}
                 />
 

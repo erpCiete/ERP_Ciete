@@ -1,4 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import { useI18n } from '@/i18n';
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
@@ -38,12 +39,18 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
     const [search, setSearch] = useState(filters.search ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
     const [priority, setPriority] = useState(filters.priority ?? '');
+    const currentPage = tickets?.current_page ?? 1;
+    const lastPage = tickets?.last_page ?? 1;
+    const total = tickets?.total ?? (tickets?.data?.length ?? 0);
+    const from = tickets?.from ?? (total === 0 ? 0 : 1);
+    const to = tickets?.to ?? (total === 0 ? 0 : (tickets?.data?.length ?? 0));
 
     const applyFilters = (overrides = {}) => {
         const next = {
             search: overrides.search !== undefined ? overrides.search : search,
             status: overrides.status !== undefined ? overrides.status : status,
             priority: overrides.priority !== undefined ? overrides.priority : priority,
+            page: overrides.page !== undefined ? overrides.page : undefined,
         };
 
         Object.keys(next).forEach((key) => {
@@ -109,7 +116,7 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
                             value={status}
                             onChange={(event) => {
                                 setStatus(event.target.value);
-                                applyFilters({ status: event.target.value });
+                applyFilters({ status: event.target.value });
                             }}
                             disabled={!supportReady}
                             className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-main focus:border-primary focus:outline-hidden"
@@ -129,7 +136,7 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
                             value={priority}
                             onChange={(event) => {
                                 setPriority(event.target.value);
-                                applyFilters({ priority: event.target.value });
+                applyFilters({ priority: event.target.value });
                             }}
                             disabled={!supportReady}
                             className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-main focus:border-primary focus:outline-hidden"
@@ -198,6 +205,11 @@ export default function AdminSupportIndex({ tickets, filters = {}, supportReady 
                     </table>
                     </div>
                 </div>
+
+                <PaginationControls
+                    pagination={{ current_page: currentPage, last_page: lastPage, total, from, to }}
+                    onPageChange={(p) => applyFilters({ page: p })}
+                />
             </div>
         </AuthenticatedLayout>
     );

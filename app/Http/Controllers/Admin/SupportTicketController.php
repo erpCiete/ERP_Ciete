@@ -76,7 +76,7 @@ class SupportTicketController extends Controller
             ")
             ->orderByDesc('ultimo_mensaje_at')
             ->orderByDesc('created_at')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString()
             ->through(fn (SolicitudSoporte $ticket) => $this->serializeTicketListItem($ticket));
 

@@ -143,6 +143,67 @@ function HelpFaqItem({ question, answer }) {
     );
 }
 
+const HELP_CAT_ADMIN     = 'admin';
+const HELP_CAT_DIRECCION = 'direccion';
+const HELP_CAT_RESTO     = 'resto';
+
+/**
+ * Normalise the authenticated user into one of three manual categories:
+ *   HELP_CAT_ADMIN     → can_access_admin_panel
+ *   HELP_CAT_DIRECCION → is_director / can_access_direction_panel
+ *   HELP_CAT_RESTO     → all other authenticated users (ejecucion*, contable, …)
+ */
+function getHelpCategory(user) {
+    if (!user) return HELP_CAT_RESTO;
+    const slugs = Array.isArray(user.role_slugs) ? user.role_slugs : [];
+    if (user.can_access_admin_panel || slugs.includes('admin')) {
+        return HELP_CAT_ADMIN;
+    }
+    if (
+        user.is_director ||
+        user.can_access_direction_panel ||
+        slugs.includes('director') ||
+        slugs.includes('direccion')
+    ) {
+        return HELP_CAT_DIRECCION;
+    }
+    return HELP_CAT_RESTO;
+}
+
+/**
+ * Section visibility map — three categories: 'admin', 'direccion', 'resto', 'todos'.
+ * Admin always sees every section regardless of this map.
+ */
+const SECTION_AUDIENCE = {
+    intro:              ['todos'],
+    access:             ['todos'],
+    daily_flow:         ['todos'],
+    home:               ['todos'],
+    dashboard:          ['todos'],
+    navigation:         ['todos'],
+    contexts:           ['todos'],
+    roles:              ['todos'],
+    tables:             ['todos'],
+    forms:              ['todos'],
+    works:              ['todos'],
+    orders:             ['todos'],
+    invoices:           ['todos'],
+    tarifarios:         ['todos'],
+    maestros:           ['admin', 'direccion'],
+    legalizations:      ['todos'],
+    closure:            ['admin', 'direccion'],
+    messages:           ['todos'],
+    support:            ['todos'],
+    admin:              ['admin'],
+    audit:              ['admin', 'direccion'],
+    imports:            ['admin'],
+    reports:            ['todos'],
+    devices:            ['todos'],
+    states_diagnostics: ['todos'],
+    best_practices:     ['todos'],
+    faq:                ['todos'],
+};
+
 const HELP_MANUAL = {
     es: {
         sections: [
@@ -220,6 +281,27 @@ const HELP_MANUAL = {
                 ],
                 tips: [
                     'Si cambias de cliente o de tipo de trabajo durante la jornada, revisa el contexto al volver a crear registros.',
+                ],
+            },
+            {
+                id: 'daily_flow',
+                icon: '🗓️',
+                title: 'Flujo diario recomendado',
+                intro:
+                    'Sigue este orden de operativa habitual para reducir errores, duplicados y descuadres entre módulos.',
+                steps: [
+                    'Revisar el contexto activo antes de empezar: MOEVE, REPSOL u OTROS CLIENTES.',
+                    'Buscar el trabajo existente en el listado. Solo crear uno nuevo si no existe; nunca crear sin buscar antes.',
+                    'Verificar que la estación pertenece al cliente del contexto correcto. Revisar el contrato o tarifario asignado al trabajo si aplica.',
+                    'Abrir o crear el pedido asociado al trabajo. Seleccionar la línea de tarifario correspondiente en cada ítem.',
+                    'Revisar importes, unidades y líneas del pedido antes de confirmar.',
+                    'Crear o revisar la factura del trabajo. Comprobar la sociedad facturadora y los datos económicos.',
+                    'Usar los diagnósticos funcionales disponibles en Maestros y Tarifarios cuando aparezcan avisos.',
+                    'Si el trabajo ya está terminado, revisarlo desde el panel de cierre si tu perfil lo permite.',
+                ],
+                tips: [
+                    'Si vas a revisar varios módulos seguidos, vuelve al listado antes de saltar al siguiente para no perder referencias abiertas.',
+                    'Revisa los avisos del inicio antes de iniciar tareas de cierre, importación o validación masiva.',
                 ],
             },
             {
@@ -365,36 +447,34 @@ const HELP_MANUAL = {
                 icon: '🛡️',
                 title: 'Roles, permisos y visibilidad',
                 intro:
-                    'El ERP contempla usuarios, roles, permisos y contextos. Eso decide qué módulos ves, qué acciones puedes ejecutar y qué registros permanecen bloqueados para tu perfil.',
+                    'El manual está organizado en tres categorías según el perfil del usuario: Admin, Dirección/Cierre y Resto de usuarios. Si una funcionalidad no aparece, puede deberse al perfil, al estado del registro o al contexto activo.',
                 subsections: [
                     {
-                        title: 'Qué significa en la práctica',
-                        bullets: [
-                            'Ver un módulo no significa poder modificar todo su contenido.',
-                            'Un trabajo finalizado puede seguir siendo visible, pero no editable para perfiles ordinarios.',
-                            'Paneles de cierre, administración, auditoría o importaciones pueden estar limitados a roles concretos.',
-                        ],
+                        title: 'Admin',
+                        body:
+                            'Acceso completo al manual y al sistema. Puede gestionar usuarios, roles, contextos, mantenimiento, importaciones y configuración global.',
                     },
                     {
-                        title: 'Perfiles habituales',
-                        bullets: [
-                            'Operativa: consulta y edición diaria dentro de los módulos asignados.',
-                            'Administración: usuarios, contextos, importaciones, revisión global y soporte avanzado.',
-                            'Dirección o cierre: validación final, bloqueo de trabajos y revisión de descuadres.',
-                            'Soporte: seguimiento formal de incidencias funcionales o de uso.',
-                        ],
+                        title: 'Dirección / Cierre',
+                        body:
+                            'Ve la parte operativa y el panel de cierre. Puede acceder a auditoría y maestros si el perfil tiene esos permisos asignados. No ve la sección de administración técnica ni gestión de usuarios.',
+                    },
+                    {
+                        title: 'Resto de usuarios',
+                        body:
+                            'Perfil operativo general. Incluye trabajos, pedidos, facturas, tarifarios, mensajes y soporte. No ve el panel de cierre ni la sección de administración. Las variantes de ejecución MOEVE y REPSOL son contextos de alcance dentro de este mismo perfil.',
                     },
                     {
                         title: 'Antes de reportar un problema de acceso',
                         checks: [
-                            'Revisa si el dato está en otro contexto.',
-                            'Comprueba si el registro está finalizado o bloqueado.',
-                            'Valida si la acción depende de un rol que no tienes asignado.',
+                            'Revisa si la sección o acción corresponde a tu categoría de perfil.',
+                            'Comprueba si el registro está finalizado o bloqueado por estado.',
+                            'Valida si el dato está en otro contexto no visible para tu perfil.',
                         ],
                     },
                 ],
                 tips: [
-                    'Cuando una acción no aparezca, no des por hecho que es un fallo. Puede estar oculta por permisos o por estado del registro.',
+                    'Cuando una acción no aparezca, no des por hecho que es un fallo. Puede estar oculta por permisos, por el estado del registro o porque el contexto activo no incluye ese dato.',
                 ],
             },
             {
@@ -555,7 +635,7 @@ const HELP_MANUAL = {
                     {
                         label: 'Estado',
                         description:
-                            'Marca la situación operativa del trabajo y condiciona qué acciones posteriores son coherentes o están bloqueadas.',
+                            'Valores posibles: pendiente, en curso, terminado (TT), facturado, finalizado, cancelado. Cada estado condiciona qué acciones posteriores son coherentes o están bloqueadas.',
                     },
                 ],
                 warnings: [
@@ -583,12 +663,14 @@ const HELP_MANUAL = {
                         ],
                     },
                     {
-                        title: 'Tarifario y contrato',
+                        title: 'Tarifario, contrato y cascada de líneas',
                         body:
-                            'El criterio funcional esperado es pedir solo lo que venga soportado por el tarifario aplicable. El contrato actúa como referencia de ese tarifario. Si una línea no encaja, debe revisarse antes de validarla como correcta.',
+                            'Al seleccionar un trabajo en el formulario de pedido, el sistema carga automáticamente las líneas del tarifario vinculadas a ese trabajo (por id_tarifario o id_contrato). Solo aparecen las líneas que corresponden al contexto y al trabajo elegido.',
                         bullets: [
-                            'No conviertas el pedido en un cajón libre de conceptos.',
-                            'Si una línea existe en un Excel histórico pero no encaja con el tarifario actual, deja el caso para revisión.',
+                            'Si cambias el trabajo, las líneas tarifarias disponibles cambian automáticamente.',
+                            'Si el trabajo tiene contrato o tarifario asignado, solo se muestran las líneas aplicables a ese contrato o tarifario.',
+                            'Si no aparecen líneas, el trabajo puede no tener contrato ni tarifario con líneas activas.',
+                            'Cada ítem del pedido requiere seleccionar una línea tarifaria si hay líneas disponibles. El sistema bloquea el guardado si falta esta selección.',
                         ],
                     },
                     {
@@ -676,6 +758,45 @@ const HELP_MANUAL = {
                 warnings: [
                     'No dupliques facturas para corregir una relación errónea. Revisa primero si debes editar la existente.',
                     'Si una factura llega antes que el pedido, no fuerces el cierre ni marques el caso como resuelto sin trazabilidad suficiente.',
+                    'Si cambias el trabajo en una factura ya parcialmente rellenada, revisa la sociedad facturadora y los campos económicos después del cambio.',
+                ],
+            },
+            {
+                id: 'tarifarios',
+                icon: '📄',
+                title: 'Tarifarios y contratos',
+                intro:
+                    'Los tarifarios recogen las líneas de tarifa aplicables a los trabajos. Están vinculados a contratos. La cadena contrato → tarifario → líneas tarifarias es la base del control económico en pedidos.',
+                subsections: [
+                    {
+                        title: 'Para qué sirven',
+                        bullets: [
+                            'Un contrato establece el marco comercial con el cliente para un periodo o ámbito dado.',
+                            'Un tarifario recoge las líneas de precio aplicables en ese contrato.',
+                            'Las líneas de tarifario son las que se seleccionan en los ítems de los pedidos.',
+                        ],
+                    },
+                    {
+                        title: 'Cascada contrato → tarifario → líneas',
+                        body:
+                            'Un tarifario solo puede vincularse a un contrato activo. Si el contrato no existe o está inactivo, las líneas del tarifario no estarán disponibles en los pedidos del trabajo.',
+                        checks: [
+                            'Confirma que el contrato está activo antes de crear o editar un tarifario.',
+                            'Verifica que el tarifario tiene líneas antes de asignarlo a un trabajo.',
+                            'Si un trabajo no tiene líneas disponibles en pedidos, revisa primero el contrato y el tarifario asignado.',
+                        ],
+                    },
+                    {
+                        title: 'Precauciones',
+                        bullets: [
+                            'No elimines líneas de tarifario si hay pedidos activos que las referencian.',
+                            'No cambies el contrato de un tarifario sin revisar el impacto en pedidos existentes.',
+                            'Si el formulario de tarifario muestra un aviso de contrato inactivo o cascada incompleta, resuélvelo antes de asignar el tarifario a nuevos trabajos.',
+                        ],
+                    },
+                ],
+                warnings: [
+                    'Si en el formulario de pedido no aparecen líneas tarifarias para un trabajo, el primer punto a revisar es si ese trabajo tiene contrato o tarifario con líneas activas asignado.',
                 ],
             },
             {
@@ -712,6 +833,46 @@ const HELP_MANUAL = {
                 ],
                 warnings: [
                     'No dupliques estaciones con nombres parecidos. El histórico operativo quedará dividido y perderás trazabilidad.',
+                ],
+            },
+            {
+                id: 'maestros',
+                icon: '🗂️',
+                title: 'Maestros',
+                intro:
+                    'Maestros centraliza los datos de referencia del sistema: clientes, estaciones de servicio, sociedades facturadoras y otros catálogos. La calidad de los maestros afecta directamente a todos los módulos operativos.',
+                subsections: [
+                    {
+                        title: 'Qué gestiona',
+                        bullets: [
+                            'Clientes: entidades con las que se trabaja o a las que se factura.',
+                            'Estaciones de servicio: ubicaciones sobre las que se ejecutan los trabajos.',
+                            'Sociedades facturadoras: entidades jurídicas que emiten las facturas. Deben tener CIF registrado.',
+                            'Tipos de trabajo, tipos de documento y otras categorías del sistema.',
+                        ],
+                    },
+                    {
+                        title: 'Diagnóstico funcional',
+                        body:
+                            'Maestros incluye un panel de diagnóstico que detecta inconsistencias de configuración: contratos sin sociedad vinculada, CIF no registrados u otras dependencias rotas entre entidades. Cuando aparecen alertas, deben revisarse antes de operar sobre los datos afectados.',
+                        bullets: [
+                            'Cada alerta indica el tipo de problema y, cuando es posible, ofrece un enlace a la configuración afectada.',
+                            'Las alertas no bloquean el sistema, pero señalan riesgos operativos reales.',
+                            'Resuélvelas antes de crear nuevos registros que dependan de la configuración afectada.',
+                        ],
+                    },
+                    {
+                        title: 'Antes de crear o corregir un maestro',
+                        checks: [
+                            'Busca primero por nombre, código y variantes habituales de escritura.',
+                            'No dupliques clientes ni estaciones con diferencias mínimas en el nombre.',
+                            'No reutilices una estación de otro cliente aunque la dirección sea parecida.',
+                            'Mantén el CIF actualizado en las sociedades facturadoras.',
+                        ],
+                    },
+                ],
+                warnings: [
+                    'Un maestro incorrecto (cliente duplicado, estación en contexto equivocado, sociedad sin CIF) genera errores en pedidos, facturas y cierres que son difíciles de corregir a posteriori.',
                 ],
             },
             {
@@ -823,14 +984,24 @@ const HELP_MANUAL = {
                 icon: '🛟',
                 title: 'Soporte',
                 intro:
-                    'Soporte se usa cuando hay un error, un bloqueo o una duda que necesita seguimiento más formal. No es solo para problemas técnicos; también sirve para incidencias funcionales reales.',
+                    'Soporte es el canal para reportar errores, bloqueos o dudas que necesitan seguimiento formal. Es válido para incidencias técnicas y funcionales. No solo para problemas de sistema.',
                 subsections: [
                     {
-                        title: 'Cuándo abrir soporte',
+                        title: 'Cuándo abrir un ticket de soporte',
                         bullets: [
                             'Cuando no puedes continuar con la operativa.',
                             'Cuando un dato no guarda y no es un problema claro de validación.',
                             'Cuando hay incoherencias entre módulos que requieren revisión.',
+                            'Cuando has revisado contexto, permisos y filtros y el problema persiste.',
+                        ],
+                    },
+                    {
+                        title: 'Estados de un ticket',
+                        bullets: [
+                            'Pendiente: ticket abierto, aún no atendido.',
+                            'En revisión: el equipo técnico o funcional está analizando el caso.',
+                            'Resuelta: el caso ha sido atendido y cerrado.',
+                            'Archivada: ticket archivado sin resolución activa (histórico).',
                         ],
                     },
                     {
@@ -840,12 +1011,13 @@ const HELP_MANUAL = {
                             'Acción realizada.',
                             'Resultado esperado.',
                             'Resultado observado.',
-                            'Ejemplo genérico o referencia suficiente para reproducir el caso.',
+                            'Referencia o ejemplo suficiente para reproducir el caso.',
                         ],
                     },
                 ],
                 warnings: [
                     'No abras varios tickets para el mismo caso si ya existe uno en seguimiento.',
+                    'No uses soporte para solicitudes de permisos o configuración que deben gestionarse por administración.',
                 ],
             },
             {
@@ -1022,23 +1194,98 @@ const HELP_MANUAL = {
                 ],
             },
             {
-                id: 'errors',
-                icon: '⚠️',
-                title: 'Errores frecuentes y cómo evitarlos',
+                id: 'states_diagnostics',
+                icon: '🔍',
+                title: 'Estados y diagnósticos',
                 intro:
-                    'Muchas incidencias se repiten. La mayoría se evita buscando antes de crear, revisando contexto y manteniendo coherentes las relaciones entre módulos.',
+                    'Esta sección describe los estados disponibles en los módulos principales y los diagnósticos automáticos que el sistema muestra en formularios y paneles.',
+                subsections: [
+                    {
+                        title: 'Estados de trabajos',
+                        bullets: [
+                            'Pendiente: trabajo registrado, pendiente de iniciar.',
+                            'En curso: trabajo en ejecución.',
+                            'Terminado (TT): actuación ejecutada. Requiere fecha real de terminación.',
+                            'Facturado: trabajo con factura emitida.',
+                            'Finalizado: trabajo cerrado y bloqueado para operativa ordinaria.',
+                            'Cancelado: trabajo cancelado. No reutilizar.',
+                        ],
+                    },
+                    {
+                        title: 'Estados de facturas',
+                        bullets: [
+                            'Pendiente: factura registrada, aún no emitida.',
+                            'Emitida: factura emitida al cliente.',
+                            'Enviada: factura enviada, en proceso de cobro.',
+                        ],
+                    },
+                    {
+                        title: 'Estados de tickets de soporte',
+                        bullets: [
+                            'Pendiente: ticket abierto sin atención.',
+                            'En revisión: caso siendo analizado.',
+                            'Resuelta: caso cerrado favorablemente.',
+                            'Archivada: ticket archivado como histórico.',
+                        ],
+                    },
+                    {
+                        title: 'Diagnóstico funcional en Maestros',
+                        body:
+                            'El módulo de Maestros incluye un panel de diagnóstico que detecta inconsistencias de configuración: contratos sin sociedad facturadora vinculada, CIF no registrados u otras dependencias rotas. Aparece automáticamente cuando hay alertas activas.',
+                        bullets: [
+                            'No bloquea el sistema, pero indica riesgos operativos reales.',
+                            'Cada alerta ofrece información sobre el tipo de inconsistencia y, cuando es posible, un enlace a la configuración afectada.',
+                            'Resuélvelas antes de crear nuevos registros que dependan de los datos afectados.',
+                        ],
+                    },
+                    {
+                        title: 'Cascada tarifaria en pedidos',
+                        body:
+                            'Al seleccionar un trabajo en el formulario de pedido, el sistema filtra automáticamente las líneas del tarifario disponibles según el contexto, el tarifario y el contrato de ese trabajo. Si se cambia el trabajo, las líneas disponibles cambian y los ítems con línea asignada pueden quedar inválidos.',
+                        bullets: [
+                            'Si el trabajo no tiene tarifario o contrato asignado, no habrá líneas disponibles.',
+                            'Si hay líneas disponibles y un ítem no tiene ninguna seleccionada, el sistema bloquea el guardado.',
+                        ],
+                    },
+                    {
+                        title: 'Limpieza automática en facturas al cambiar trabajo',
+                        body:
+                            'Cuando se cambia el trabajo en el formulario de factura, el sistema limpia automáticamente la sociedad facturadora y otros campos dependientes para evitar inconsistencias.',
+                        bullets: [
+                            'Tras cambiar el trabajo, revisa siempre la sociedad y los campos económicos antes de guardar.',
+                        ],
+                    },
+                    {
+                        title: 'Diagnóstico de contratos en tarifarios',
+                        body:
+                            'El formulario de tarifarios avisa cuando el contrato asociado no está activo o cuando la cascada contrato → tarifario → líneas está incompleta.',
+                        bullets: [
+                            'Un tarifario sin contrato activo no ofrecerá líneas en pedidos.',
+                            'Revisa el estado del contrato antes de asignar el tarifario a un trabajo.',
+                        ],
+                    },
+                ],
+            },
+            {
+                id: 'best_practices',
+                icon: '✅',
+                title: 'Buenas prácticas',
+                intro:
+                    'Seguir estas prácticas reduce errores, duplicados y descuadres en la operativa diaria.',
                 checks: [
-                    'Buscar antes de crear un trabajo, pedido, factura, cliente o estación.',
-                    'Confirmar el contexto antes de editar.',
-                    'No mezclar estaciones de distintos clientes.',
-                    'No marcar TT sin fecha real de terminación.',
-                    'No finalizar trabajos con descuadres sin trazabilidad.',
-                    'No confirmar importaciones con errores visibles en previsualización.',
+                    'Revisar el contexto activo antes de crear o editar cualquier registro.',
+                    'No mezclar MOEVE y REPSOL: cada contexto tiene su operativa separada.',
+                    'Buscar antes de crear: trabajos, pedidos, clientes y estaciones pueden ya existir.',
+                    'Revisar el contrato y tarifario del trabajo antes de crear pedidos con ítems tarifados.',
+                    'Revisar importes, unidades y líneas tarifarias antes de emitir una factura.',
+                    'Usar el módulo de soporte para incidencias, no mensajes informales.',
+                    'No modificar registros finalizados o bloqueados sin autorización expresa.',
+                    'Confirmar el contexto activo después de cambiar de cliente durante la jornada.',
+                    'Revisar el diagnóstico de Maestros si aparecen alertas antes de operar sobre los datos afectados.',
                 ],
                 warnings: [
-                    'Si una factura llega antes que el pedido, no fuerces el caso como finalizado. Déjalo preparado para regularización.',
-                    'Si un trabajo ya está finalizado, no lo modifiques salvo autorización expresa y motivo claro.',
-                    'No dupliques estaciones o clientes por diferencias mínimas de escritura.',
+                    'Un dato creado en el contexto incorrecto puede generar duplicados y descuadres difíciles de corregir a posteriori.',
+                    'No cambies estados para que un panel o informe se vea mejor. El estado debe reflejar la realidad del registro.',
                 ],
             },
             {
@@ -1046,35 +1293,43 @@ const HELP_MANUAL = {
                 icon: '❓',
                 title: 'Preguntas frecuentes',
                 intro:
-                    'Estas respuestas recogen dudas habituales de usuarios nuevos, operativos, administración, cierre y soporte.',
+                    'Respuestas a las dudas más habituales por módulo, rol y situación.',
                 faq: [
                     {
-                        q: 'Antes de crear un trabajo, ¿qué debo comprobar?',
-                        a: 'Busca si ya existe por número, estación o descripción, revisa el contexto activo y confirma que la estación pertenece al cliente correcto.',
+                        q: '¿Por qué no veo todos los módulos?',
+                        a: 'El ERP muestra solo los módulos que tu rol y permisos permiten ver. Si necesitas acceso a un módulo, contacta con administración.',
                     },
                     {
-                        q: '¿Qué hago si una factura existe pero el pedido todavía no está registrado?',
-                        a: 'No cierres el flujo como regularizado. Deja visible el caso para revisión, conserva la relación con el trabajo y registra el seguimiento hasta que el pedido pueda trazarse correctamente.',
+                        q: '¿Por qué no puedo editar un trabajo cerrado?',
+                        a: 'Los trabajos finalizados están bloqueados para la operativa ordinaria. Solo perfiles autorizados (Dirección o Admin) pueden reabrir un trabajo, siempre con motivo documentado.',
                     },
                     {
-                        q: '¿Por qué no aparecen ciertas estaciones o trabajos?',
-                        a: 'Lo primero es revisar contexto, permisos y filtros activos. En muchos casos el dato existe, pero no está en el ámbito visible actual.',
+                        q: '¿Qué hago si no aparecen líneas tarifarias en un pedido?',
+                        a: 'Verifica que el trabajo seleccionado tiene un contrato o tarifario asignado con líneas activas. Si el trabajo no tiene tarifario o contrato, no se mostrarán opciones en los ítems del pedido.',
                     },
                     {
-                        q: '¿Puedo mezclar MOEVE y REPSOL en el mismo flujo?',
-                        a: 'Solo si tu perfil tiene acceso a ambos contextos y la consulta lo requiere. Operativamente deben mantenerse separados para no contaminar datos ni informes.',
+                        q: '¿Qué pasa si cambio el trabajo en una factura?',
+                        a: 'Al cambiar el trabajo, el sistema limpia automáticamente la sociedad facturadora y otros campos dependientes. Revisa y vuelve a rellenar esos campos antes de guardar.',
                     },
                     {
-                        q: '¿Qué significa que un trabajo esté bloqueado o finalizado?',
-                        a: 'Significa que ya no debe modificarse en la operativa ordinaria. Cualquier cambio posterior requiere autorización, control y trazabilidad.',
+                        q: '¿Cómo sé si estoy trabajando en MOEVE o REPSOL?',
+                        a: 'El contexto activo se muestra en la barra lateral o en el selector de contexto visible en la interfaz. Revísalo siempre antes de crear o editar registros.',
                     },
                     {
-                        q: '¿Cómo ayuda el ERP a no dejar trabajos sin cobrar?',
-                        a: 'Relacionando trabajos con pedidos y facturas, facilitando búsquedas de pendientes, revisión de estados y control de descuadres antes del cierre.',
+                        q: '¿Dónde comunico una incidencia o bloqueo?',
+                        a: 'Usa el módulo de Soporte para abrir un ticket. Describe el módulo afectado, la acción realizada, el resultado esperado y el resultado observado.',
                     },
                     {
-                        q: '¿Qué hago si una estación aparece duplicada?',
-                        a: 'No sigas creando registros sobre ambas. Revisa cuál es la estación correcta, comunica la incidencia si hace falta y evita dividir el histórico operativo.',
+                        q: '¿Qué hago si un pedido no cuadra con la factura?',
+                        a: 'No forces el cierre ni marques el caso como resuelto sin trazabilidad suficiente. Deja el estado visible para revisión y documenta la situación en observaciones o en un ticket de soporte.',
+                    },
+                    {
+                        q: '¿Qué significa TT en un trabajo?',
+                        a: 'TT significa trabajo terminado. Indica que la actuación fue ejecutada. Para marcarlo como TT debe existir fecha real de terminación.',
+                    },
+                    {
+                        q: '¿Qué hago si el diagnóstico de Maestros muestra alertas?',
+                        a: 'Revisa las alertas antes de crear nuevos registros dependientes. Cada alerta indica el tipo de inconsistencia y, cuando es posible, enlaza a la configuración afectada.',
                     },
                 ],
             },
@@ -1137,6 +1392,26 @@ const HELP_MANUAL = {
                             'If an action is missing, check permissions and context before reporting an incident.',
                         ],
                     },
+                ],
+            },
+            {
+                id: 'daily_flow',
+                icon: '🗓️',
+                title: 'Recommended daily workflow',
+                intro:
+                    'Follow this order to reduce errors, duplicates and mismatches between modules.',
+                steps: [
+                    'Review the active context before starting: MOEVE, REPSOL or OTHER CLIENTS.',
+                    'Search for the work or create it only if it does not exist.',
+                    'Verify the station belongs to the correct client context. Check the contract or rate sheet if applicable.',
+                    'Open or create the order linked to the work. Select the rate line for each item.',
+                    'Review lines, quantities and amounts before confirming the order.',
+                    'Create or review the invoice for the work. Check the billing entity and financial data.',
+                    'Use functional diagnostics in Masters and Rate Sheets when alerts appear.',
+                    'If the work is finished, review it from the closure panel if your role allows it.',
+                ],
+                tips: [
+                    'When reviewing several modules in sequence, return to the list before switching to avoid losing open references.',
                 ],
             },
             {
@@ -1253,23 +1528,29 @@ const HELP_MANUAL = {
                 icon: '🛡️',
                 title: 'Roles, permissions and visibility',
                 intro:
-                    'Users, roles, permissions and contexts decide which modules you see, which actions are available and which records remain blocked for your profile.',
+                    'The manual is organised in three categories based on the user profile: Admin, Direction/Closure and General users. If a feature is not visible, it may be due to your profile, the record status or the active context.',
                 subsections: [
                     {
-                        title: 'Practical meaning',
-                        bullets: [
-                            'Seeing a module does not mean full edit access.',
-                            'A closed work can still be visible but locked.',
-                            'Closure, admin, audit or import areas may be restricted.',
-                        ],
+                        title: 'Admin',
+                        body:
+                            'Full access to the manual and the system. Can manage users, roles, contexts, imports, maintenance and global configuration.',
                     },
                     {
-                        title: 'Typical role groups',
-                        bullets: [
-                            'Operations: daily review and editing.',
-                            'Administration: users, contexts, imports and global review.',
-                            'Direction or closure: final validation and locking.',
-                            'Support: formal incident follow-up.',
+                        title: 'Direction / Closure',
+                        body:
+                            'Sees the operational content and the closure panel. Can access audit and master data if those permissions are assigned. Does not see admin technical sections or user management.',
+                    },
+                    {
+                        title: 'General users',
+                        body:
+                            'Operational profile. Covers works, orders, invoices, rate sheets, messages and support. Does not see the closure panel or the admin section. MOEVE and REPSOL execution variants are context scopes within this profile.',
+                    },
+                    {
+                        title: 'Before reporting an access problem',
+                        checks: [
+                            'Check whether the section or action matches your profile category.',
+                            'Check if the record is closed or locked by its status.',
+                            'Verify the record is in a context visible to your profile.',
                         ],
                     },
                 ],
@@ -1439,6 +1720,29 @@ const HELP_MANUAL = {
                 ],
                 warnings: [
                     'If invoice and order do not match yet, keep the case traceable instead of forcing closure.',
+                    'If you change the work in an invoice already partially filled, review the billing entity and amounts after the change.',
+                ],
+            },
+            {
+                id: 'tarifarios',
+                icon: '📄',
+                title: 'Rate sheets and contracts',
+                intro:
+                    'Rate sheets define the tariff lines applicable to works. They are linked to contracts. The chain contract → rate sheet → lines is the basis of order economic control.',
+                subsections: [
+                    {
+                        title: 'Contract → rate sheet → lines cascade',
+                        body:
+                            'A rate sheet can only be linked to an active contract. If the contract does not exist or is inactive, the rate sheet lines will not be available in orders.',
+                        checks: [
+                            'Confirm the contract is active before creating or editing a rate sheet.',
+                            'Verify the rate sheet has lines before assigning it to a work.',
+                            'If no rate lines appear in an order, the first check is whether the work has an active contract or rate sheet assigned.',
+                        ],
+                    },
+                ],
+                warnings: [
+                    'Do not delete rate sheet lines if there are active orders referencing them.',
                 ],
             },
             {
@@ -1551,7 +1855,7 @@ const HELP_MANUAL = {
                 icon: '🛟',
                 title: 'Support',
                 intro:
-                    'Support is used when an issue needs formal tracking. It is valid for technical and functional incidents.',
+                    'Support is the channel for formal incident tracking. Valid for technical and functional issues.',
                 subsections: [
                     {
                         title: 'When to open support',
@@ -1559,6 +1863,16 @@ const HELP_MANUAL = {
                             'When you cannot continue working.',
                             'When data does not save and it is not a clear validation issue.',
                             'When module relations look inconsistent.',
+                            'When context, permissions and filters have been reviewed and the issue persists.',
+                        ],
+                    },
+                    {
+                        title: 'Ticket states',
+                        bullets: [
+                            'Pending: ticket open, awaiting review.',
+                            'In review: case being analyzed.',
+                            'Resolved: case closed.',
+                            'Archived: ticket archived as historical record.',
                         ],
                     },
                     {
@@ -1568,9 +1882,12 @@ const HELP_MANUAL = {
                             'Action performed.',
                             'Expected result.',
                             'Observed result.',
-                            'Enough generic detail to reproduce the case.',
+                            'Enough reference to reproduce the case.',
                         ],
                     },
+                ],
+                warnings: [
+                    'Do not open multiple tickets for the same case.',
                 ],
             },
             {
@@ -1694,21 +2011,80 @@ const HELP_MANUAL = {
                 ],
             },
             {
-                id: 'errors',
-                icon: '⚠️',
-                title: 'Frequent mistakes and how to avoid them',
+                id: 'states_diagnostics',
+                icon: '🔍',
+                title: 'States and diagnostics',
                 intro:
-                    'Most repeated incidents can be prevented by searching before creating, confirming context and keeping module relations coherent.',
+                    'This section covers available states per module and the automatic diagnostics the ERP shows in forms and panels.',
+                subsections: [
+                    {
+                        title: 'Work states',
+                        bullets: [
+                            'Pending: registered, not yet started.',
+                            'In progress: being executed.',
+                            'Finished (TT): completed. Requires a real completion date.',
+                            'Invoiced: work with issued invoice.',
+                            'Closed: locked for ordinary editing.',
+                            'Cancelled: cancelled work.',
+                        ],
+                    },
+                    {
+                        title: 'Invoice states',
+                        bullets: [
+                            'Pending: registered, not yet issued.',
+                            'Issued: sent to client.',
+                            'Sent: in collection process.',
+                        ],
+                    },
+                    {
+                        title: 'Support ticket states',
+                        bullets: [
+                            'Pending: open, awaiting review.',
+                            'In review: being analyzed.',
+                            'Resolved: closed.',
+                            'Archived: stored as historical record.',
+                        ],
+                    },
+                    {
+                        title: 'Functional diagnostic in Masters',
+                        body:
+                            'The Masters module shows a diagnostic panel that detects configuration inconsistencies: contracts without billing entities, missing CIFs or broken dependencies.',
+                        bullets: [
+                            'Does not block the system but flags real operational risks.',
+                            'Resolve alerts before creating dependent records.',
+                        ],
+                    },
+                    {
+                        title: 'Rate sheet cascade in orders',
+                        body:
+                            'Selecting a work in an order filters available rate lines by context, rate sheet and contract. Changing the work resets item rate line selections.',
+                    },
+                    {
+                        title: 'Invoice work change cleanup',
+                        body:
+                            'Changing the work in an invoice automatically clears the billing entity and dependent fields. Review them before saving.',
+                    },
+                ],
+            },
+            {
+                id: 'best_practices',
+                icon: '✅',
+                title: 'Best practices',
+                intro:
+                    'Following these practices reduces errors, duplicates and mismatches in daily operations.',
                 checks: [
-                    'Search before creating a work, order, invoice, client or station.',
-                    'Confirm context before editing.',
-                    'Do not mix stations from different clients.',
-                    'Do not mark TT without a real completion date.',
-                    'Do not confirm imports with visible preview errors.',
+                    'Review the active context before creating or editing any record.',
+                    'Do not mix MOEVE and REPSOL operations.',
+                    'Search before creating: works, orders, clients and stations may already exist.',
+                    'Review the contract and rate sheet before creating itemized orders.',
+                    'Review amounts, quantities and lines before issuing an invoice.',
+                    'Use the support module for incidents.',
+                    'Do not modify closed or locked records without explicit authorization.',
+                    'Check Masters diagnostics when alerts appear before creating dependent records.',
                 ],
                 warnings: [
-                    'If an invoice arrives before the order, do not force the case as closed.',
-                    'Do not modify a closed work without authorization and a clear reason.',
+                    'A record created in the wrong context may generate duplicates and mismatches that are hard to correct later.',
+                    'Do not change statuses just to make a panel look cleaner. Status must reflect reality.',
                 ],
             },
             {
@@ -1716,27 +2092,39 @@ const HELP_MANUAL = {
                 icon: '❓',
                 title: 'Frequently asked questions',
                 intro:
-                    'These answers cover common doubts from operations, administration, closure and support users.',
+                    'Answers to the most common questions by module, role and situation.',
                 faq: [
                     {
-                        q: 'What should I check before creating a work?',
-                        a: 'Search by number, station or description, review the active context and confirm the station belongs to the correct client.',
+                        q: 'Why can I not see all modules?',
+                        a: 'The ERP shows only modules your role and permissions allow. Contact administration if you need additional access.',
                     },
                     {
-                        q: 'What if an invoice exists but the order is not registered yet?',
-                        a: 'Do not treat the flow as regularized. Keep the case visible for review and preserve the link to the work until the order can be traced properly.',
+                        q: 'Why can I not edit a closed work?',
+                        a: 'Closed works are locked for ordinary editing. Only authorized profiles (Direction or Admin) can reopen a work, always with a documented reason.',
                     },
                     {
-                        q: 'Why can I not see some stations or works?',
-                        a: 'First review context, permissions and active filters. In many cases the record exists but is outside the currently visible scope.',
+                        q: 'What do I do if no rate lines appear in an order?',
+                        a: 'Check that the selected work has a contract or rate sheet with active lines assigned.',
                     },
                     {
-                        q: 'Can I mix MOEVE and REPSOL in the same workflow?',
-                        a: 'Only if your profile can access both contexts and the task really requires it. Operationally they should stay separated.',
+                        q: 'What happens if I change the work in an invoice?',
+                        a: 'The system clears the billing entity and other dependent fields automatically. Review and fill them again before saving.',
                     },
                     {
-                        q: 'How does the ERP help avoid doing work without charging it?',
-                        a: 'By linking works with orders and invoices, making pending cases searchable and keeping status and mismatch review visible before closure.',
+                        q: 'How do I know if I am working in MOEVE or REPSOL?',
+                        a: 'The active context is shown in the sidebar or the context selector in the interface.',
+                    },
+                    {
+                        q: 'Where do I report an incident?',
+                        a: 'Use the Support module to open a ticket. Include the affected module, action, expected result and observed result.',
+                    },
+                    {
+                        q: 'What do I do if an order and invoice do not match?',
+                        a: 'Do not force closure. Keep the record visible for review and document the situation in notes or a support ticket.',
+                    },
+                    {
+                        q: 'What does TT mean on a work?',
+                        a: 'TT means finished work. It indicates the intervention was completed. A real completion date is required to set TT status.',
                     },
                 ],
             },
@@ -1866,9 +2254,8 @@ export default function Help() {
     const [openSections, setOpenSections] = useState(new Set(['intro']));
     const [search, setSearch] = useState('');
 
-    const isAdmin = user?.is_admin;
-    const isCierre = user?.can_access_direction_panel;
     const manual = HELP_MANUAL[locale] ?? HELP_MANUAL.es;
+    const category = getHelpCategory(user);
 
     const toggleSection = (id) => {
         setOpenSections((prev) => {
@@ -1882,17 +2269,50 @@ export default function Help() {
         });
     };
 
+    // Admin sees every section. Other categories filter by SECTION_AUDIENCE.
+    // Search operates only on sections already visible to this user.
+    const visibleSections = useMemo(() => {
+        if (category === HELP_CAT_ADMIN) return manual.sections;
+        return manual.sections.filter((section) => {
+            const allowed = SECTION_AUDIENCE[section.id] ?? ['todos'];
+            return allowed.includes('todos') || allowed.includes(category);
+        });
+    }, [manual.sections, category]);
+
     const filteredSections = useMemo(() => {
         const query = search.trim();
-
-        if (!query) return manual.sections;
-
+        if (!query) return visibleSections;
         const normalizedQuery = normalizeSearchText(query);
-
-        return manual.sections.filter((section) =>
+        return visibleSections.filter((section) =>
             normalizeSearchText(section).includes(normalizedQuery),
         );
-    }, [manual.sections, search]);
+    }, [visibleSections, search]);
+
+    const categoryConfig = {
+        [HELP_CAT_ADMIN]:     {
+            badge:  { label: 'Admin',              color: 'bg-primary/15 text-primary' },
+            banner: {
+                es: 'Manual completo — todas las secciones están disponibles para tu perfil.',
+                en: 'Full manual — all sections are available for your profile.',
+            },
+        },
+        [HELP_CAT_DIRECCION]: {
+            badge:  { label: 'Dirección / Cierre', color: 'bg-state-progress-bg text-state-progress-text' },
+            banner: {
+                es: 'Manual Dirección / Cierre — incluye operativa general y el panel de cierre.',
+                en: 'Direction / Closure manual — includes general operations and the closure panel.',
+            },
+        },
+        [HELP_CAT_RESTO]:     {
+            badge:  { label: 'Resto de usuarios',  color: 'bg-accent/15 text-accent' },
+            banner: {
+                es: 'Manual operativo — cubre los módulos de la operativa diaria.',
+                en: 'Operational manual — covers the daily operational modules.',
+            },
+        },
+    };
+    const cfg    = categoryConfig[category] ?? categoryConfig[HELP_CAT_RESTO];
+    const banner = cfg.banner[locale] ?? cfg.banner.es;
 
     return (
         <AuthenticatedLayout header={t('help.header')}>
@@ -1907,6 +2327,11 @@ export default function Help() {
                     <p className="mt-1 text-sm text-text-muted">{t('help.description')}</p>
                 </div>
 
+                <div className="flex items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3">
+                    <RoleBadge label={cfg.badge.label} color={cfg.badge.color} />
+                    <p className="text-xs text-text-muted">{banner}</p>
+                </div>
+
                 <div className="relative">
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-hint" />
                     <input
@@ -1916,14 +2341,6 @@ export default function Help() {
                         placeholder={t('help.searchPlaceholder')}
                         className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-4 text-sm text-text-main placeholder:text-text-hint focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                     />
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                    <RoleBadge label={t('help.roleBadgeUser')} />
-                    {isAdmin && <RoleBadge label="Admin" color="bg-primary/15 text-primary" />}
-                    {isCierre && (
-                        <RoleBadge label="Cierre" color="bg-state-progress-bg text-state-progress-text" />
-                    )}
                 </div>
 
                 <div className="space-y-2">

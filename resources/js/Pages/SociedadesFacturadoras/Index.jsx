@@ -1,6 +1,7 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import InputError from '@/Components/InputError';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
@@ -36,6 +37,11 @@ export default function SociedadesFacturadorasIndex({
     const [activo, setActivo] = useState(filters.activo ?? '');
     const [deactivateTarget, setDeactivateTarget] = useState(null);
     const [editTarget, setEditTarget] = useState(null);
+    const currentPage = relaciones?.current_page ?? 1;
+    const lastPage = relaciones?.last_page ?? 1;
+    const total = relaciones?.total ?? (relaciones?.data?.length ?? 0);
+    const from = relaciones?.from ?? (total === 0 ? 0 : 1);
+    const to = relaciones?.to ?? (total === 0 ? 0 : (relaciones?.data?.length ?? 0));
 
     const canEdit = auth?.user?.is_director || hasPermission(auth?.user, 'sociedades_facturadoras.editar');
     const canDelete = auth?.user?.is_director || hasPermission(auth?.user, 'sociedades_facturadoras.eliminar');
@@ -56,7 +62,7 @@ export default function SociedadesFacturadorasIndex({
 
     const applyFilters = (event) => {
         event.preventDefault();
-        router.get(route('maestros.sociedades.index'), { search, activo }, { preserveState: true });
+        router.get(route('maestros.sociedades.index'), { search, activo, page: 1 }, { preserveState: true });
     };
 
     const submit = (event) => {
@@ -98,6 +104,14 @@ export default function SociedadesFacturadorasIndex({
             preserveScroll: true,
             onSuccess: () => setDeactivateTarget(null),
         });
+    };
+
+    const goToPage = (page) => {
+        if (page < 1 || page > lastPage || page === currentPage) {
+            return;
+        }
+
+        router.get(route('maestros.sociedades.index'), { search, activo, page }, { preserveState: true, preserveScroll: true });
     };
 
     return (
@@ -325,6 +339,11 @@ export default function SociedadesFacturadorasIndex({
                         </table>
                     </div>
                 </section>
+
+                <PaginationControls
+                    pagination={{ current_page: currentPage, last_page: lastPage, total, from, to }}
+                    onPageChange={goToPage}
+                />
             </div>
         </AuthenticatedLayout>
     );

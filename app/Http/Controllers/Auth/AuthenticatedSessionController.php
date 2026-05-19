@@ -52,7 +52,7 @@ class AuthenticatedSessionController extends Controller
             $request->session()->put('sesion_login_id', $sesionLoginId);
         }
 
-        return redirect()->intended(route('index', absolute: false));
+        return redirect()->route('index');
     }
 
     /**

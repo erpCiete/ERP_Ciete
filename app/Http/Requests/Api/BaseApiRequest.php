@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -57,6 +58,13 @@ abstract class BaseApiRequest extends FormRequest
         }
 
         return Str::upper((string) preg_replace('/\s+/', '', $normalized));
+    }
+
+    protected function currentUser(): ?User
+    {
+        $user = $this->user();
+
+        return $user instanceof User ? $user : null;
     }
 
     private function validationFailureMessage(): string

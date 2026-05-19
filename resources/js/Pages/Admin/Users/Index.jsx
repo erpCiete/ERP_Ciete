@@ -3,7 +3,7 @@ import { useI18n } from '@/i18n';
 import { Head, Link, router } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 
-export default function UsersIndex({ users, filtros = {} }) {
+export default function UsersIndex({ users, filtros = {}, rolesInfo = [] }) {
     const { t } = useI18n();
 
     const [search, setSearch] = useState(filtros.search ?? '');
@@ -12,6 +12,7 @@ export default function UsersIndex({ users, filtros = {} }) {
 
     const rows = users?.data ?? [];
     const pagination = users?.meta ?? users;
+    const roleInfoBySlug = Object.fromEntries((rolesInfo ?? []).map((role) => [role.slug, role]));
 
     const aplicarFiltros = useCallback(
         (overrides = {}) => {
@@ -137,7 +138,16 @@ export default function UsersIndex({ users, filtros = {} }) {
                                             <td className="px-4 py-3 text-sm text-text-muted whitespace-nowrap">{user.nombre_usuario}</td>
                                             <td className="px-4 py-3 text-sm text-text-muted break-words">{user.email}</td>
                                             <td className="px-4 py-3 text-sm text-text-muted">
-                                                {user.contexto?.codigo ?? '—'}
+                                                <div className="flex flex-wrap gap-1">
+                                                    {(user.contextos_asignados?.length ? user.contextos_asignados : [user.contexto].filter(Boolean)).map((contexto) => (
+                                                        <span
+                                                            key={`${user.id_usuario}-${contexto?.id_contexto ?? contexto?.codigo}`}
+                                                            className="inline-flex items-center rounded-full bg-surface-2 px-2 py-0.5 text-[9px] font-bold text-text-muted"
+                                                        >
+                                                            {contexto?.codigo ?? '—'}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex flex-wrap gap-1">
@@ -150,6 +160,11 @@ export default function UsersIndex({ users, filtros = {} }) {
                                                         </span>
                                                     ))}
                                                 </div>
+                                                <p className="mt-1 text-[10px] text-text-hint">
+                                                    {(user.roles ?? []).some((role) => (roleInfoBySlug[role.slug]?.scope_summary?.operational_mutation?.length ?? 0) > 0)
+                                                        ? t('adminUsers.scopeMutationEnabled')
+                                                        : t('adminUsers.scopeReadOnly')}
+                                                </p>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span
@@ -210,10 +225,10 @@ export default function UsersIndex({ users, filtros = {} }) {
 
                 <div className="pt-2">
                     <Link
-                        href={route('maestros.index')}
+                        href={route('admin.dashboard')}
                         className="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-main transition hover:bg-surface-2"
                     >
-                        Volver a maestros
+                        {t('adminUsers.backToAdmin')}
                     </Link>
                 </div>
             </div>

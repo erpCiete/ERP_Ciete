@@ -2,6 +2,7 @@ import BadgeCliente from '@/Components/ui/BadgeCliente';
 import BadgeTrabajo from '@/Components/ui/BadgeTrabajo';
 import TrabajosExcelView from '@/Components/ui/TrabajosExcelView';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import OperationalReadOnlyNotice from '@/Components/OperationalReadOnlyNotice';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
@@ -9,6 +10,7 @@ import { useTheme } from '@/theme';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import TrabajosColumnas from '@/Components/ui/TrabajosColumnas';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import { useTrabajos } from '@/Hooks/useTrabajos';
 
 // ─── Opciones de estado para el filtro ───────────────────────────────────────
@@ -23,7 +25,7 @@ function formatWorkNumber(trabajo) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 // Props que llegan desde TrabajoController@index via Inertia:
-//   trabajos    → { data: [...], meta: { pagination: { total, current_page, last_page } } }
+//   trabajos    → { data: [...], links: {...}, meta: { current_page, last_page, total, per_page, ... } }
 //   filters     → { search, estado, fecha_desde, fecha_hasta } (filtros activos en el servidor)
 //   contextoIds → [1] = MOEVE · [2] = REPSOL · [1,2] = ambos
 //   canCreate   → boolean — permiso trabajos.crear del usuario autenticado
@@ -51,7 +53,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     const rows  = trabajos?.data  ?? [];
-    const total = trabajos?.meta?.pagination?.total ?? rows.length;
+    const total = trabajos?.meta?.total ?? rows.length;
     const hasFilters = search !== '' || estado !== '' || fechaDesde !== '' || fechaHasta !== '';
 
     // Número de columnas total — para colSpan dinámico
@@ -109,7 +111,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
     // ── Cancelar trabajo ──────────────────────────────────────────────────────
     const handleDelete = () => {
         if (!deleteTarget) return;
-    
+
         // Usamos la función del hook en lugar de 'router.delete' manual
         eliminarTrabajo(deleteTarget.id_trabajo, () => {
             setDeleteTarget(null);
@@ -166,6 +168,8 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                     ) : null}
                 />
 
+                <OperationalReadOnlyNotice />
+
                 {!isCieteExcel && canCreateByPermission && activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                         Selecciona un contexto concreto para crear trabajos.
@@ -179,7 +183,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                         filters={filters}
                         aplicarFiltros={aplicarFiltros}
                         canCreate={canCreateByPermission}
-                        pagination={trabajos?.meta?.pagination}
+                        pagination={trabajos?.meta}
                         responsables={responsables}
                         creationCatalogs={creationCatalogs}
                     />
@@ -276,8 +280,8 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                         <table className="min-w-[1220px] w-full table-fixed divide-y divide-border text-sm">
                             <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
                                 <tr>
-                                    <th className="w-22 px-3 py-3 whitespace-nowrap">{t('trabajos.columns.number')}</th>
-                                    <th className="px-3 py-3">{t('trabajos.columns.description')}</th>
+                                    <th className="w-[9rem] max-w-[9rem] px-3 py-3 whitespace-nowrap">{t('trabajos.columns.number')}</th>
+                                    <th className="min-w-0 px-4 py-3">{t('trabajos.columns.description')}</th>
                                     <th className="w-28 px-3 py-3">{t('trabajos.columns.status')}</th>
                                     <th className="w-32 px-3 py-3">{t('trabajos.columns.company')}</th>
                                     <th className="px-3 py-3">{t('trabajos.columns.station')}</th>
@@ -337,19 +341,27 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                 )}
 
                                 {/* Filas de datos */}
-                                {status === 'ready' && rows.map((trabajo) => (
+                                {status === 'ready' && rows.map((trabajo) => {
+                                    const canEditRow = Boolean(trabajo.can?.update);
+                                    const canDeleteRow = Boolean(trabajo.can?.delete);
+                                    const workNumber = formatWorkNumber(trabajo);
+
+                                    return (
                                     <tr key={trabajo.id_trabajo} className="hover:bg-surface-2/60">
 
                                         {/* Nº trabajo — en mono rojo igual que referencias OBR/PED */}
-                                        <td className="px-3 py-4 align-top">
-                                            <span className="font-mono text-xs font-semibold text-(--ciete-red)">
-                                                {formatWorkNumber(trabajo)}
+                                        <td className="w-[9rem] max-w-[9rem] px-3 py-4 align-top">
+                                            <span
+                                                className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--ciete-red)"
+                                                title={workNumber !== '—' ? workNumber : undefined}
+                                            >
+                                                {workNumber}
                                             </span>
                                         </td>
 
                                         {/* Descripción */}
-                                        <td className="px-3 py-4 align-top">
-                                            <p className="font-medium text-text-main line-clamp-2">
+                                        <td className="min-w-0 px-4 py-4 align-top">
+                                            <p className="line-clamp-2 break-words font-medium text-text-main">
                                                 {trabajo.descripcion_trabajo}
                                             </p>
                                         </td>
@@ -381,61 +393,46 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
 
                                         {/* Acciones */}
                                         <td className="px-3 py-4 align-top">
-                                            <div className="flex flex-wrap justify-end gap-3">
-                                                <button
-                                                    type="button"
-                                                    // CAMBIO: Antes usabas router.visit, ahora usas la función del hook
-                                                    onClick={() => irAEditar(trabajo.id_trabajo)}
-                                                    className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
-                                                >
-                                                    {t('common.actions.edit')}
-                                                </button>
-                                                
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setDeleteTarget(trabajo)}
-                                                    className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
-                                                >
-                                                    {t('trabajos.cancelAction')}
-                                                </button>
-                                            </div>
+                                            {canEditRow || canDeleteRow ? (
+                                                <div className="flex flex-wrap justify-end gap-3">
+                                                    {canEditRow && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => irAEditar(trabajo.id_trabajo)}
+                                                            className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
+                                                        >
+                                                            {t('common.actions.edit')}
+                                                        </button>
+                                                    )}
+
+                                                    {canDeleteRow && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDeleteTarget(trabajo)}
+                                                            className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
+                                                        >
+                                                            {t('trabajos.cancelAction')}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs font-medium uppercase tracking-widest text-text-hint">
+                                                    {t('supportReadOnly.short')}
+                                                </span>
+                                            )}
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
 
                     {/* ── Paginación ─────────────────────────────────────────── */}
-                    {trabajos?.meta?.pagination?.last_page > 1 && (
-                        <div className="flex flex-col gap-3 border-t border-border px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs text-text-hint">
-                                {t('trabajos.pagination.summary', {
-                                    page: trabajos.meta.pagination.current_page,
-                                    lastPage: trabajos.meta.pagination.last_page,
-                                    total,
-                                })}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    disabled={trabajos.meta.pagination.current_page <= 1}
-                                    onClick={() => aplicarFiltros({ page: trabajos.meta.pagination.current_page - 1 })}
-                                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
-                                >
-                                    {t('trabajos.pagination.previous')}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={trabajos.meta.pagination.current_page >= trabajos.meta.pagination.last_page}
-                                    onClick={() => aplicarFiltros({ page: trabajos.meta.pagination.current_page + 1 })}
-                                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-main transition hover:bg-surface-2 disabled:opacity-40"
-                                >
-                                    {t('trabajos.pagination.next')}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <PaginationControls
+                        pagination={trabajos?.meta}
+                        onPageChange={(p) => aplicarFiltros({ page: p })}
+                    />
                 </section>
                 </>
                 )}

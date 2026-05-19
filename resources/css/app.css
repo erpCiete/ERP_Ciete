@@ -185,6 +185,22 @@
     @apply px-4 py-2 text-xs text-text-hint sm:px-5;
 }
 
+@layer components {
+    .ciete-excel-table th {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 1.2rem !important;
+        padding-right: 1.2rem !important;
+    }
+
+    .ciete-excel-table td {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 1.2rem !important;
+        padding-right: 1.2rem !important;
+    }
+}
+
 @layer base {
     :root {
         --ciete-red: var(--color-primary);

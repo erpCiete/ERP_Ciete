@@ -13,14 +13,14 @@ class PermisosSeeder extends Seeder
     public function run(): void
     {
         $legacySlugs = [
-                'trabajos.cerrar',
-                'trabajos_cerrados.editar',
-                'trabajos.editar_cerrado',
-                'pedidos.gestionar',
-                'facturas.gestionar',
-                'estaciones.gestionar',
-                'empresas_contactos.gestionar',
-            ];
+            'trabajos.cerrar',
+            'trabajos_cerrados.editar',
+            'trabajos.editar_cerrado',
+            'pedidos.gestionar',
+            'facturas.gestionar',
+            'estaciones.gestionar',
+            'empresas_contactos.gestionar',
+        ];
 
         $legacyPermissionIds = Permission::query()
             ->whereIn('slug', $legacySlugs)
@@ -40,6 +40,7 @@ class PermisosSeeder extends Seeder
             ['id_permiso' => 1, 'nombre' => 'Ver usuarios', 'slug' => 'usuarios.ver', 'descripcion' => 'Consulta de usuarios'],
             ['id_permiso' => 2, 'nombre' => 'Gestionar usuarios', 'slug' => 'usuarios.gestionar', 'descripcion' => 'Alta, baja y edicion de usuarios'],
             ['id_permiso' => 3, 'nombre' => 'Gestionar roles', 'slug' => 'roles.gestionar', 'descripcion' => 'Gestion de roles y permisos'],
+            ['id_permiso' => 72, 'nombre' => 'Acceder al panel admin tecnico', 'slug' => 'admin.panel.ver', 'descripcion' => 'Acceso al panel tecnico de administracion del ERP'],
             ['id_permiso' => 4, 'nombre' => 'Ver trabajos', 'slug' => 'trabajos.ver', 'descripcion' => 'Consulta de trabajos'],
             ['id_permiso' => 5, 'nombre' => 'Crear trabajos', 'slug' => 'trabajos.crear', 'descripcion' => 'Creacion de trabajos'],
             ['id_permiso' => 6, 'nombre' => 'Editar trabajos', 'slug' => 'trabajos.editar', 'descripcion' => 'Edicion de trabajos'],
@@ -84,6 +85,8 @@ class PermisosSeeder extends Seeder
             ['id_permiso' => 52, 'nombre' => 'Limpiar auditoria', 'slug' => 'auditoria.limpiar', 'descripcion' => 'Limpieza controlada del registro de auditoria'],
             ['id_permiso' => 53, 'nombre' => 'Confirmar importaciones', 'slug' => 'importaciones.confirmar', 'descripcion' => 'Confirmacion de importaciones revisadas'],
             ['id_permiso' => 54, 'nombre' => 'Gestionar soporte', 'slug' => 'soporte.gestionar', 'descripcion' => 'Gestion tecnica de solicitudes de soporte'],
+            ['id_permiso' => 73, 'nombre' => 'Gestionar mantenimiento', 'slug' => 'mantenimiento.gestionar', 'descripcion' => 'Activacion y desactivacion del modo mantenimiento'],
+            ['id_permiso' => 74, 'nombre' => 'Gestionar avisos internos', 'slug' => 'avisos.gestionar', 'descripcion' => 'Publicacion de avisos internos y tecnicos'],
             ['id_permiso' => 55, 'nombre' => 'Exportar facturas', 'slug' => 'facturas.exportar', 'descripcion' => 'Exportacion de listados y detalle de facturas'],
             ['id_permiso' => 56, 'nombre' => 'Ver maestros', 'slug' => 'maestros.ver', 'descripcion' => 'Acceso al panel separado de datos maestros'],
             ['id_permiso' => 57, 'nombre' => 'Gestionar maestros', 'slug' => 'maestros.gestionar', 'descripcion' => 'Gestion global de datos maestros'],

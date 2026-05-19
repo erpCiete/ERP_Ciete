@@ -1,4 +1,5 @@
 import CieteMark from '@/Components/CieteMark';
+import UserAccountAvatar from '@/Components/UserAccountAvatar';
 import { getNavigationIcon } from '@/Components/navigationIcons';
 import { Link } from '@inertiajs/react';
 
@@ -88,7 +89,8 @@ export default function MobileSidebarDrawer({
                 </div>
 
                 <div className="border-t border-white/10 bg-black/10 p-4">
-                    <div className="mb-3 px-1">
+                    <div className="mb-3 flex items-center gap-2.5 px-1">
+                        <UserAccountAvatar user={user} className="h-8 w-8" fallbackClassName="bg-white/10 text-white/75" />
                         <p className="truncate text-[10px] font-semibold text-white/55">{user.email}</p>
                     </div>
 

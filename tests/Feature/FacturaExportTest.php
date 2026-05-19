@@ -41,7 +41,7 @@ class FacturaExportTest extends TestCase
         $response->assertOk();
         $content = $response->streamedContent();
 
-        $this->assertStringContainsString('Numero factura', $content);
+        $this->assertStringContainsString('Número factura', $content);
         $this->assertStringContainsString($visible->numero_factura, $content);
         $this->assertStringNotContainsString($hidden->numero_factura, $content);
     }
@@ -132,14 +132,14 @@ class FacturaExportTest extends TestCase
     private function createUserWithPermissions(array $permissions, array $contexts): User
     {
         $permissionIds = collect($permissions)
-            ->map(fn (string $slug) => Permission::firstOrCreate(
+            ->map(fn(string $slug) => Permission::firstOrCreate(
                 ['slug' => $slug],
                 ['nombre' => $slug, 'activo' => true]
             )->id_permiso)
             ->all();
 
         $role = Role::firstOrCreate(
-            ['slug' => 'facturas_export_test_'.md5(implode('|', $permissions))],
+            ['slug' => 'facturas_export_test_' . md5(implode('|', $permissions))],
             ['nombre' => 'Facturas Export Test', 'activo' => true]
         );
         $role->permissions()->sync($permissionIds);
@@ -147,7 +147,7 @@ class FacturaExportTest extends TestCase
         $user = User::factory()->create(['id_contexto' => $contexts[0]]);
         $user->roles()->sync([$role->id_rol]);
         $user->contextos()->sync(collect($contexts)->mapWithKeys(
-            fn (int $contextId) => [$contextId => ['es_contexto_principal' => $contextId === $contexts[0], 'activo' => true]]
+            fn(int $contextId) => [$contextId => ['es_contexto_principal' => $contextId === $contexts[0], 'activo' => true]]
         )->all());
 
         return $user;
@@ -167,7 +167,7 @@ class FacturaExportTest extends TestCase
             'id_empresa_facturadora' => $empresaFacturadora->id_empresa,
             'id_empresa_cliente' => $trabajo->id_empresa_cliente,
             'numero_factura' => $number,
-            'numero_factura_ccp' => 'CCP-'.$number,
+            'numero_factura_ccp' => 'CCP-' . $number,
             'orden_factura' => 1,
             'fecha_emision' => '2026-05-06',
             'fecha_vencimiento' => '2026-06-06',
@@ -193,15 +193,15 @@ class FacturaExportTest extends TestCase
     {
         $empresaCliente = Empresa::factory()->create([
             'id_contexto' => $contextId,
-            'cif' => 'A'.$contextId.str_pad((string) random_int(1, 9999999), 7, '0', STR_PAD_LEFT),
+            'cif' => 'A' . $contextId . str_pad((string) random_int(1, 9999999), 7, '0', STR_PAD_LEFT),
             'tipo_empresa' => 'cliente',
         ]);
 
         return Contrato::create([
             'id_contexto' => $contextId,
             'id_empresa_cliente' => $empresaCliente->id_empresa,
-            'codigo_contrato' => 'EXP-'.$contextId.'-'.uniqid(),
-            'nombre' => 'Contrato export '.$contextId,
+            'codigo_contrato' => 'EXP-' . $contextId . '-' . uniqid(),
+            'nombre' => 'Contrato export ' . $contextId,
             'tipo' => 'marco',
             'estado' => 'vigente',
             'activo' => true,
@@ -221,7 +221,7 @@ class FacturaExportTest extends TestCase
     {
         $empresa = Empresa::factory()->create([
             'id_contexto' => $contrato->id_contexto,
-            'cif' => 'B'.$contrato->id_contexto.str_pad((string) random_int(1, 9999999), 7, '0', STR_PAD_LEFT),
+            'cif' => 'B' . $contrato->id_contexto . str_pad((string) random_int(1, 9999999), 7, '0', STR_PAD_LEFT),
             'tipo_empresa' => 'cliente',
             'activo' => true,
         ]);
@@ -263,9 +263,9 @@ class FacturaExportTest extends TestCase
         return PedidoItem::create([
             'id_contexto' => $trabajo->id_contexto,
             'id_pedido' => $pedido->id_pedido,
-            'codigo_servicio' => 'SERV-'.$numeroPedido,
-            'numero_tarifa' => 'TAR-'.$numeroPedido,
-            'descripcion_servicio' => 'Servicio '.$numeroPedido,
+            'codigo_servicio' => 'SERV-' . $numeroPedido,
+            'numero_tarifa' => 'TAR-' . $numeroPedido,
+            'descripcion_servicio' => 'Servicio ' . $numeroPedido,
             'precio_unitario' => $importe / max($cantidad, 1),
             'cantidad' => $cantidad,
             'total_linea' => $importe,

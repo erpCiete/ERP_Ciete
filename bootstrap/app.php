@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'forbid_role' => \App\Http\Middleware\ForbidRoleMiddleware::class,
             'maintenance' => \App\Http\Middleware\CheckMaintenanceMode::class,
             'audit.access' => \App\Http\Middleware\AuditAccessMiddleware::class,
         ]);
@@ -52,6 +53,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return Inertia::render('Error', [
                 'status' => $status,
+                'homeUrl' => route('index'),
+                'accessDenied' => [
+                    'message' => 'No tienes permiso para acceder a este módulo.',
+                    'backHomeLabel' => 'Volver al inicio',
+                    'help' => 'Si crees que necesitas acceso a este módulo, contacta con administración.',
+                ],
             ])->toResponse($request)->setStatusCode($status);
         });
     })

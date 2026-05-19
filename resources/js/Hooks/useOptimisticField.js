@@ -13,6 +13,7 @@ function readConflict(responseData, attemptedValue, fieldName) {
         myValue: responseData?.valor_intentado ?? attemptedValue,
         currentUpdatedAt: responseData?.updated_at_actual ?? responseData?.current_updated_at ?? null,
         usuarioModificacion: responseData?.usuario_modificacion ?? null,
+        modificadoRecientemente: Boolean(responseData?.modificado_recientemente ?? false),
     };
 }
 

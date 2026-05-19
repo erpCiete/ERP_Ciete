@@ -55,9 +55,6 @@ function fmtMoney(value) {
     }).format(toNumber(value));
 }
 
-const hasPermission = (user, permission, aliases = []) =>
-    Boolean(user?.permission_slugs?.some((slug) => slug === permission || aliases.includes(slug)));
-
 function contractIdsForEmpresa(empresa) {
     const ids = Array.isArray(empresa?.id_contratos)
         ? empresa.id_contratos
@@ -241,7 +238,7 @@ function validarForm({
 
     if (invoiceItems.length > 0 && availableEmpresasFacturadoras.length === 0) {
         errs.id_empresa_facturadora =
-            'No hay sociedades/CIF permitidas para el contrato o tarifa de los items seleccionados.';
+            'No hay sociedades facturadoras permitidas con CIF registrado para el contrato o tarifa de los items seleccionados.';
     }
 
     if (form.id_empresa_facturadora && availableEmpresasFacturadoras.length > 0) {
@@ -310,8 +307,6 @@ export default function FacturasForm({
     const isAllContext = props.auth?.user?.active_context?.is_all ?? false;
 
     const isEditing = factura !== null;
-    const facturaId = (factura?.data ?? factura)?.id_factura;
-    const canExportFacturas = hasPermission(props.auth?.user, 'facturas.exportar');
     const pageTitle = isEditing ? t('facturas.edit') : t('facturas.create');
     const normalizedFactura = useMemo(() => normalizeFactura(factura), [factura]);
     const normalizedExistingItems = useMemo(
@@ -429,6 +424,7 @@ export default function FacturasForm({
 
         return (pedidoItemsFacturables || [])
             .filter((item) => !selectedContext || String(item.id_contexto) === String(selectedContext.id_contexto))
+            .filter((item) => !form.id_trabajo || String(item.id_trabajo) === String(form.id_trabajo))
             .filter((item) => !selectedPedidoItemIds.has(Number(item.id_pedido_item)))
             .filter((item) => {
                 if (!selectedEmpresaFacturadora) return true;
@@ -456,7 +452,14 @@ export default function FacturasForm({
                     .includes(query);
             })
             .slice(0, 25);
-    }, [itemSearch, pedidoItemsFacturables, selectedContext, selectedPedidoItemIds, selectedEmpresaFacturadora]);
+    }, [form.id_trabajo, itemSearch, pedidoItemsFacturables, selectedContext, selectedPedidoItemIds, selectedEmpresaFacturadora]);
+    const contextPedidoItemsCount = useMemo(
+        () =>
+            (pedidoItemsFacturables || []).filter(
+                (item) => !selectedContext || String(item.id_contexto) === String(selectedContext.id_contexto),
+            ).length,
+        [pedidoItemsFacturables, selectedContext],
+    );
     const assignedAmount = useMemo(
         () => invoiceItems.reduce((sum, line) => sum + toNumber(line.importe_facturado), 0),
         [invoiceItems],
@@ -534,13 +537,18 @@ export default function FacturasForm({
             const next = { ...prev };
             delete next.id_trabajo;
             delete next.orden_factura;
+            delete next.items;
+            delete next.id_empresa_facturadora;
             return next;
         });
         setForm((prev) => ({
             ...prev,
             id_trabajo: value,
             orden_factura: '',
+            id_empresa_facturadora: '',
         }));
+        setInvoiceItems([]);
+        setItemSearch('');
     };
 
     const addInvoiceItem = (item) => {
@@ -668,15 +676,6 @@ export default function FacturasForm({
                     eyebrow={t('nav.groups.operations')}
                     title={pageTitle}
                     description={selectedClientKey ? t('trabajos.clientSelector.contextReady') : t('trabajos.clientSelector.intro')}
-                    actions={isEditing && canExportFacturas && facturaId ? (
-                        <button
-                            type="button"
-                            onClick={() => window.location.assign(`/api/v1/facturas/${facturaId}/export`)}
-                            className="inline-flex w-full items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-main transition hover:bg-surface-2 sm:w-auto"
-                        >
-                            {t('facturas.exportInvoice')}
-                        </button>
-                    ) : null}
                 />
 
                 {!hasOperationalClientAccess && (
@@ -695,7 +694,7 @@ export default function FacturasForm({
                         {!isEditing && isAllContext && (
                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                                 <p className="text-sm font-medium text-amber-800">
-                                    No es posible crear registros mientras el contexto activo es Todos. Selecciona un contexto especifico en la barra superior.
+                                    No es posible crear registros mientras el contexto activo es Todos. Selecciona un contexto específico en la barra superior.
                                 </p>
                             </div>
                         )}
@@ -859,8 +858,27 @@ export default function FacturasForm({
                                         {invoiceItems.length > 0 && availableEmpresasFacturadoras.length === 0 && (
                                             <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
                                                 <p className="text-sm font-medium text-amber-800">
-                                                    No hay sociedades/CIF permitidas para el contrato o tarifa de los items seleccionados.
+                                                    No hay sociedades facturadoras permitidas con CIF registrado para el contrato o tarifa de los items seleccionados.
                                                 </p>
+                                                <p className="mt-1 text-sm text-amber-700">
+                                                    Revisa en Maestros la relacion contrato-sociedad permitida y comprueba que la empresa tenga CIF informado y este activa en el contexto actual.
+                                                </p>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => router.visit(route('maestros.sociedades.index'))}
+                                                        className="rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-amber-800 transition hover:bg-amber-100"
+                                                    >
+                                                        Abrir sociedades facturadoras
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => router.visit(route('clientes.index'))}
+                                                        className="rounded-md border border-amber-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-amber-800 transition hover:bg-amber-100"
+                                                    >
+                                                        Revisar empresas / CIF
+                                                    </button>
+                                                </div>
                                                 <InputError message={getError('id_empresa_facturadora')} className="mt-1.5" />
                                             </div>
                                         )}
@@ -1080,9 +1098,18 @@ export default function FacturasForm({
 
                                             <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
                                                 {availablePedidoItems.length === 0 && (
-                                                    <p className="rounded-lg border border-border bg-surface px-3 py-4 text-sm text-text-muted">
-                                                        No hay items pendientes para los filtros actuales.
-                                                    </p>
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-4">
+                                                        <p className="text-sm font-medium text-amber-800">
+                                                            No hay items pendientes para facturar.
+                                                        </p>
+                                                        <p className="mt-1 text-sm text-amber-700">
+                                                            {contextPedidoItemsCount === 0
+                                                                ? 'Primero crea un pedido con items para este contexto y trabajo.'
+                                                                : form.id_empresa_facturadora
+                                                                  ? 'La sociedad seleccionada no permite los contratos de los items disponibles.'
+                                                                  : 'Revisa el trabajo seleccionado, la busqueda o los items ya añadidos.'}
+                                                        </p>
+                                                    </div>
                                                 )}
                                                 {availablePedidoItems.map((item) => (
                                                     <button

@@ -2,13 +2,13 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
 Estado: manual provisional compactado.
 
-Fuente funcional:
+Referencia de autoridad:
 
-`docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`
+`docs/02_CLIENTE/reunionCieteCompletaFormato.txt`, aterrizada en `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md` y priorizada en `docs/02_CLIENTE/tareasComparar.md`
 
 Este manual sustituye versiones anteriores que mezclaban admin operativo, cobros, legalizaciones o facturas por trabajo como flujo principal.
 
@@ -34,12 +34,12 @@ Este manual sustituye versiones anteriores que mezclaban admin operativo, cobros
 - Un trabajo puede crearse sin pedido.
 - Estado inicial: `en_curso`.
 - Estados:
-  - `en_curso`
-  - `terminado`
-  - `pendiente_facturar`
-  - `facturado`
-  - `finalizado`
-  - `cancelado`
+    - `en_curso`
+    - `terminado`
+    - `pendiente_facturar`
+    - `facturado`
+    - `finalizado`
+    - `cancelado`
 - `terminado` significa ejecucion hecha.
 - `finalizado` significa ejecucion y economia resueltas.
 - Los cancelados siguen visibles y filtrables.

@@ -10,8 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckMaintenanceMode
 {
     /**
-     * If maintenance mode is active, non-admin users see the maintenance page.
-     * Admin users bypass maintenance and can use the system normally.
+     * If maintenance mode is active, only technical maintenance managers bypass it.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -21,7 +20,7 @@ class CheckMaintenanceMode
 
         $user = $request->user();
 
-        if ($user && $user->isAdmin()) {
+        if ($user && $user->canManageMaintenance()) {
             return $next($request);
         }
 

@@ -101,10 +101,10 @@ final class MoeveExcelImporter
                     $relative,
                     $sheet,
                     (int) $row['row'],
-                    'Fila de estacion MOEVE sin codigo util.',
+                    'Fila de estación MOEVE sin código útil.',
                     'station_missing_code',
                     'acceptable',
-                    'Mantener fuera salvo que CIETE confirme un codigo alternativo fiable para esa estacion.'
+                    'Mantener fuera salvo que CIETE confirme un código alternativo fiable para esa estación.'
                 );
                 continue;
             }
@@ -159,7 +159,7 @@ final class MoeveExcelImporter
                     $relative,
                     $sheet,
                     (int) $row['row'],
-                    'Fila de trabajo MOEVE sin numero de trabajo.',
+                    'Fila de trabajo MOEVE sin número de trabajo.',
                     'work_missing_number',
                     'acceptable',
                     'Mantener fuera si la fila es cabecera repetida, subtotal o linea no operativa.'
@@ -173,7 +173,7 @@ final class MoeveExcelImporter
                     $relative,
                     $sheet,
                     (int) $row['row'],
-                    'Trabajo MOEVE con importe pero sin numero de pedido; no se crea pedido_item.',
+                    'Trabajo MOEVE con importe pero sin número de pedido; no se crea pedido_item.',
                     'work_amount_without_order',
                     'functional_decision',
                     'Confirmar con CIETE si estas lineas deben quedar como trabajo sin pedido o requieren otro origen documental.'
@@ -203,7 +203,7 @@ final class MoeveExcelImporter
                     $relative,
                     $sheet,
                     (int) $row['row'],
-                    'Fila de factura emitida MOEVE sin numero de factura.',
+                    'Fila de factura emitida MOEVE sin número de factura.',
                     'invoice_missing_number',
                     'acceptable',
                     'Mantener fuera si la fila es subtotal, nota o linea de apoyo.'

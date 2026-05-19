@@ -68,6 +68,16 @@ class MaintenanceModeTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_direction_cannot_toggle_maintenance(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $director = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
+
+        $this->actingAs($director)
+            ->post('/admin/maintenance')
+            ->assertForbidden();
+    }
+
     public function test_non_admin_sees_maintenance_page_when_active(): void
     {
         $this->seed(DatabaseSeeder::class);
@@ -90,10 +100,24 @@ class MaintenanceModeTest extends TestCase
         file_put_contents($this->flagFile, json_encode(['time' => now()->toIso8601String()]));
 
         $response = $this->actingAs($admin)
+            ->get('/admin');
+
+        $response->assertOk();
+        $response->assertInertia(fn($page) => $page->component('Admin/Dashboard'));
+    }
+
+    public function test_direction_does_not_bypass_maintenance_mode(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $director = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
+
+        file_put_contents($this->flagFile, json_encode(['time' => now()->toIso8601String()]));
+
+        $response = $this->actingAs($director)
             ->get('/dashboard');
 
         $response->assertOk();
-        $response->assertInertia(fn($page) => $page->component('Dashboard'));
+        $response->assertInertia(fn($page) => $page->component('Maintenance'));
     }
 
     public function test_maintenance_state_is_shared_via_inertia(): void
@@ -102,13 +126,13 @@ class MaintenanceModeTest extends TestCase
         $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
 
         $this->actingAs($admin)
-            ->get('/dashboard')
+            ->get('/admin')
             ->assertInertia(fn($page) => $page->where('maintenance.active', false));
 
         file_put_contents($this->flagFile, json_encode(['time' => now()->toIso8601String()]));
 
         $this->actingAs($admin)
-            ->get('/dashboard')
+            ->get('/admin')
             ->assertInertia(fn($page) => $page->where('maintenance.active', true));
     }
 }

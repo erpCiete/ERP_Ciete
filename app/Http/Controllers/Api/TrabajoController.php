@@ -9,6 +9,7 @@ use App\Models\ContextoCliente;
 use App\Models\AuditLog;
 use App\Models\Contrato;
 use App\Models\EstacionServicio;
+use App\Models\Pedido;
 use App\Models\TipoDocumento;
 use App\Models\TipoTrabajo;
 use App\Models\Trabajo;
@@ -18,6 +19,7 @@ use App\Support\ContextGuard;
 use App\Support\TrabajoPermission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -99,7 +101,7 @@ class TrabajoController extends Controller
         $query->orderByRaw("CASE estado WHEN 'en_curso' THEN 1 WHEN 'terminado' THEN 2 WHEN 'pendiente_facturar' THEN 3 WHEN 'facturado' THEN 4 WHEN 'finalizado' THEN 5 WHEN 'cancelado' THEN 99 ELSE 90 END")
               ->orderBy('fecha_encargo', 'desc');
 
-        $trabajos = $query->paginate(20)->withQueryString();
+        $trabajos = $query->paginate(10)->withQueryString();
 
         $responsables = User::query()
             ->where('activo', true)
@@ -115,6 +117,8 @@ class TrabajoController extends Controller
         $canCreate = TrabajoPermission::canCreate($request->user());
         $canCreateInContext = $canCreate
             && ContextGuard::canCreateInActiveContext($request->user());
+        $canUseExcelCatalogs = $canCreateInContext
+            || ($request->user()?->hasPermission('trabajos.editar') ?? false);
 
         return Inertia::render('Trabajos/Index', [
             // Pasamos por el Resource para que actúe el firewall de contexto (Tarea B03-03)
@@ -123,13 +127,14 @@ class TrabajoController extends Controller
             'filters'      => $request->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'id_responsable_ciete', 'id_estacion_servicio', 'municipio', 'provincia', 'codigo_estacion']),
             'canCreate'    => $canCreate,
             'responsables' => $responsables,
-            'creationCatalogs' => $canCreateInContext
+            'creationCatalogs' => $canUseExcelCatalogs
                 ? $this->buildExcelCreationCatalogs($request->user()->getActiveContextIds())
                 : [
                     'estaciones' => [],
                     'contratos' => [],
                     'tiposDocumento' => [],
                     'tiposTrabajo' => [],
+                    'pedidos' => [],
                 ],
         ]);
     }
@@ -389,10 +394,14 @@ class TrabajoController extends Controller
             'numero_trabajo' => 'numero_trabajo',
             'numero_trabajo_operativo' => 'numero_trabajo_operativo',
             'categoria' => 'categoria',
+            'id_tipo_documento' => 'id_tipo_documento',
+            'id_tipo_trabajo' => 'id_tipo_trabajo',
+            'id_estacion_servicio' => 'id_estacion_servicio',
             'codigo_estacion' => 'codigo_estacion',
             'nombre_estacion' => 'nombre_estacion',
             'municipio' => 'municipio',
             'provincia' => 'provincia',
+            'id_pedido_principal' => 'id_pedido_principal',
         ];
 
         $campo = $fieldMap[$request->input('campo')] ?? $request->input('campo');
@@ -403,6 +412,7 @@ class TrabajoController extends Controller
             'provincia' => 'provincia',
         ];
         $isStationField = array_key_exists($campo, $stationFieldMap);
+        $isPedidoPrincipalField = $campo === 'id_pedido_principal';
 
         if (
             in_array($campo, ['observaciones', 'fecha_terminacion', 'id_responsable_ciete', 'descripcion_trabajo', 'numero_trabajo_operativo', 'categoria', 'municipio', 'provincia'], true)
@@ -425,10 +435,30 @@ class TrabajoController extends Controller
             'numero_trabajo'        => ['required', 'integer'],
             'numero_trabajo_operativo' => ['nullable', 'string', 'max:100'],
             'categoria'             => ['nullable', 'string', 'max:120'],
+            'id_tipo_documento'      => [
+                'required',
+                'integer',
+                Rule::exists('tipos_documento', 'id_tipo_documento')->where(fn ($query) => $query->whereIn('id_contexto', $activeContextIds)->where('activo', true)),
+            ],
+            'id_tipo_trabajo'        => [
+                'required',
+                'integer',
+                Rule::exists('tipos_trabajo', 'id_tipo_trabajo')->where(fn ($query) => $query->whereIn('id_contexto', $activeContextIds)->where('activo', true)),
+            ],
+            'id_estacion_servicio'  => [
+                'required',
+                'integer',
+                Rule::exists('estaciones_servicio', 'id_estacion_servicio')->where(fn ($query) => $query->whereIn('id_contexto', $activeContextIds)),
+            ],
             'codigo_estacion'       => ['required', 'string', 'max:80'],
             'nombre_estacion'       => ['required', 'string', 'max:180'],
             'municipio'             => ['nullable', 'string', 'max:120'],
             'provincia'             => ['nullable', 'string', 'max:120'],
+            'id_pedido_principal'   => [
+                'required',
+                'integer',
+                Rule::exists('pedidos', 'id_pedido')->where(fn ($query) => $query->whereIn('id_contexto', $activeContextIds)),
+            ],
             default                => ['prohibited'],
         };
 
@@ -442,6 +472,13 @@ class TrabajoController extends Controller
         if ($isStationField && ! $trabajo->relationLoaded('estacion')) {
             $trabajo->load('estacion');
         }
+        if ($isPedidoPrincipalField && ! $trabajo->relationLoaded('primerPedido')) {
+            $trabajo->load('primerPedido');
+        }
+
+        $currentPatchValue = $isStationField
+            ? $trabajo->estacion?->{$stationFieldMap[$campo]}
+            : ($isPedidoPrincipalField ? $trabajo->primerPedido?->id_pedido : $trabajo->{$campo});
 
         $serverTs = $trabajo->updated_at?->format('Y-m-d H:i:s') ?? '';
         $clientTs = $this->normalizePatchTimestamp($validated['updated_at']) ?? $validated['updated_at'];
@@ -465,21 +502,249 @@ class TrabajoController extends Controller
                 ) ?: null;
             }
 
+            $fueModificadoPorOtroUsuario = $lastAudit?->id_usuario
+                && (int) $lastAudit->id_usuario !== (int) $request->user()->id_usuario;
+
+            $fueModificadoRecientemente = $fueModificadoPorOtroUsuario
+                && $lastAudit?->created_at instanceof Carbon
+                && $lastAudit->created_at->greaterThanOrEqualTo(now()->subHour());
+
+            $conflictMessage = $fueModificadoRecientemente
+                ? 'Este campo fue modificado recientemente por otro usuario.'
+                : 'Este campo fue modificado por otro usuario.';
+
             return response()->json([
                 'conflict'             => true,
-                'message'              => 'Este campo fue modificado por otro usuario.',
+                'message'              => $conflictMessage,
                 'campo'                => $campo,
-                'valor_actual'         => $this->formatPatchValue($isStationField ? $trabajo->estacion?->{$stationFieldMap[$campo]} : $trabajo->{$campo}),
+                'valor_actual'         => $this->formatPatchValue($currentPatchValue),
                 'valor_intentado'      => $this->formatPatchValue($request->input('valor')),
                 'updated_at_actual'    => $serverTs,
                 'usuario_modificacion' => $usuarioMod,
-                'current_value'        => $this->formatPatchValue($isStationField ? $trabajo->estacion?->{$stationFieldMap[$campo]} : $trabajo->{$campo}),
+                'modificado_recientemente' => $fueModificadoRecientemente,
+                'current_value'        => $this->formatPatchValue($currentPatchValue),
                 'current_updated_at'   => $serverTs,
             ], 409);
         }
 
-        $valorAnterior = $this->formatPatchValue($isStationField ? $trabajo->estacion?->{$stationFieldMap[$campo]} : $trabajo->{$campo});
+        $valorAnterior = $this->formatPatchValue($currentPatchValue);
         $valorNuevo    = $validated['valor'];
+
+        if (in_array($campo, ['id_tipo_documento', 'id_tipo_trabajo'], true)) {
+            if ((int) $trabajo->id_contexto !== 2) {
+                return response()->json([
+                    'message' => 'El selector de tipo de trabajo solo aplica al contexto REPSOL.',
+                ], 422);
+            }
+
+            if ($campo === 'id_tipo_documento') {
+                $tipoDocumento = TipoDocumento::query()
+                    ->where('id_tipo_documento', $valorNuevo)
+                    ->where('id_contexto', $trabajo->id_contexto)
+                    ->where('activo', true)
+                    ->first();
+
+                if (! $tipoDocumento) {
+                    return response()->json([
+                        'message' => 'El tipo documental seleccionado no pertenece al contexto del trabajo.',
+                    ], 422);
+                }
+
+                $trabajo->id_tipo_documento = $tipoDocumento->id_tipo_documento;
+
+                if (
+                    $trabajo->id_tipo_trabajo
+                    && ! TipoTrabajo::query()
+                        ->where('id_tipo_trabajo', $trabajo->id_tipo_trabajo)
+                        ->where('id_tipo_documento', $tipoDocumento->id_tipo_documento)
+                        ->exists()
+                ) {
+                    $trabajo->id_tipo_trabajo = null;
+                }
+            } else {
+                $tipoTrabajo = TipoTrabajo::query()
+                    ->where('id_tipo_trabajo', $valorNuevo)
+                    ->where('id_contexto', $trabajo->id_contexto)
+                    ->where('activo', true)
+                    ->first();
+
+                if (! $tipoTrabajo) {
+                    return response()->json([
+                        'message' => 'El tipo de trabajo seleccionado no pertenece al contexto del trabajo.',
+                    ], 422);
+                }
+
+                if ($trabajo->id_tipo_documento && (int) $tipoTrabajo->id_tipo_documento !== (int) $trabajo->id_tipo_documento) {
+                    return response()->json([
+                        'message' => 'El tipo de trabajo no pertenece al tipo documental actual.',
+                    ], 422);
+                }
+
+                $trabajo->id_tipo_documento = $tipoTrabajo->id_tipo_documento;
+                $trabajo->id_tipo_trabajo = $tipoTrabajo->id_tipo_trabajo;
+            }
+
+            if (! $trabajo->isDirty('id_tipo_documento') && ! $trabajo->isDirty('id_tipo_trabajo')) {
+                $this->loadTrabajoForResponse($trabajo);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'El tipo seleccionado ya estaba asociado a este trabajo.',
+                    'campo' => $campo,
+                    'valor' => $valorNuevo,
+                    'updated_at' => $serverTs,
+                    'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+                ]);
+            }
+
+            $trabajo->save();
+            $trabajo->refresh();
+            $this->loadTrabajoForResponse($trabajo);
+
+            $this->auditLogger->log([
+                'user'           => $user,
+                'accion'         => 'actualizar',
+                'modulo'         => 'trabajos',
+                'tabla'          => 'trabajos',
+                'entity_type'    => Trabajo::class,
+                'entity_id'      => $trabajo->id_trabajo,
+                'registro_id'    => $trabajo->id_trabajo,
+                'campo'          => $campo,
+                'valor_anterior' => $valorAnterior,
+                'valor_nuevo'    => $valorNuevo,
+                'id_contexto'    => $trabajo->id_contexto,
+                'descripcion'    => sprintf('El usuario modifico la categorizacion REPSOL del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            ], $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tipo de trabajo actualizado correctamente.',
+                'campo' => $campo,
+                'valor' => $valorNuevo,
+                'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
+
+        if ($campo === 'id_estacion_servicio') {
+            $estacion = EstacionServicio::query()
+                ->where('id_estacion_servicio', $valorNuevo)
+                ->where('id_contexto', $trabajo->id_contexto)
+                ->first();
+
+            if (! $estacion) {
+                return response()->json([
+                    'message' => 'La estacion seleccionada no pertenece al contexto del trabajo.',
+                ], 422);
+            }
+
+            $trabajo->id_estacion_servicio = $estacion->id_estacion_servicio;
+            $trabajo->id_empresa_cliente = $estacion->id_empresa_cliente;
+
+            if (! $trabajo->isDirty('id_estacion_servicio') && ! $trabajo->isDirty('id_empresa_cliente')) {
+                $this->loadTrabajoForResponse($trabajo);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'La estacion seleccionada ya estaba asociada a este trabajo.',
+                    'campo' => $campo,
+                    'valor' => $estacion->id_estacion_servicio,
+                    'updated_at' => $serverTs,
+                    'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+                ]);
+            }
+
+            $trabajo->save();
+            $trabajo->refresh();
+            $this->loadTrabajoForResponse($trabajo);
+
+            $this->auditLogger->log([
+                'user'           => $user,
+                'accion'         => 'actualizar',
+                'modulo'         => 'trabajos',
+                'tabla'          => 'trabajos',
+                'entity_type'    => Trabajo::class,
+                'entity_id'      => $trabajo->id_trabajo,
+                'registro_id'    => $trabajo->id_trabajo,
+                'campo'          => $campo,
+                'valor_anterior' => $valorAnterior,
+                'valor_nuevo'    => $estacion->id_estacion_servicio,
+                'id_contexto'    => $trabajo->id_contexto,
+                'descripcion'    => sprintf('El usuario modifico la estacion del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            ], $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Estacion asociada correctamente.',
+                'campo' => $campo,
+                'valor' => $estacion->id_estacion_servicio,
+                'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
+
+        if ($campo === 'id_pedido_principal') {
+            $pedidoActual = $trabajo->primerPedido;
+            $valorAnterior = $pedidoActual?->id_pedido;
+
+            $pedidoSeleccionado = Pedido::query()
+                ->where('id_pedido', $valorNuevo)
+                ->where('id_contexto', $trabajo->id_contexto)
+                ->first();
+
+            if (! $pedidoSeleccionado) {
+                return response()->json([
+                    'message' => 'El pedido seleccionado no pertenece al contexto del trabajo.',
+                ], 422);
+            }
+
+            if ((int) $pedidoSeleccionado->id_trabajo === (int) $trabajo->id_trabajo) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'El pedido seleccionado ya estaba asociado a este trabajo.',
+                    'campo' => $campo,
+                    'valor' => $pedidoSeleccionado->id_pedido,
+                    'updated_at' => $serverTs,
+                    'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+                ]);
+            }
+
+            $trabajoOrigen = $pedidoSeleccionado->id_trabajo;
+
+            DB::transaction(function () use ($pedidoSeleccionado, $trabajo): void {
+                $pedidoSeleccionado->id_trabajo = $trabajo->id_trabajo;
+                $pedidoSeleccionado->save();
+                $trabajo->touch();
+            });
+
+            $trabajo->refresh();
+            $this->loadTrabajoForResponse($trabajo);
+
+            $this->auditLogger->log([
+                'user'           => $user,
+                'accion'         => 'actualizar',
+                'modulo'         => 'pedidos',
+                'tabla'          => 'pedidos',
+                'entity_type'    => Pedido::class,
+                'entity_id'      => $pedidoSeleccionado->id_pedido,
+                'registro_id'    => $pedidoSeleccionado->id_pedido,
+                'campo'          => 'id_trabajo',
+                'valor_anterior' => $trabajoOrigen,
+                'valor_nuevo'    => $trabajo->id_trabajo,
+                'id_contexto'    => $trabajo->id_contexto,
+                'descripcion'    => sprintf('El usuario reasigno el pedido %s al trabajo %s desde la vista Excel.', $pedidoSeleccionado->numero_pedido ?? $pedidoSeleccionado->id_pedido, $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            ], $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pedido asociado correctamente al trabajo.',
+                'campo' => $campo,
+                'valor' => $pedidoSeleccionado->id_pedido,
+                'valor_anterior' => $valorAnterior,
+                'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
 
         if ($isStationField && ! $trabajo->estacion) {
             return response()->json([
@@ -739,6 +1004,22 @@ class TrabajoController extends Controller
                     'nombre' => $estacion->nombre,
                     'municipio' => $estacion->poblacion,
                     'provincia' => $estacion->provincia,
+                ])
+                ->values()
+                ->all(),
+            'pedidos' => Pedido::query()
+                ->whereIn('id_contexto', $normalizedContextIds)
+                ->orderByDesc('fecha_solicitud')
+                ->orderByDesc('id_pedido')
+                ->limit(1000)
+                ->get(['id_pedido', 'id_contexto', 'id_trabajo', 'numero_pedido', 'fecha_solicitud', 'importe_pedido'])
+                ->map(fn (Pedido $pedido): array => [
+                    'id' => $pedido->id_pedido,
+                    'id_contexto' => $pedido->id_contexto,
+                    'id_trabajo' => $pedido->id_trabajo,
+                    'numero' => $pedido->numero_pedido,
+                    'fecha_solicitud' => $pedido->fecha_solicitud?->format('Y-m-d'),
+                    'importe_pedido' => $pedido->importe_pedido,
                 ])
                 ->values()
                 ->all(),

@@ -294,7 +294,7 @@ export default function TrabajosForm({
 
         const payload = {
             id_contexto: Number(form.id_contexto),
-            numero_trabajo: form.numero_trabajo,
+            numero_trabajo: Number(form.numero_trabajo),
             numero_trabajo_operativo: form.numero_trabajo_operativo || null,
             descripcion_trabajo: form.descripcion_trabajo,
             id_estacion_servicio: Number(form.id_estacion_servicio),
@@ -459,7 +459,7 @@ export default function TrabajosForm({
                                                 value={form.numero_trabajo_operativo}
                                                 onChange={(event) => updateField('numero_trabajo_operativo', event.target.value)}
                                                 className={inputClass('numero_trabajo_operativo')}
-                                                placeholder="Codigo real del Excel"
+                                                placeholder="Código real del Excel"
                                             />
                                             <InputError message={getError('numero_trabajo_operativo')} className="mt-1.5" />
                                         </div>
@@ -500,9 +500,21 @@ export default function TrabajosForm({
                                                 ))}
                                             </select>
                                             {filteredEstaciones.length === 0 && (
-                                                <p className="mt-1 text-xs text-amber-600">
-                                                    {t('trabajos.clientSelector.noStationsAvailable')}
-                                                </p>
+                                                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                    <p className="text-xs font-medium text-amber-800">
+                                                        {t('trabajos.clientSelector.noStationsAvailable')}
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-amber-700">
+                                                        Revisa Maestros &gt; Estaciones para este contexto antes de crear el trabajo.
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => router.visit(route('estaciones.index'))}
+                                                        className="mt-2 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+                                                    >
+                                                        Abrir estaciones
+                                                    </button>
+                                                </div>
                                             )}
                                             <InputError message={getError('id_estacion_servicio')} className="mt-1.5" />
                                         </div>
@@ -574,9 +586,21 @@ export default function TrabajosForm({
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <select value="" disabled className={inputClass('id_contrato')}>
-                                                        <option value="">{t('trabajos.clientSelector.moeve.noContractsAvailable')}</option>
-                                                    </select>
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                        <p className="text-xs font-medium text-amber-800">
+                                                            {t('trabajos.clientSelector.moeve.noContractsAvailable')}
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-amber-700">
+                                                            MOEVE necesita contrato activo para crear trabajos defendibles.
+                                                        </p>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => router.visit(route('maestros.contratos.index'))}
+                                                            className="mt-2 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+                                                        >
+                                                            Abrir contratos
+                                                        </button>
+                                                    </div>
                                                 )}
                                                 <InputError message={getError('id_contrato')} className="mt-1.5" />
                                             </div>
@@ -619,9 +643,14 @@ export default function TrabajosForm({
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <select value="" disabled className={inputClass('id_tipo_documento')}>
-                                                        <option value="">{t('trabajos.clientSelector.repsol.noDocumentTypesAvailable')}</option>
-                                                    </select>
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                        <p className="text-xs font-medium text-amber-800">
+                                                            {t('trabajos.clientSelector.repsol.noDocumentTypesAvailable')}
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-amber-700">
+                                                            REPSOL necesita tipos de documento activos para clasificar el trabajo.
+                                                        </p>
+                                                    </div>
                                                 )}
                                                 <InputError message={getError('id_tipo_documento')} className="mt-1.5" />
                                             </div>
@@ -644,9 +673,14 @@ export default function TrabajosForm({
                                                         ))}
                                                     </select>
                                                 ) : (
-                                                    <select value="" disabled className={inputClass('id_tipo_trabajo')}>
-                                                        <option value="">{t('trabajos.clientSelector.repsol.noWorkTypesAvailable')}</option>
-                                                    </select>
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                        <p className="text-xs font-medium text-amber-800">
+                                                            {t('trabajos.clientSelector.repsol.noWorkTypesAvailable')}
+                                                        </p>
+                                                        <p className="mt-1 text-xs text-amber-700">
+                                                            Selecciona un tipo de documento con tipos de trabajo activos o revisa los catalogos maestros.
+                                                        </p>
+                                                    </div>
                                                 )}
                                                 <InputError message={getError('id_tipo_trabajo')} className="mt-1.5" />
                                             </div>

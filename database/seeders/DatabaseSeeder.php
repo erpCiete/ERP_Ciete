@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RolPermisosSeeder::class,
             DatosBaseSeeder::class,
             UsuariosInicialesSeeder::class,
+            HomeNoticeSeeder::class,
         ]);
     }
 }

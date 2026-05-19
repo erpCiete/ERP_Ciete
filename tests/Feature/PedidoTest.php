@@ -33,7 +33,7 @@ class PedidoTest extends TestCase
 
         // 1. Configuración de Permisos (Adaptado al esquema nativo de Ciete)
         $permisoVer = Permission::firstOrCreate(
-            ['slug' => 'pedidos.ver'], 
+            ['slug' => 'pedidos.ver'],
             ['nombre' => 'Ver Pedidos', 'activo' => true]
         );
         $permisoCrear = Permission::firstOrCreate(
@@ -51,7 +51,7 @@ class PedidoTest extends TestCase
 
         // 2. Configuración de Roles
         $rolGestor = Role::firstOrCreate(
-            ['slug' => 'gestor'], 
+            ['slug' => 'gestor'],
             ['nombre' => 'Gestor Operativo', 'activo' => true]
         );
         $rolGestor->permissions()->sync([
@@ -62,7 +62,7 @@ class PedidoTest extends TestCase
         ]);
 
         $rolLector = Role::firstOrCreate(
-            ['slug' => 'usuario'], 
+            ['slug' => 'usuario'],
             ['nombre' => 'Usuario Base', 'activo' => true]
         );
         $rolLector->permissions()->sync([
@@ -110,8 +110,8 @@ class PedidoTest extends TestCase
         $response = $this->getJson('/api/v1/pedidos');
 
         $response->assertStatus(200)
-                 ->assertJsonCount(2, 'data') // Solo debe devolver los 2 de MOEVE
-                 ->assertJsonPath('data.0.id_contexto', 1);
+            ->assertJsonCount(2, 'data') // Solo debe devolver los 2 de MOEVE
+            ->assertJsonPath('data.0.id_contexto', 1);
     }
 
     public function test_gestor_moeve_no_puede_crear_pedido_para_trabajo_repsol(): void
@@ -140,7 +140,7 @@ class PedidoTest extends TestCase
 
         // La validación debe bloquear el intento (422) porque el Trabajo no pertenece a MOEVE
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['id_trabajo']);
+            ->assertJsonValidationErrors(['id_trabajo']);
     }
 
     public function test_gestor_puede_crear_pedido_completo_con_items(): void
@@ -179,8 +179,8 @@ class PedidoTest extends TestCase
         $response = $this->postJson('/api/v1/pedidos', $payload);
 
         $response->assertStatus(201)
-                 ->assertJsonPath('data.numero_pedido', 'PED-TEST-OK-01')
-                 ->assertJsonPath('data.importe_pedido', 1500.5);
+            ->assertJsonPath('data.numero_pedido', 'PED-TEST-OK-01')
+            ->assertJsonPath('data.importe_pedido', 1500.5);
 
         // Verificar BBDD principal
         $this->assertDatabaseHas('pedidos', [
@@ -195,6 +195,41 @@ class PedidoTest extends TestCase
             'codigo_servicio' => 'SRV-01',
             'total_linea' => 1500.50
         ]);
+    }
+
+    public function test_gestor_repsol_no_puede_crear_pedido_con_cantidad_o_unidades_solicitadas_decimales(): void
+    {
+        Sanctum::actingAs($this->gestorRepsol);
+
+        $empresaRepsol = Empresa::factory()->create(['id_contexto' => 2]);
+        $trabajoRepsol = Trabajo::factory()->create(['id_contexto' => 2, 'id_empresa_cliente' => $empresaRepsol->id_empresa]);
+
+        $response = $this->postJson('/api/v1/pedidos', [
+            'id_trabajo' => $trabajoRepsol->id_trabajo,
+            'numero_pedido' => 'PED-REPSOL-DEC-01',
+            'fecha_solicitud' => '2026-04-20',
+            'importe_pedido' => 150.50,
+            'importe_solicitado' => 150.50,
+            'importe_facturado' => 0,
+            'unidades_pedido' => 1,
+            'unidades_solicitadas' => 1.5,
+            'estado' => 'pendiente',
+            'pedido_completo' => false,
+            'tiene_mas_de_1_item' => false,
+            'facturado_completo' => false,
+            'items' => [
+                [
+                    'codigo_servicio' => 'SRV-DEC',
+                    'descripcion_servicio' => 'Servicio decimal no permitido',
+                    'cantidad' => 1.5,
+                    'precio_unitario' => 100.33,
+                    'total_linea' => 150.50,
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['unidades_solicitadas', 'items.0.cantidad']);
     }
 
     public function test_gestor_puede_ver_actualizar_y_cancelar_un_pedido_de_su_contexto(): void

@@ -30,7 +30,7 @@ export default function Edit({ avatarCatalog = [] }) {
                                 Selecciona el contexto de trabajo para altas y consultas contextuales.
                             </p>
                         </div>
-                        <ContextSelector />
+                        <ContextSelector allowAllContexts={false} />
                     </section>
                 </div>
 

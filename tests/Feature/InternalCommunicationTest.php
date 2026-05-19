@@ -187,6 +187,64 @@ class InternalCommunicationTest extends TestCase
         ]);
     }
 
+    public function test_admin_and_direction_can_broadcast_internal_notices(): void
+    {
+        $admin = User::factory()->create();
+        $director = User::factory()->create();
+        $recipient = User::factory()->create();
+
+        $this->assignRole($admin, 'admin');
+        $this->assignRole($director, 'director');
+
+        $this->actingAs($admin)
+            ->post(route('messages.broadcast'), [
+                'asunto' => 'Aviso técnico',
+                'cuerpo' => 'Se activa ventana de mantenimiento.',
+                'prioridad' => 'alta',
+            ])
+            ->assertRedirect();
+
+        $this->actingAs($director)
+            ->post(route('messages.broadcast'), [
+                'asunto' => 'Aviso funcional',
+                'cuerpo' => 'Revisar prioridades de cierre.',
+                'prioridad' => 'normal',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('mensajes_internos', [
+            'id_remitente' => $admin->id_usuario,
+            'id_destinatario' => $recipient->id_usuario,
+            'asunto' => 'Aviso técnico',
+            'es_aviso_sistema' => true,
+        ]);
+
+        $this->assertDatabaseHas('mensajes_internos', [
+            'id_remitente' => $director->id_usuario,
+            'id_destinatario' => $recipient->id_usuario,
+            'asunto' => 'Aviso funcional',
+            'es_aviso_sistema' => true,
+        ]);
+    }
+
+    public function test_contable_and_execution_cannot_broadcast_internal_notices(): void
+    {
+        $contable = User::factory()->create();
+        $ejecucion = User::factory()->create();
+
+        $this->assignRole($contable, 'contable');
+        $this->assignRole($ejecucion, 'ejecucion');
+
+        foreach ([$contable, $ejecucion] as $user) {
+            $this->actingAs($user)
+                ->post(route('messages.broadcast'), [
+                    'asunto' => 'No autorizado',
+                    'cuerpo' => 'No debería salir',
+                ])
+                ->assertForbidden();
+        }
+    }
+
     public function test_message_directory_and_recipient_validation_are_limited_by_shared_context(): void
     {
         $sender = User::factory()->create(['id_contexto' => 1]);
@@ -207,7 +265,7 @@ class InternalCommunicationTest extends TestCase
         $this->actingAs($sender)
             ->get(route('messages.index'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
+            ->assertInertia(fn(Assert $page) => $page
                 ->component('Messages/Index')
                 ->has('users', 1)
                 ->where('users.0.id_usuario', $shared->id_usuario));

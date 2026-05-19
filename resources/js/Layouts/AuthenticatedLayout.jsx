@@ -1,6 +1,7 @@
 import CieteMark from '@/Components/CieteMark';
 import FloatingContextHelp from '@/Components/FloatingContextHelp';
 import TopNavbar from '@/Components/TopNavbar';
+import UserAccountAvatar from '@/Components/UserAccountAvatar';
 import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
 import { buildSidebarSections } from '@/navigation/sidebar';
@@ -72,7 +73,8 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                     </div>
 
                     <div className="border-t border-white/10 bg-black/10 p-4">
-                        <div className="mb-3 px-2">
+                        <div className="mb-3 flex items-center gap-2.5 px-2">
+                            <UserAccountAvatar user={user} className="h-8 w-8" />
                             <p className="truncate text-[10px] font-semibold text-text-hint">{user.email}</p>
                         </div>
                         <Link

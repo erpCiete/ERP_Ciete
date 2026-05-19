@@ -1,5 +1,6 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
@@ -29,12 +30,17 @@ export default function TarifarioLineas({ lineas, filters = {}, tarifarios = [],
     const [tarifario, setTarifario] = useState(filters.tarifario ?? '');
     const [activo, setActivo] = useState(filters.activo ?? '');
     const [deactivateTarget, setDeactivateTarget] = useState(null);
+    const currentPage = lineas?.current_page ?? 1;
+    const lastPage = lineas?.last_page ?? 1;
+    const total = lineas?.total ?? (lineas?.data?.length ?? 0);
+    const from = lineas?.from ?? (total === 0 ? 0 : 1);
+    const to = lineas?.to ?? (total === 0 ? 0 : (lineas?.data?.length ?? 0));
     const canEdit = auth?.user?.is_director || hasPermission(auth?.user, 'tarifario_lineas.editar');
     const canDelete = auth?.user?.is_director || hasPermission(auth?.user, 'tarifario_lineas.eliminar');
 
     const applyFilters = (event) => {
         event.preventDefault();
-        router.get(route('maestros.tarifario-lineas.index'), { search, tarifario, activo }, { preserveState: true });
+        router.get(route('maestros.tarifario-lineas.index'), { search, tarifario, activo, page: 1 }, { preserveState: true });
     };
 
     const deactivate = () => {
@@ -46,6 +52,14 @@ export default function TarifarioLineas({ lineas, filters = {}, tarifarios = [],
             preserveScroll: true,
             onSuccess: () => setDeactivateTarget(null),
         });
+    };
+
+    const goToPage = (page) => {
+        if (page < 1 || page > lastPage || page === currentPage) {
+            return;
+        }
+
+        router.get(route('maestros.tarifario-lineas.index'), { search, tarifario, activo, page }, { preserveState: true, preserveScroll: true });
     };
 
     return (
@@ -96,7 +110,7 @@ export default function TarifarioLineas({ lineas, filters = {}, tarifarios = [],
                                 type="search"
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                placeholder="Buscar por codigo, grupo, actuacion o descripcion"
+                                placeholder="Buscar por código, grupo, actuación o descripción"
                                 className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm"
                             />
                         </div>
@@ -187,6 +201,11 @@ export default function TarifarioLineas({ lineas, filters = {}, tarifarios = [],
                         </table>
                     </div>
                 </section>
+
+                <PaginationControls
+                    pagination={{ current_page: currentPage, last_page: lastPage, total, from, to }}
+                    onPageChange={goToPage}
+                />
             </div>
         </AuthenticatedLayout>
     );

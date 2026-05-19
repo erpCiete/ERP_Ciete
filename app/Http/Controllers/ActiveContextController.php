@@ -26,6 +26,13 @@ class ActiveContextController extends Controller
         $user = $request->user();
         $beforeSelection = $user->getActiveContextSelection();
         $requestedSelection = $validated['contexto'];
+        $requestedNormalized = strtolower(trim((string) $requestedSelection));
+
+        if (in_array($requestedNormalized, [User::ACTIVE_CONTEXT_ALL, 'todos', 'todo'], true)) {
+            throw ValidationException::withMessages([
+                'contexto' => 'Selecciona un contexto operativo real (MOEVE, REPSOL u OTROS CLIENTES).',
+            ]);
+        }
 
         if (! $user->canSelectContext($requestedSelection)) {
             throw ValidationException::withMessages([

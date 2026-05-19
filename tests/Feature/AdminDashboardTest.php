@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AdminDashboardTest extends TestCase
@@ -30,24 +30,17 @@ class AdminDashboardTest extends TestCase
 
     public function test_admin_user_can_access_admin_dashboard(): void
     {
-        $admin = User::factory()->create();
-        $role = Role::query()->firstOrCreate(
-            ['slug' => 'admin'],
-            [
-                'nombre' => 'Admin',
-                'descripcion' => 'Acceso total',
-                'activo' => true,
-            ]
-        );
+        $this->seed(DatabaseSeeder::class);
 
-        DB::table('usuario_roles')->insert([
-            'id_usuario' => $admin->id_usuario,
-            'id_rol' => $role->id_rol,
-            'created_at' => now(),
-        ]);
+        $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
 
         $response = $this->actingAs($admin)->get('/admin');
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertInertia(fn(Assert $page) => $page
+                ->component('Admin/Dashboard')
+                ->has('stats.open_tickets')
+                ->has('stats.active_users')
+                ->has('stats.imports'));
     }
 }

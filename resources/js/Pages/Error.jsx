@@ -1,6 +1,6 @@
 import CieteMark from '@/Components/CieteMark';
 import ErrorShellLayout from '@/Layouts/ErrorShellLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 const COPY = {
     es: {
@@ -15,7 +15,7 @@ const COPY = {
             },
             '403': {
                 title: 'Acceso no disponible para tu perfil',
-                message: 'Tu sesión actual no tiene permisos suficientes para abrir esta sección. Puedes seguir navegando por el resto del portal.',
+                message: 'No tienes permiso para acceder a este módulo.',
             },
             '404': {
                 title: 'La página solicitada no está disponible',
@@ -38,6 +38,8 @@ const COPY = {
                 message: 'Se ha producido una incidencia no prevista.',
             },
         },
+        accessHelp: 'Si crees que necesitas acceso a este módulo, contacta con administración.',
+        backHome: 'Volver al inicio',
     },
     en: {
         pageTitle: 'Error',
@@ -51,7 +53,7 @@ const COPY = {
             },
             '403': {
                 title: 'This area is not available for your profile',
-                message: 'Your current session does not have enough permissions to open this section.',
+                message: 'You do not have permission to access this module.',
             },
             '404': {
                 title: 'The requested page is not available',
@@ -74,6 +76,8 @@ const COPY = {
                 message: 'An unexpected incident has occurred.',
             },
         },
+        accessHelp: 'If you need access to this module, contact administration.',
+        backHome: 'Back to home',
     },
 };
 
@@ -103,10 +107,18 @@ function resolveErrorContent(locale, status) {
     };
 }
 
-export default function ErrorPage({ status = 500 }) {
+export default function ErrorPage({ status = 500, homeUrl = null, accessDenied = null }) {
     const locale = resolveLocale();
     const { catalog, title, message } = resolveErrorContent(locale, status);
     const pageTitle = `${catalog.pageTitle} ${status}`;
+    const statusCode = String(status);
+    const isAccessDenied = statusCode === '403';
+    const isNotFound = statusCode === '404';
+    const showBackHomeAction = isAccessDenied || isNotFound;
+    const resolvedHomeUrl = homeUrl ?? route('index');
+    const accessDeniedMessage = accessDenied?.message ?? message;
+    const accessDeniedHelp = accessDenied?.help ?? catalog.accessHelp;
+    const accessDeniedBackLabel = accessDenied?.backHomeLabel ?? catalog.backHome;
 
     return (
         <ErrorShellLayout header={pageTitle} footerText={catalog.footer}>
@@ -136,8 +148,23 @@ export default function ErrorPage({ status = 500 }) {
                             {title}
                         </h1>
                         <p className="mt-4 max-w-2xl text-base leading-relaxed text-text-muted sm:text-lg">
-                            {message}
+                            {isAccessDenied ? accessDeniedMessage : message}
                         </p>
+                        {showBackHomeAction && (
+                            <div className="mt-6 flex flex-col items-center gap-3 lg:items-start">
+                                <Link
+                                    href={resolvedHomeUrl}
+                                    className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                                >
+                                    {accessDeniedBackLabel}
+                                </Link>
+                                {isAccessDenied && (
+                                    <p className="max-w-2xl text-sm text-text-hint">
+                                        {accessDeniedHelp}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>

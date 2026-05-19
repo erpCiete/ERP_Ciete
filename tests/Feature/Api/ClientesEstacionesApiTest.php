@@ -141,7 +141,7 @@ class ClientesEstacionesApiTest extends TestCase
                 'activo' => true,
             ])
             ->assertStatus(422)
-            ->assertJsonPath('errors.cif.0', 'Introduce un identificador fiscal espanol valido (NIF, NIE o CIF).');
+            ->assertJsonPath('errors.cif.0', 'Introduce un identificador fiscal español válido (NIF, NIE o CIF).');
     }
 
     public function test_user_with_estaciones_view_permission_can_list_but_not_modify_estaciones(): void
@@ -337,7 +337,34 @@ class ClientesEstacionesApiTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonMissingPath('errors.codigo_estacion')
-            ->assertJsonPath('errors.codigo_postal.0', 'Introduce un codigo postal espanol valido.');
+            ->assertJsonPath('errors.codigo_postal.0', 'Introduce un código postal español válido.');
+    }
+
+    public function test_station_code_preserves_leading_zeros_and_alphanumeric_prefixes(): void
+    {
+        $user = $this->createUserWithPermissions(['estaciones.crear']);
+        $cliente = $this->createCliente($user, [
+            'nombre' => 'Cliente Codigos Mixtos',
+            'nombre_comercial' => 'Moeve Mixto',
+            'cif' => $this->makeValidNif(43345678),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/estaciones', [
+                'id_empresa_cliente' => $cliente->id_empresa,
+                'nombre' => 'Estacion Mixta',
+                'codigo_estacion' => '00A-001',
+                'codigo_postal' => '41001',
+                'poblacion' => 'Sevilla',
+                'provincia' => 'Sevilla',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.codigo_estacion', '00A-001');
+
+        $this->assertDatabaseHas('estaciones_servicio', [
+            'id_empresa_cliente' => $cliente->id_empresa,
+            'codigo_estacion' => '00A-001',
+        ]);
     }
 
     public function test_estaciones_index_supports_search_by_code_municipio_and_provincia(): void

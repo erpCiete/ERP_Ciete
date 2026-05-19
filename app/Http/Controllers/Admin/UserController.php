@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
@@ -21,14 +22,81 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function __construct(private readonly AuditLogger $auditLogger)
-    {
-    }
+    private const TECHNICAL_PERMISSION_SLUGS = [
+        'admin.panel.ver',
+        'usuarios.ver',
+        'usuarios.crear',
+        'usuarios.editar',
+        'usuarios.gestionar',
+        'soporte.gestionar',
+        'auditoria.ver',
+        'auditoria.exportar',
+        'auditoria.limpiar',
+        'mantenimiento.gestionar',
+        'avisos.gestionar',
+        'importaciones.ver',
+        'importaciones.ejecutar',
+        'importaciones.confirmar',
+    ];
+
+    private const OPERATIONAL_READ_PERMISSION_SLUGS = [
+        'trabajos.ver',
+        'pedidos.ver',
+        'facturas.ver',
+        'clientes.ver',
+        'estaciones.ver',
+        'maestros.ver',
+        'contratos.ver',
+        'sociedades_facturadoras.ver',
+        'tarifarios.ver',
+        'tarifario_lineas.ver',
+    ];
+
+    private const OPERATIONAL_MUTATION_PERMISSION_SLUGS = [
+        'trabajos.crear',
+        'trabajos.editar',
+        'trabajos.eliminar',
+        'trabajos.finalizar',
+        'trabajos.cambiar_estado',
+        'trabajos.marcar_terminado',
+        'trabajos.editar_finalizado',
+        'pedidos.crear',
+        'pedidos.editar',
+        'pedidos.eliminar',
+        'facturas.crear',
+        'facturas.editar',
+        'facturas.eliminar',
+        'clientes.crear',
+        'clientes.editar',
+        'clientes.eliminar',
+        'estaciones.crear',
+        'estaciones.editar',
+        'estaciones.eliminar',
+        'maestros.gestionar',
+        'contratos.crear',
+        'contratos.editar',
+        'contratos.eliminar',
+        'sociedades_facturadoras.crear',
+        'sociedades_facturadoras.editar',
+        'sociedades_facturadoras.eliminar',
+        'tarifarios.crear',
+        'tarifarios.editar',
+        'tarifarios.eliminar',
+        'tarifario_lineas.crear',
+        'tarifario_lineas.editar',
+        'tarifario_lineas.eliminar',
+    ];
+
+    public function __construct(private readonly AuditLogger $auditLogger) {}
 
     public function index(Request $request): Response
     {
         $query = User::query()
-            ->with(['roles:id_rol,slug,nombre', 'contexto:id_contexto,nombre,codigo']);
+            ->with([
+                'roles.permissions:id_permiso,slug,nombre',
+                'contexto:id_contexto,nombre,codigo',
+                'contextos:id_contexto,nombre,codigo',
+            ]);
 
         if ($request->filled('search')) {
             $term = '%' . $request->input('search') . '%';
@@ -44,18 +112,33 @@ class UserController extends Controller
             $query->where('activo', $request->boolean('activo'));
         }
 
-        $users = $query->orderBy('nombre')->paginate(20)->withQueryString();
+        $users = $query->orderBy('nombre')->paginate(10)->withQueryString()
+            ->through(function (User $user): array {
+                return [
+                    ...$user->toArray(),
+                    'scope_summary' => $this->buildPermissionScopeSummary($user->roles->flatMap(fn(Role $role) => $role->permissions)),
+                    'contextos_asignados' => $user->contextos
+                        ->map(fn(ContextoCliente $contexto): array => [
+                            'id_contexto' => $contexto->id_contexto,
+                            'codigo' => $contexto->codigo,
+                            'nombre' => $contexto->nombre,
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            });
 
         return Inertia::render('Admin/Users/Index', [
             'users'   => $users,
             'filtros' => $request->only(['search', 'activo']),
+            'rolesInfo' => $this->buildRoleCatalog(),
         ]);
     }
 
     public function create(): Response
     {
         return Inertia::render('Admin/Users/Form', [
-            'roles'     => Role::where('activo', true)->get(['id_rol', 'nombre', 'slug']),
+            'roles'     => $this->buildRoleCatalog(),
             'contextos' => ContextoCliente::where('activo', true)->get(['id_contexto', 'nombre', 'codigo']),
         ]);
     }
@@ -122,7 +205,7 @@ class UserController extends Controller
 
         return Inertia::render('Admin/Users/Form', [
             'user'      => $user,
-            'roles'     => Role::where('activo', true)->get(['id_rol', 'nombre', 'slug']),
+            'roles'     => $this->buildRoleCatalog(),
             'contextos' => ContextoCliente::where('activo', true)->get(['id_contexto', 'nombre', 'codigo']),
         ]);
     }
@@ -292,7 +375,7 @@ class UserController extends Controller
         }
 
         $logs = $query->latest('created_at')
-            ->paginate(30)
+            ->paginate(10)
             ->withQueryString()
             ->through(function (AuditLog $log) use ($hasModuloColumn) {
                 $item = $log->toArray();
@@ -317,20 +400,20 @@ class UserController extends Controller
 
         $modulosFiltro = $hasModuloColumn
             ? AuditLog::query()
-                ->select(['modulo', 'tabla'])
-                ->orderBy('tabla')
-                ->get()
-                ->map(fn (AuditLog $log) => $log->modulo ?: $log->tabla)
-                ->filter()
-                ->unique()
-                ->values()
+            ->select(['modulo', 'tabla'])
+            ->orderBy('tabla')
+            ->get()
+            ->map(fn(AuditLog $log) => $log->modulo ?: $log->tabla)
+            ->filter()
+            ->unique()
+            ->values()
             : AuditLog::query()
-                ->select('tabla')
-                ->whereNotNull('tabla')
-                ->orderBy('tabla')
-                ->distinct()
-                ->pluck('tabla')
-                ->values();
+            ->select('tabla')
+            ->whereNotNull('tabla')
+            ->orderBy('tabla')
+            ->distinct()
+            ->pluck('tabla')
+            ->values();
 
         $accionesFiltro = collect(AuditLog::ACTIONS)
             ->merge(AuditLog::query()->select('accion')->distinct()->pluck('accion'))
@@ -419,5 +502,51 @@ class UserController extends Controller
         }
 
         return 'Edición de usuario. Campos modificados: ' . implode(', ', $changedFields) . '.';
+    }
+
+    private function buildRoleCatalog(): array
+    {
+        return Role::query()
+            ->with('permissions:id_permiso,slug,nombre')
+            ->where('activo', true)
+            ->orderBy('nombre')
+            ->get(['id_rol', 'nombre', 'slug', 'descripcion'])
+            ->map(function (Role $role): array {
+                return [
+                    'id_rol' => $role->id_rol,
+                    'nombre' => $role->nombre,
+                    'slug' => $role->slug,
+                    'descripcion' => $role->descripcion,
+                    'scope_summary' => $this->buildPermissionScopeSummary($role->permissions),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function buildPermissionScopeSummary(Collection $permissions): array
+    {
+        $indexed = $permissions
+            ->map(fn($permission): array => [
+                'slug' => $permission->slug,
+                'nombre' => $permission->nombre,
+            ])
+            ->unique('slug')
+            ->values();
+
+        return [
+            'technical' => $indexed
+                ->filter(fn(array $permission): bool => in_array($permission['slug'], self::TECHNICAL_PERMISSION_SLUGS, true))
+                ->values()
+                ->all(),
+            'operational_read' => $indexed
+                ->filter(fn(array $permission): bool => in_array($permission['slug'], self::OPERATIONAL_READ_PERMISSION_SLUGS, true))
+                ->values()
+                ->all(),
+            'operational_mutation' => $indexed
+                ->filter(fn(array $permission): bool => in_array($permission['slug'], self::OPERATIONAL_MUTATION_PERMISSION_SLUGS, true))
+                ->values()
+                ->all(),
+        ];
     }
 }

@@ -41,7 +41,7 @@ class MaestrosTest extends TestCase
         $this->seed(\Database\Seeders\ContextosClienteSeeder::class);
     }
 
-    public function test_only_direction_can_view_maestros(): void
+    public function test_admin_and_direction_can_view_maestros(): void
     {
         $this->seed(\Database\Seeders\RolesSeeder::class);
         $this->seed(\Database\Seeders\PermisosSeeder::class);
@@ -50,12 +50,15 @@ class MaestrosTest extends TestCase
         $admin = $this->createUserForRole('admin', [1, 2, 3]);
         $director = $this->createUserForRole('director', [1, 2, 3]);
 
-        $this->actingAs($admin)->get(route('maestros.index'))->assertForbidden();
+        $this->actingAs($admin)
+            ->get(route('maestros.index'))
+            ->assertOk()
+            ->assertInertia(fn(Assert $page) => $page->component('Maestros/Index'));
 
         $this->actingAs($director)
             ->get(route('maestros.index'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('Maestros/Index'));
+            ->assertInertia(fn(Assert $page) => $page->component('Maestros/Index'));
     }
 
     public function test_user_without_permission_cannot_view_maestros(): void
@@ -65,7 +68,7 @@ class MaestrosTest extends TestCase
         $this->actingAs($user)->get(route('maestros.index'))->assertForbidden();
     }
 
-    public function test_all_context_blocks_contract_creation(): void
+    public function test_web_request_normalizes_all_context_before_contract_creation(): void
     {
         $user = $this->createUserWithPermissions([
             'maestros.ver',
@@ -75,15 +78,23 @@ class MaestrosTest extends TestCase
 
         $empresa = Empresa::factory()->create(['id_contexto' => 1]);
 
-        $this->actingAs($user);
-        $user->setActiveContextSelection(User::ACTIVE_CONTEXT_ALL);
+        $session = [User::ACTIVE_CONTEXT_SESSION_KEY => User::ACTIVE_CONTEXT_ALL];
 
-        $this->post(route('maestros.contratos.store'), [
+        $this->actingAs($user)
+            ->withSession($session)
+            ->post(route('maestros.contratos.store'), [
+                'id_empresa_cliente' => $empresa->id_empresa,
+                'codigo_contrato' => 'CTX-ALL-BLOCK',
+                'nombre' => 'Contrato normalizado desde web',
+                'tipo' => 'marco',
+                'estado' => 'vigente',
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('contratos', [
+            'id_contexto' => 1,
             'id_empresa_cliente' => $empresa->id_empresa,
             'codigo_contrato' => 'CTX-ALL-BLOCK',
-            'tipo' => 'marco',
-            'estado' => 'vigente',
-        ])->assertForbidden();
+        ]);
     }
 
     public function test_real_context_allows_contract_creation_and_audit(): void

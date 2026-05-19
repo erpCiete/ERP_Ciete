@@ -2,15 +2,17 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
 Responsable: Eduardo Jiménez  
 Objetivo: definir y mantener las reglas de trabajo en Git para todo el equipo.
 
 ## Flujo de Trabajo: Nuestro Tablero
+
 Para que todos tengamos visibilidad total y evitemos cuellos de botella (especialmente en integraciones con Frontend), usaremos un tablero unificado. Intentad actualizar el estado de las tareas diariamente.
 
 El ciclo de vida de cada tarea pasará por las siguientes columnas:
+
 - **Backlog**: Tareas identificadas y registradas, pero que aún no están priorizadas o refinadas para este ciclo.
 - **Ready**: La tarea está perfectamente definida, documentada y lista para desarrollo. Si terminas tu tarea actual, coge una de aquí.
 - **In Progress**: Tareas en las que se está trabajando activamente. Intentemos no tener más de 2 tareas por persona en esta columna al mismo tiempo.
@@ -19,6 +21,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - **Done**: Código mergeado en la rama principal, probado y documentado. Tarea finalizada al 100%.
 
 ## 1. Flujo de ramas
+
 - Rama principal de integración diaria: `develop`.
 - Rama de release/estable: `main`.
 - Convención de ramas de feature: `feature/<area>-<id>-<descripcion-corta>`.
@@ -26,6 +29,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - Todo trabajo nuevo parte de `develop` salvo hotfix urgente en producción.
 
 ## 2. Reglas de commits
+
 - Formato recomendado: `<tipo>(<area>): <mensaje corto>`.
 - Tipos permitidos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
 - Idioma: español técnico, claro y breve.
@@ -36,6 +40,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - `docs(git): actualiza guía de trabajo y tablero`
 
 ## 3. Pull Requests
+
 - Cuándo abrir PR: al cerrar una tarea funcional o un bloque coherente y probado.
 - Base de PR: `develop` para trabajo normal, `main` solo en hotfix de producción.
 - Plantilla mínima obligatoria:
@@ -55,6 +60,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - Aprobaciones requeridas.
 
 ## 4. Integración entre BACK y FRONT
+
 - Orden recomendado de integración:
 - Definir primero contrato API.
 - Integrar Auth (login/logout + sesión).
@@ -68,6 +74,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - Si hay conflicto cruzado BACK/FRONT, se revisa en llamada corta y se documenta decisión en el PR.
 
 ## 5. Buenas prácticas obligatorias
+
 - Actualizar rama local con `develop` antes de abrir PR.
 - No hacer merge sin revisión.
 - No subir secretos, tokens ni credenciales.
@@ -76,6 +83,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - Mantener PRs pequeñas y enfocadas por objetivo.
 
 ## 6. Checklist antes de merge
+
 - [ ] Código probado en entorno local.
 - [ ] Cambios documentados en el sprint.
 - [ ] Sin conflictos pendientes.
@@ -84,6 +92,7 @@ El ciclo de vida de cada tarea pasará por las siguientes columnas:
 - [ ] Riesgos y alcance del cambio claros.
 
 ## 7. Registro de cambios de esta guía
+
 - Fecha: 24/03/2026
 - Cambio: se define flujo real de tablero, ramas, commits, PR, integración BACK/FRONT y checklist operativa.
 - Responsable: Eduardo Jiménez

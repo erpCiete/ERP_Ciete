@@ -119,7 +119,7 @@ export default function ContratosIndex({ contratos, filters = {}, canCreate = fa
                                 type="search"
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
-                                placeholder="Buscar por codigo, nombre o empresa"
+                                placeholder="Buscar por código, nombre o empresa"
                                 className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text-main"
                             />
                         </div>

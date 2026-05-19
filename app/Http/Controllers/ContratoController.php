@@ -53,7 +53,7 @@ class ContratoController extends Controller
             ->when($activo !== '', fn ($query) => $query->where('activo', $activo === '1'))
             ->orderBy('id_contexto')
             ->orderBy('codigo_contrato')
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Contratos/Index', [

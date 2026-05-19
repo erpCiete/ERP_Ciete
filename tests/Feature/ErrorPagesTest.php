@@ -26,7 +26,8 @@ class ErrorPagesTest extends TestCase
             ->assertStatus(404)
             ->assertInertia(fn(Assert $page) => $page
                 ->component('Error')
-                ->where('status', 404));
+                ->where('status', 404)
+                ->where('homeUrl', route('index')));
     }
 
     public function test_forbidden_web_route_returns_corporate_403_page(): void
@@ -38,7 +39,9 @@ class ErrorPagesTest extends TestCase
             ->assertStatus(403)
             ->assertInertia(fn(Assert $page) => $page
                 ->component('Error')
-                ->where('status', 403));
+                ->where('status', 403)
+                ->where('homeUrl', route('index'))
+                ->where('accessDenied.backHomeLabel', 'Volver al inicio'));
     }
 
     public function test_authenticated_error_preview_route_renders_requested_status(): void

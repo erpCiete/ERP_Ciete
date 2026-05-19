@@ -98,7 +98,7 @@ function selectedTheme(clientKey) {
     return CLIENT_THEME[clientKey] ?? null;
 }
 
-function validarForm(form, items, trabajos, allowClientSelection, isRepsol, t) {
+function validarForm(form, items, trabajos, tarifarioLineas, allowClientSelection, isRepsol, t) {
     const errs = {};
     const reqMsg = t('common.validation.required');
     const selectedTrabajo = trabajos.find(
@@ -121,6 +121,8 @@ function validarForm(form, items, trabajos, allowClientSelection, isRepsol, t) {
         String(selectedTrabajo.id_contexto) !== String(form.id_contexto)
     ) {
         errs.id_trabajo = t('trabajos.clientSelector.workMismatch');
+    } else if (trabajos.length === 0) {
+        errs.id_trabajo = 'No hay trabajos disponibles en este contexto. Crea primero el trabajo.';
     }
 
     if (!form.fecha_solicitud) {
@@ -137,6 +139,14 @@ function validarForm(form, items, trabajos, allowClientSelection, isRepsol, t) {
         }
         if (form.unidades_solicitadas === '' || form.unidades_solicitadas === null) {
             errs.unidades_solicitadas = reqMsg;
+        } else {
+            const requestedUnits = Number(form.unidades_solicitadas);
+
+            if (!Number.isFinite(requestedUnits) || requestedUnits < 0) {
+                errs.unidades_solicitadas = 'Las unidades solicitadas no son válidas.';
+            } else if (!Number.isInteger(requestedUnits)) {
+                errs.unidades_solicitadas = 'Las unidades solicitadas deben ser enteras.';
+            }
         }
     }
 
@@ -144,8 +154,15 @@ function validarForm(form, items, trabajos, allowClientSelection, isRepsol, t) {
         errs.items = 'Añade al menos una línea al pedido.';
     } else {
         items.forEach((item, i) => {
-            if (Number(item.cantidad) <= 0) {
+            const quantity = Number(item.cantidad);
+
+            if (tarifarioLineas.length > 0 && !item.id_tarifario_linea) {
+                errs[`items.${i}.id_tarifario_linea`] = 'Selecciona una linea de tarifa del trabajo.';
+            }
+            if (!Number.isFinite(quantity) || quantity <= 0) {
                 errs[`items.${i}.cantidad`] = 'La cantidad debe ser mayor que 0.';
+            } else if (!Number.isInteger(quantity)) {
+                errs[`items.${i}.cantidad`] = 'La cantidad debe ser entera.';
             }
             if (Number(item.precio_unitario) < 0) {
                 errs[`items.${i}.precio_unitario`] = 'El precio no puede ser negativo.';
@@ -159,6 +176,7 @@ function validarForm(form, items, trabajos, allowClientSelection, isRepsol, t) {
 export default function PedidosForm({
     pedido = null,
     trabajos = [],
+    tarifarioLineas = [],
     contextoIds = [],
     clientContexts = [],
 }) {
@@ -243,10 +261,35 @@ export default function PedidosForm({
             (item) => String(item.id_contexto) === String(selectedContext.id_contexto),
         );
     }, [allowClientSelection, listaTrab, selectedContext]);
+    const selectedTrabajo = useMemo(
+        () => filteredTrabajos.find((item) => String(item.id_trabajo ?? item.id) === String(form.id_trabajo)) ?? null,
+        [filteredTrabajos, form.id_trabajo],
+    );
+    const filteredTarifarioLineas = useMemo(() => {
+        if (!selectedContext || !selectedTrabajo) {
+            return [];
+        }
+
+        return (tarifarioLineas || []).filter((linea) => {
+            if (String(linea.id_contexto) !== String(selectedContext.id_contexto)) {
+                return false;
+            }
+
+            if (selectedTrabajo.id_tarifario) {
+                return String(linea.id_tarifario) === String(selectedTrabajo.id_tarifario);
+            }
+
+            if (selectedTrabajo.id_contrato) {
+                return String(linea.id_contrato) === String(selectedTrabajo.id_contrato);
+            }
+
+            return true;
+        });
+    }, [selectedContext, selectedTrabajo, tarifarioLineas]);
     const isRepsol = selectedClientKey === 'repsol';
     const localErrors = useMemo(
-        () => validarForm(form, items, filteredTrabajos, allowClientSelection, isRepsol, t),
-        [form, items, filteredTrabajos, allowClientSelection, isRepsol, t],
+        () => validarForm(form, items, filteredTrabajos, filteredTarifarioLineas, allowClientSelection, isRepsol, t),
+        [form, items, filteredTrabajos, filteredTarifarioLineas, allowClientSelection, isRepsol, t],
     );
     const totalPedido = items.reduce((sum, item) => sum + (Number(item.total_linea) || 0), 0);
     const pedidoStatusOptions = useMemo(() => {
@@ -267,6 +310,18 @@ export default function PedidosForm({
         setForm((prev) => ({ ...prev, [field]: value }));
     };
 
+    const updateTrabajo = (value) => {
+        setTouched((prev) => ({ ...prev, id_trabajo: true, items: true }));
+        setServerErrors((prev) => {
+            const next = { ...prev };
+            delete next.id_trabajo;
+            delete next.items;
+            return next;
+        });
+        setForm((prev) => ({ ...prev, id_trabajo: value }));
+        setItems([{ ...EMPTY_ITEM }]);
+    };
+
     const selectClient = (contextId) => {
         setTouched((prev) => ({ ...prev, id_contexto: true }));
         setServerErrors((prev) => {
@@ -284,6 +339,7 @@ export default function PedidosForm({
             importe_solicitado: '',
             unidades_solicitadas: '',
         }));
+        setItems([{ ...EMPTY_ITEM }]);
     };
 
     const getError = (field) => {
@@ -344,6 +400,16 @@ export default function PedidosForm({
                 estado: form.estado,
                 items: payloadItems,
             };
+
+            const selectedLine = payloadItems.find((item) => item.id_tarifario_linea);
+            if (selectedLine) {
+                const line = tarifarioLineas.find(
+                    (tarifa) => Number(tarifa.id_tarifario_linea) === Number(selectedLine.id_tarifario_linea),
+                );
+                if (line?.id_tarifario) {
+                    payload.id_tarifario = Number(line.id_tarifario);
+                }
+            }
 
             if (isRepsol) {
                 payload.importe_solicitado = Number(form.importe_solicitado) || 0;
@@ -512,7 +578,7 @@ export default function PedidosForm({
                                             <select
                                                 id="id_trabajo"
                                                 value={form.id_trabajo}
-                                                onChange={(e) => updateField('id_trabajo', e.target.value)}
+                                                onChange={(e) => updateTrabajo(e.target.value)}
                                                 disabled={cargandoTrab || !selectedClientKey}
                                                 className={inputClass('id_trabajo')}
                                             >
@@ -535,9 +601,14 @@ export default function PedidosForm({
                                                 })}
                                             </select>
                                             {filteredTrabajos.length === 0 && !cargandoTrab && (
-                                                <p className="mt-1 text-xs text-amber-600">
-                                                    {t('trabajos.clientSelector.noWorksAvailable')}
-                                                </p>
+                                                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                    <p className="text-xs font-medium text-amber-800">
+                                                        No hay trabajos disponibles para este contexto.
+                                                    </p>
+                                                    <p className="mt-1 text-xs text-amber-700">
+                                                        Primero crea el trabajo en MOEVE, REPSOL u OTROS CLIENTES. Desde TODOS no se crean pedidos.
+                                                    </p>
+                                                </div>
                                             )}
                                             <InputError message={getError('id_trabajo')} className="mt-1.5" />
                                         </div>
@@ -663,7 +734,7 @@ export default function PedidosForm({
                                                     id="unidades_solicitadas"
                                                     type="number"
                                                     min="0"
-                                                    step="0.01"
+                                                    step="1"
                                                     value={form.unidades_solicitadas}
                                                     onChange={(e) => updateField('unidades_solicitadas', e.target.value)}
                                                     className={inputClass('unidades_solicitadas')}
@@ -679,7 +750,23 @@ export default function PedidosForm({
                                     <legend className="px-1 text-sm font-semibold text-text-main">
                                         {t('pedidos.items.title')}
                                     </legend>
-                                    <ItemsTable items={items} onChange={setItems} errors={serverErrors} disabled={false} />
+                                    {form.id_trabajo && filteredTarifarioLineas.length === 0 && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                                            <p className="text-sm font-medium text-amber-800">
+                                                Este trabajo no tiene lineas de tarifa disponibles para su contrato/tarifario.
+                                            </p>
+                                            <p className="mt-1 text-sm text-amber-700">
+                                                Revisa Maestros &gt; Tarifarios y Lineas antes de crear items economicos.
+                                            </p>
+                                        </div>
+                                    )}
+                                    <ItemsTable
+                                        items={items}
+                                        onChange={setItems}
+                                        errors={{ ...serverErrors, ...localErrors }}
+                                        disabled={false}
+                                        tarifarioLineas={filteredTarifarioLineas}
+                                    />
                                     {submitAttempted && localErrors.items && (
                                         <p className="text-xs font-medium text-red-600">{localErrors.items}</p>
                                     )}

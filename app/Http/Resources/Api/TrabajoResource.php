@@ -39,7 +39,6 @@ class TrabajoResource extends JsonResource
 
             $this->mergeWhen($this->id_contexto === 1, [
                 'id_contrato' => $this->id_contrato,
-                'categoria'   => $this->categoria,
                 // Serializar relación solo si está cargada
                 'contrato'    => new ContratoResource($this->whenLoaded('contrato')),
             ]),
@@ -59,6 +58,7 @@ class TrabajoResource extends JsonResource
             'descripcion_trabajo'    => $this->descripcion_trabajo,
             'observaciones'          => $this->observaciones,
             'responsable_cliente'    => $this->responsable_cliente,
+            'categoria'              => $this->categoria,
             'tipo_trabajo_nombre'    => $this->tipoTrabajo?->nombre ?? ($this->categoria ?? null),
             'codigo_estacion'        => $this->estacion?->codigo_estacion,
             'municipio'              => $this->estacion?->poblacion,
@@ -75,6 +75,7 @@ class TrabajoResource extends JsonResource
             'nombre_contrato'        => $this->contrato?->nombre,
             'nombre_tarifa'          => $this->tarifario?->nombre,
             'fecha_solicitud_pedido' => $this->formatDateValue($primerPedido?->fecha_solicitud),
+            'id_pedido_principal'    => $primerPedido?->id_pedido,
             'numero_pedido_principal' => $primerPedido?->numero_pedido,
             // withSum attributes are set directly on the model when using ->withSum() in the query builder.
             // When pedidos collection is loaded instead (e.g. after store/patchField), sum from collection.

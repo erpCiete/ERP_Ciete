@@ -90,6 +90,24 @@ class TrabajoRequestTest extends TestCase
             ->assertJsonPath('data.numero_trabajo', 91001);
     }
 
+    public function test_store_trabajo_request_rejects_textual_internal_work_number_when_other_required_fields_are_valid(): void
+    {
+        $user = User::factory()->create(['id_contexto' => 2]);
+        $estacion = $this->createStationForContext(2);
+
+        $response = $this->actingAs($user)->postJson('/test/store-trabajo', [
+            'numero_trabajo' => 'TR-REP-INT-001',
+            'descripcion_trabajo' => 'Trabajo con número interno textual',
+            'id_estacion_servicio' => $estacion->id_estacion_servicio,
+            'fecha_encargo' => now()->toDateString(),
+            'estado' => 'en_curso',
+            'id_tipo_documento' => 4,
+            'id_tipo_trabajo' => 8,
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['numero_trabajo']);
+    }
+
     public function test_update_trabajo_request_allows_partial_update_without_context_codes(): void
     {
         $user = User::factory()->create(['id_contexto' => 2]);

@@ -153,7 +153,7 @@ class AuditLogController extends Controller
         $query = $this->buildQuery($filtros);
 
         $logs = $query->latest('created_at')
-            ->paginate(50)
+            ->paginate(10)
             ->withQueryString()
             ->through(fn (AuditLog $log) => $this->transformLog($log));
 

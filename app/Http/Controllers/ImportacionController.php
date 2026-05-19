@@ -37,12 +37,12 @@ class ImportacionController extends Controller
             'resultado' => trim((string) $request->input('resultado', '')),
         ];
 
-        $importacionesQuery = Importacion::query()
+        $importacionesBaseQuery = Importacion::query()
             ->with(['contexto:id_contexto,codigo,nombre', 'usuario:id_usuario,email,nombre']);
 
-        $this->applyImportacionFilters($importacionesQuery, $filters);
+        $this->applyImportacionFilters($importacionesBaseQuery, $filters);
 
-        $importaciones = $importacionesQuery
+        $importaciones = (clone $importacionesBaseQuery)
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -54,7 +54,7 @@ class ImportacionController extends Controller
 
         $detailQuery = ImportacionFila::query()
             ->with('importacion.contexto:id_contexto,codigo,nombre')
-            ->whereIn('id_importacion', (clone $importacionesQuery)->select('id_importacion'));
+            ->whereIn('id_importacion', (clone $importacionesBaseQuery)->select('id_importacion'));
 
         if ($selectedImportId !== null) {
             $detailQuery->where('id_importacion', $selectedImportId);
@@ -69,7 +69,7 @@ class ImportacionController extends Controller
 
         return Inertia::render('Importaciones/Index', [
             'importaciones' => $importaciones,
-            'resumen' => $this->buildImportSummary(clone $importacionesQuery),
+            'resumen' => $this->buildImportSummary(clone $importacionesBaseQuery),
             'detalleImportacion' => $selectedImport,
             'detalleFilas' => $detalleFilas,
             'agrupaciones' => [
@@ -148,7 +148,7 @@ class ImportacionController extends Controller
             ->orderByDesc('total')
             ->limit(12)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'archivo' => $row->archivo_origen,
                 'total' => (int) $row->total,
             ])
@@ -164,7 +164,7 @@ class ImportacionController extends Controller
             ->orderByDesc('total')
             ->limit(15)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'archivo' => $row->archivo_origen,
                 'hoja' => $row->hoja_origen,
                 'total' => (int) $row->total,
@@ -180,7 +180,7 @@ class ImportacionController extends Controller
             ->orderByDesc('total')
             ->limit(15)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'codigo' => $row->codigo,
                 'clasificacion' => $row->clasificacion,
                 'total' => (int) $row->total,
@@ -197,7 +197,7 @@ class ImportacionController extends Controller
             ->orderByDesc('total')
             ->limit(12)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'archivo' => $row->archivo_origen,
                 'total' => (int) $row->total,
             ])
@@ -213,7 +213,7 @@ class ImportacionController extends Controller
             ->orderByDesc('total')
             ->limit(15)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'archivo' => $row->archivo_origen,
                 'hoja' => $row->hoja_origen,
                 'total' => (int) $row->total,
@@ -233,7 +233,7 @@ class ImportacionController extends Controller
             ->flatMap(function (ImportacionFila $row): array {
                 $columns = $row->datos_json['columns'] ?? [];
 
-                return array_map(fn ($column) => [
+                return array_map(fn($column) => [
                     'archivo' => $row->archivo_origen,
                     'hoja' => $row->hoja_origen,
                     'columna' => (string) $column,
@@ -241,7 +241,7 @@ class ImportacionController extends Controller
                     'decision' => $row->decision_sugerida,
                 ], $columns);
             })
-            ->unique(fn (array $row) => $row['archivo'] . '|' . $row['hoja'] . '|' . $row['columna'])
+            ->unique(fn(array $row) => $row['archivo'] . '|' . $row['hoja'] . '|' . $row['columna'])
             ->values()
             ->all();
     }
@@ -331,7 +331,6 @@ class ImportacionController extends Controller
 
             return redirect()->route('importaciones.preview', $importacion->id_importacion ?? $importacion->id)
                 ->with('success', 'Archivo analizado correctamente.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error en importación Store: ' . $e->getMessage());
@@ -478,7 +477,6 @@ class ImportacionController extends Controller
 
             return redirect()->route('trabajos.index')
                 ->with('success', "Importación completada: {$importadas} trabajos nuevos creados.");
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error confirmando importación: ' . $e->getMessage());

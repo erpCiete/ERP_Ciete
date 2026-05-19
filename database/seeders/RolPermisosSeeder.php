@@ -90,7 +90,6 @@ class RolPermisosSeeder extends Seeder
         ];
 
         $accounting = [
-            'trabajos.ver',
             'pedidos.ver',
             'facturas.ver',
             'facturas.crear',
@@ -103,10 +102,39 @@ class RolPermisosSeeder extends Seeder
             'tarifario_lineas.ver',
         ];
 
+        $technicalAdmin = [
+            'admin.panel.ver',
+            'usuarios.ver',
+            'usuarios.crear',
+            'usuarios.editar',
+            'soporte.gestionar',
+            'auditoria.ver',
+            'mantenimiento.gestionar',
+            'avisos.gestionar',
+            'importaciones.ver',
+            'importaciones.ejecutar',
+            'importaciones.confirmar',
+            'maestros.ver',
+            'contratos.ver',
+            'sociedades_facturadoras.ver',
+            'tarifarios.ver',
+            'tarifario_lineas.ver',
+            'trabajos.ver',
+            'pedidos.ver',
+            'facturas.ver',
+            'clientes.ver',
+            'estaciones.ver',
+        ];
+
+        $direction = array_values(array_unique([
+            ...$direction,
+            'avisos.gestionar',
+        ]));
+
         $map = [
-            'admin' => array_keys($permisos->all()),
+            'admin' => $technicalAdmin,
             'ejecucion' => $operativos,
-            'director' => array_values(array_unique([...$direction])),
+            'director' => $direction,
             'ejecucion_moeve' => $operativos,
             'ejecucion_repsol' => $operativos,
             'contable' => $accounting,

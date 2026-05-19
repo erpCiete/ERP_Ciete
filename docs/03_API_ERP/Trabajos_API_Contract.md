@@ -2,11 +2,18 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
 Estado: contrato tecnico vivo compactado.
 
-Fuente funcional: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+Subordinacion funcional obligatoria:
+
+1. `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`
+2. `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`
+3. `docs/02_CLIENTE/tareasComparar.md`
+4. `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md` como sintesis interpretativa secundaria
+
+Este contrato tecnico no prevalece sobre la reunion/transcripcion, la auditoria vigente ni el backlog maestro.
 
 Este documento sustituye el contrato API anterior que trataba `facturas.id_trabajo` y `factura_pedidos` como flujo principal. Esas estructuras quedan como legacy/compatibilidad.
 
@@ -37,12 +44,12 @@ La API no debe:
 
 ## 1. Contextos
 
-| Concepto | Regla |
-|---|---|
-| MOEVE | Contexto real |
-| REPSOL | Contexto real |
-| OTROS CLIENTES | Contexto real |
-| TODOS | Vista global operativa, no contexto real |
+| Concepto       | Regla                                    |
+| -------------- | ---------------------------------------- |
+| MOEVE          | Contexto real                            |
+| REPSOL         | Contexto real                            |
+| OTROS CLIENTES | Contexto real                            |
+| TODOS          | Vista global operativa, no contexto real |
 
 Reglas API:
 
@@ -80,9 +87,9 @@ PATCH por campo:
 
 - Endpoint esperado: `PATCH /api/v1/trabajos/{trabajo}/campo`.
 - Payload:
-  - `campo`
-  - `valor`
-  - `updated_at`
+    - `campo`
+    - `valor`
+    - `updated_at`
 - Debe validar permisos, contexto, campo editable y conflicto por `updated_at`.
 
 ## 3. Pedidos
@@ -152,9 +159,9 @@ Calculos:
 - `importe_asignado = sum(factura_items.importe_facturado)`
 - `diferencia = importe_factura - importe_asignado`
 - `estado_cuadre`:
-  - `cuadrada`
-  - `con_diferencia`
-  - `sin_items`
+    - `cuadrada`
+    - `con_diferencia`
+    - `sin_items`
 
 ## 6. Contratos, tarifas y sociedades
 

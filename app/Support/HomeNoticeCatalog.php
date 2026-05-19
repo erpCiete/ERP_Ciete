@@ -2,7 +2,11 @@
 
 namespace App\Support;
 
+use App\Models\HomeNotice;
+use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -14,7 +18,7 @@ final class HomeNoticeCatalog
 
     public static function categories(): array
     {
-        return self::CATEGORIES;
+        return HomeNotice::uiCategories();
     }
 
     public static function empty(): array
@@ -27,6 +31,137 @@ final class HomeNoticeCatalog
     }
 
     public static function load(): array
+    {
+        if (! Schema::hasTable('home_notices')) {
+            return self::loadLegacyFile();
+        }
+
+        return self::catalogFromQuery(HomeNotice::query());
+    }
+
+    public static function loadActive(): array
+    {
+        if (! Schema::hasTable('home_notices')) {
+            return self::loadLegacyFile();
+        }
+
+        return self::catalogFromQuery(
+            HomeNotice::query()
+                ->activeVisible()
+                ->where('is_featured', false),
+        );
+    }
+
+    public static function save(array $payload, ?User $user = null): array
+    {
+        if (! Schema::hasTable('home_notices')) {
+            return self::saveLegacyFile($payload);
+        }
+
+        return DB::transaction(function () use ($payload, $user) {
+            $featuredId = null;
+
+            foreach (self::categories() as $categoryKey) {
+                $category = HomeNotice::categoryFromInput($categoryKey);
+
+                collect($payload[$categoryKey] ?? [])
+                    ->filter(fn ($item) => is_array($item))
+                    ->values()
+                    ->each(function (array $item, int $index) use ($category, $categoryKey, $user, &$featuredId) {
+                        $normalized = self::normalizeItem($item, $categoryKey, $index);
+                        $titleEs = trim((string) ($item['title_es'] ?? Str::limit($normalized['es'], 120, '')));
+                        $titleEn = trim((string) ($item['title_en'] ?? Str::limit($normalized['en'], 120, '')));
+
+                        $notice = is_numeric($normalized['id'])
+                            ? HomeNotice::query()->find((int) $normalized['id'])
+                            : null;
+                        $notice ??= new HomeNotice();
+                        $notice->fill([
+                            'category' => $category,
+                            'title_es' => $titleEs !== '' ? $titleEs : $normalized['es'],
+                            'body_es' => trim((string) ($item['body_es'] ?? $normalized['es'])),
+                            'title_en' => $titleEn !== '' ? $titleEn : $normalized['en'],
+                            'body_en' => trim((string) ($item['body_en'] ?? $normalized['en'])),
+                            'is_active' => (bool) ($item['is_active'] ?? true),
+                            'is_featured' => (bool) ($item['featured'] ?? $item['is_featured'] ?? false),
+                            'starts_at' => $item['starts_at'] ?? null,
+                            'ends_at' => $item['ends_at'] ?? null,
+                            'updated_by' => $user?->id_usuario,
+                        ]);
+
+                        if (! $notice->exists) {
+                            $notice->created_by = $user?->id_usuario;
+                        }
+
+                        if (! $notice->is_active) {
+                            $notice->is_featured = false;
+                        }
+
+                        $notice->save();
+
+                        if ($notice->is_featured && $notice->is_active) {
+                            $featuredId = $notice->getKey();
+                        }
+                    });
+            }
+
+            if ($featuredId) {
+                HomeNotice::query()
+                    ->where('id_home_notice', '!=', $featuredId)
+                    ->where('is_featured', true)
+                    ->update([
+                        'is_featured' => false,
+                        'updated_by' => $user?->id_usuario,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            return self::load();
+        });
+    }
+
+    public static function featured(array $catalog): ?array
+    {
+        return collect(self::CATEGORIES)
+            ->flatMap(fn (string $category) => collect($catalog[$category] ?? [])->map(
+                fn (array $item) => [...$item, 'category' => $category],
+            ))
+            ->filter(fn (array $item) => (bool) ($item['featured'] ?? false))
+            ->sortByDesc(fn (array $item) => strtotime((string) ($item['featured_at'] ?? $item['updated_at'] ?? '1970-01-01')))
+            ->first();
+    }
+
+    public static function featuredActive(): ?array
+    {
+        if (! Schema::hasTable('home_notices')) {
+            return self::featured(self::loadLegacyFile());
+        }
+
+        return HomeNotice::query()
+            ->activeVisible()
+            ->where('is_featured', true)
+            ->latest('updated_at')
+            ->first()
+            ?->toHomePayload();
+    }
+
+    private static function catalogFromQuery(\Illuminate\Database\Eloquent\Builder $query): array
+    {
+        $catalog = self::empty();
+
+        $query
+            ->orderByRaw("CASE category WHEN 'internal_notice' THEN 1 WHEN 'system_update' THEN 2 WHEN 'company_news' THEN 3 ELSE 4 END")
+            ->orderByDesc('is_featured')
+            ->orderBy('id_home_notice')
+            ->get()
+            ->each(function (HomeNotice $notice) use (&$catalog) {
+                $catalog[HomeNotice::uiKeyForCategory($notice->category)][] = $notice->toHomePayload();
+            });
+
+        return $catalog;
+    }
+
+    private static function loadLegacyFile(): array
     {
         if (! Storage::exists(self::FILE)) {
             return self::empty();
@@ -51,9 +186,9 @@ final class HomeNoticeCatalog
         return $catalog;
     }
 
-    public static function save(array $payload): array
+    private static function saveLegacyFile(array $payload): array
     {
-        $existing = self::load();
+        $existing = self::loadLegacyFile();
         $catalog = self::empty();
 
         foreach (self::CATEGORIES as $category) {
@@ -88,17 +223,6 @@ final class HomeNoticeCatalog
         Storage::put(self::FILE, json_encode($catalog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         return $catalog;
-    }
-
-    public static function featured(array $catalog): ?array
-    {
-        return collect(self::CATEGORIES)
-            ->flatMap(fn (string $category) => collect($catalog[$category] ?? [])->map(
-                fn (array $item) => [...$item, 'category' => $category],
-            ))
-            ->filter(fn (array $item) => (bool) ($item['featured'] ?? false))
-            ->sortByDesc(fn (array $item) => strtotime((string) ($item['featured_at'] ?? $item['updated_at'] ?? '1970-01-01')))
-            ->first();
     }
 
     private static function normalizeItem(array $item, string $category, int $index): array

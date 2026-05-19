@@ -1,7 +1,9 @@
 import BadgeCliente from '@/Components/ui/BadgeCliente';
 import BadgeEstado from '@/Components/ui/BadgeEstado';
 import ClientesExcelView from '@/Components/ui/ClientesExcelView';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import OperationalReadOnlyNotice from '@/Components/OperationalReadOnlyNotice';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import { useClientes } from '@/Hooks/useClientes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -27,6 +29,7 @@ export default function ClientesIndex({ canCreate = true }) {
 
     const [search, setSearch] = useState('');
     const [contextFilter, setContextFilter] = useState('');
+    const [page, setPage] = useState(1);
     const [response, setResponse] = useState({ data: [], meta: {} });
     const [status, setStatus] = useState('loading');
     const [deleteTarget, setDeleteTarget] = useState(null);
@@ -40,7 +43,8 @@ export default function ClientesIndex({ canCreate = true }) {
             const result = await getClientes({
                 search: deferredSearch || undefined,
                 contexto: contextFilter || undefined,
-                per_page: 50,
+                page,
+                per_page: 10,
             });
 
             const nextResponse = result ?? { data: [], meta: {} };
@@ -49,14 +53,20 @@ export default function ClientesIndex({ canCreate = true }) {
         } catch {
             setStatus('error');
         }
-    }, [contextFilter, deferredSearch, getClientes]);
+    }, [contextFilter, deferredSearch, getClientes, page]);
 
     useEffect(() => {
         loadClientes();
     }, [loadClientes]);
 
     const rows = response.data ?? [];
-    const total = response.meta?.pagination?.total ?? rows.length;
+    const pagination = response.meta?.pagination ?? {};
+    const total = pagination.total ?? rows.length;
+    const currentPage = pagination.current_page ?? page;
+    const lastPage = pagination.last_page ?? 1;
+    const perPage = pagination.per_page ?? 10;
+    const from = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+    const to = total === 0 ? 0 : Math.min(currentPage * perPage, total);
     const hasFilters = search !== '' || contextFilter !== '';
 
     const handleDelete = async () => {
@@ -71,6 +81,14 @@ export default function ClientesIndex({ canCreate = true }) {
         } catch {
             setStatus('error');
         }
+    };
+
+    const goToPage = (nextPage) => {
+        if (nextPage < 1 || nextPage > lastPage || nextPage === currentPage) {
+            return;
+        }
+
+        setPage(nextPage);
     };
 
     return (
@@ -103,6 +121,8 @@ export default function ClientesIndex({ canCreate = true }) {
                     </button> : null}
                 />
 
+                <OperationalReadOnlyNotice />
+
                 {activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                         No puedes crear registros desde TODOS. Selecciona primero un contexto real: MOEVE, REPSOL u OTROS CLIENTES.
@@ -118,7 +138,7 @@ export default function ClientesIndex({ canCreate = true }) {
                         search={search} setSearch={setSearch}
                         contextFilter={contextFilter} setContextFilter={setContextFilter}
                         hasFilters={hasFilters}
-                        onClearFilters={() => { setSearch(''); setContextFilter(''); }}
+                        onClearFilters={() => { setSearch(''); setContextFilter(''); setPage(1); }}
                         onDelete={setDeleteTarget}
                         onReload={loadClientes}
                         total={total}
@@ -134,14 +154,20 @@ export default function ClientesIndex({ canCreate = true }) {
                         <input
                             type="search"
                             value={search}
-                            onChange={(event) => setSearch(event.target.value)}
+                            onChange={(event) => {
+                                setSearch(event.target.value);
+                                setPage(1);
+                            }}
                             placeholder={t('clientes.searchPlaceholder')}
                             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:flex-1"
                         />
 
                         <select
                             value={contextFilter}
-                            onChange={(event) => setContextFilter(event.target.value)}
+                            onChange={(event) => {
+                                setContextFilter(event.target.value);
+                                setPage(1);
+                            }}
                             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:w-56"
                         >
                             <option value="">{t('clientes.allContexts')}</option>
@@ -158,6 +184,7 @@ export default function ClientesIndex({ canCreate = true }) {
                                 onClick={() => {
                                     setSearch('');
                                     setContextFilter('');
+                                    setPage(1);
                                 }}
                                 className="text-sm font-medium text-text-muted transition hover:text-text-main"
                             >
@@ -270,6 +297,11 @@ export default function ClientesIndex({ canCreate = true }) {
                 </section>
             </>
             )}
+
+                <PaginationControls
+                    pagination={{ current_page: currentPage, last_page: lastPage, total, from, to }}
+                    onPageChange={goToPage}
+                />
             </div>
         </AuthenticatedLayout>
     );

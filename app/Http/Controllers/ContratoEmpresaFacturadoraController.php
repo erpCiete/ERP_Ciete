@@ -56,7 +56,7 @@ class ContratoEmpresaFacturadoraController extends Controller
             ->orderBy('id_contexto')
             ->orderByDesc('activo')
             ->orderByDesc('id')
-            ->paginate(25)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('SociedadesFacturadoras/Index', [

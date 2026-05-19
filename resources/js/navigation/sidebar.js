@@ -19,8 +19,8 @@ function isActive(patterns = []) {
     return patterns.some((pattern) => route().current(pattern));
 }
 
-function makeItem({ id, key, label, routeName, routeParams = {}, activePatterns, method }) {
-    const href = routeName ? hrefFor(routeName, routeParams) : null;
+function makeItem({ id, key, label, routeName, routeParams = {}, activePatterns, method, href: customHref }) {
+    const href = customHref ?? (routeName ? hrefFor(routeName, routeParams) : null);
 
     if (!href) {
         return null;
@@ -79,28 +79,36 @@ export function buildSidebarSections(t, user) {
     const canCreateWorks = hasPermission(user, 'trabajos.crear');
     const canViewOrders = hasPermission(user, 'pedidos.ver');
     const canViewInvoices = hasPermission(user, 'facturas.ver');
+    const canViewClients = hasPermission(user, 'clientes.ver');
     const canViewStations = hasPermission(user, 'estaciones.ver');
-    const canViewMasters = user.is_director;
-    const canManageImports = hasPermission(user, 'importaciones.ver');
-    const canViewAudit = hasPermission(user, 'auditoria.ver');
+    const canViewMasters = hasPermission(user, 'maestros.ver');
+    const canAccessAdminPanel = Boolean(user.can_access_admin_panel);
+    const canManageUsers = Boolean(user.can_manage_users);
+    const canManageSupport = Boolean(user.can_manage_support);
+    const canManageMaintenance = Boolean(user.can_manage_maintenance);
+    const canManageNotices = Boolean(user.can_manage_notices);
+    const canManageImports = Boolean(user.can_manage_imports);
+    const canViewAudit = Boolean(user.can_view_audit);
+    const canAccessClosure = Boolean(user.can_access_closure);
+    const isTechnicalAdmin = canAccessAdminPanel;
     const isExcelMode = user.interface_mode === 'ciete_excel';
     const worksLabel = user.is_execution_moeve
         ? t('nav.worksMoeve')
         : user.is_execution_repsol
-          ? t('nav.worksRepsol')
-          : t('nav.works');
+            ? t('nav.worksRepsol')
+            : t('nav.works');
 
     const createWorkLabel = user.is_execution_moeve
         ? t('nav.createWorkMoeve')
         : user.is_execution_repsol
-          ? t('nav.createWorkRepsol')
-          : t('nav.createWork');
+            ? t('nav.createWorkRepsol')
+            : t('nav.createWork');
 
     const ordersLabel = user.is_execution_moeve
         ? t('nav.ordersMoeve')
         : user.is_execution_repsol
-          ? t('nav.ordersRepsol')
-          : t('nav.orders');
+            ? t('nav.ordersRepsol')
+            : t('nav.orders');
 
     const sections = [
         section('general', t('nav.groups.general'), [
@@ -114,7 +122,7 @@ export function buildSidebarSections(t, user) {
         ]),
     ];
 
-    if (user.is_admin) {
+    if (isTechnicalAdmin) {
         sections.push(
             section('administration', t('nav.groups.administration'), [
                 makeItem({
@@ -122,104 +130,55 @@ export function buildSidebarSections(t, user) {
                     key: 'nav.adminPanel',
                     label: t('nav.adminDashboard'),
                     routeName: 'admin.dashboard',
-                    activePatterns: ['admin.dashboard'],
+                    activePatterns: ['admin.dashboard', 'admin.users.*', 'admin.support.*', 'admin.audit'],
                 }),
-                canViewAudit
-                    ? makeItem({
-                          id: 'audit',
-                          key: 'nav.audit',
-                          label: t('nav.audit'),
-                          routeName: 'registro.actividad.index',
-                          activePatterns: ['registro.actividad.*', 'admin.audit'],
-                      })
-                    : null,
-            ])
-        );
-
-        sections.push(
-            section('direction', t('nav.groups.direction'), [
                 makeItem({
-                    id: 'direction-dashboard',
-                    key: 'nav.directionPanel',
-                    label: t('nav.directionPanel'),
-                    routeName: 'cierre.dashboard',
-                    activePatterns: ['cierre.dashboard'],
+                    id: 'system-status',
+                    key: 'nav.systemStatus',
+                    label: t('nav.systemStatus'),
+                    routeName: 'status',
+                    activePatterns: ['status'],
                 }),
             ])
         );
-
-        sections.push(
-            section('operations', t('nav.groups.operations'), [
-                canViewWorks
-                    ? makeItem({
-                          id: 'works',
-                          key: 'nav.works',
-                          label: t('nav.works'),
-                          routeName: 'trabajos.index',
-                          activePatterns: ['trabajos.*'],
-                      })
-                    : null,
-                canViewOrders
-                    ? makeItem({
-                          id: 'orders',
-                          key: 'nav.orders',
-                          label: t('nav.orders'),
-                          routeName: 'pedidos.index',
-                          activePatterns: ['pedidos.*'],
-                      })
-                    : null,
-                canViewInvoices
-                    ? makeItem({
-                          id: 'invoices',
-                          key: 'nav.invoices',
-                          label: t('nav.invoices'),
-                          routeName: 'facturas.index',
-                          activePatterns: ['facturas.*'],
-                      })
-                    : null,
-            ])
-        );
-
-        if (canManageImports) {
-            sections.push(
-                section('data', t('nav.groups.data'), [
-                    makeItem({
-                        id: 'imports',
-                        key: 'nav.imports',
-                        label: t('nav.imports'),
-                        routeName: 'importaciones.index',
-                        activePatterns: ['importaciones.*'],
-                    }),
-                ])
-            );
-        }
     } else if (user.can_access_direction_panel) {
         sections.push(
             section('direction', t('nav.groups.direction'), [
-                makeItem({
-                    id: 'direction-dashboard',
-                    key: 'nav.directionPanel',
-                    label: t('nav.directionPanel'),
-                    routeName: 'cierre.dashboard',
-                    activePatterns: ['cierre.dashboard'],
-                }),
+                canAccessClosure
+                    ? makeItem({
+                        id: 'direction-dashboard',
+                        key: 'nav.directionPanel',
+                        label: t('nav.directionPanel'),
+                        routeName: 'cierre.dashboard',
+                        activePatterns: ['cierre.dashboard'],
+                    })
+                    : null,
+                canManageUsers
+                    ? makeItem({
+                        id: 'admin-users',
+                        key: 'nav.adminUsers',
+                        label: t('nav.adminUsers'),
+                        routeName: 'admin.users.index',
+                        activePatterns: ['admin.users.*'],
+                    })
+                    : null,
                 canViewAudit
                     ? makeItem({
-                          id: 'audit',
-                          key: 'nav.audit',
-                          label: t('nav.audit'),
-                          routeName: 'registro.actividad.index',
-                          activePatterns: ['registro.actividad.*', 'admin.audit'],
-                      })
+                        id: 'activity-log',
+                        key: 'nav.activityLog',
+                        label: t('nav.activityLog'),
+                        routeName: 'registro.actividad.index',
+                        activePatterns: ['registro.actividad.*'],
+                    })
                     : null,
                 canViewMasters
                     ? makeItem({
-                          id: 'master-data',
-                          key: 'nav.masterData',
-                          label: t('nav.masterData'),
-                          routeName: 'maestros.index',
-                          activePatterns: ['maestros.*'],
-                      })
+                        id: 'master-data',
+                        key: 'nav.masterData',
+                        label: t('nav.masterData'),
+                        routeName: 'maestros.index',
+                        activePatterns: ['maestros.*'],
+                    })
                     : null,
             ])
         );
@@ -228,30 +187,30 @@ export function buildSidebarSections(t, user) {
             section('consultation', t('nav.groups.consultation'), [
                 canViewWorks
                     ? makeItem({
-                          id: 'works',
-                          key: 'nav.works',
-                          label: t('nav.works'),
-                          routeName: 'trabajos.index',
-                          activePatterns: ['trabajos.*'],
-                      })
+                        id: 'works',
+                        key: 'nav.works',
+                        label: t('nav.works'),
+                        routeName: 'trabajos.index',
+                        activePatterns: ['trabajos.*'],
+                    })
                     : null,
                 canViewOrders
                     ? makeItem({
-                          id: 'orders',
-                          key: 'nav.orders',
-                          label: t('nav.orders'),
-                          routeName: 'pedidos.index',
-                          activePatterns: ['pedidos.*'],
-                      })
+                        id: 'orders',
+                        key: 'nav.orders',
+                        label: t('nav.orders'),
+                        routeName: 'pedidos.index',
+                        activePatterns: ['pedidos.*'],
+                    })
                     : null,
                 canViewInvoices
                     ? makeItem({
-                          id: 'invoices',
-                          key: 'nav.invoices',
-                          label: t('nav.invoices'),
-                          routeName: 'facturas.index',
-                          activePatterns: ['facturas.*'],
-                      })
+                        id: 'invoices',
+                        key: 'nav.invoices',
+                        label: t('nav.invoices'),
+                        routeName: 'facturas.index',
+                        activePatterns: ['facturas.*'],
+                    })
                     : null,
             ])
         );
@@ -259,55 +218,55 @@ export function buildSidebarSections(t, user) {
         const executionGroupKey = user.is_execution_moeve
             ? 'nav.groups.executionMoeve'
             : user.is_execution_repsol
-              ? 'nav.groups.executionRepsol'
-              : 'nav.groups.execution';
+                ? 'nav.groups.executionRepsol'
+                : 'nav.groups.execution';
 
         sections.push(
             section('execution', t(executionGroupKey), [
                 canViewWorks
                     ? makeItem({
-                          id: 'works',
-                          key: 'nav.works',
-                          label: worksLabel,
-                          routeName: 'trabajos.index',
-                          activePatterns: ['trabajos.index', 'trabajos.edit'],
-                      })
+                        id: 'works',
+                        key: 'nav.works',
+                        label: worksLabel,
+                        routeName: 'trabajos.index',
+                        activePatterns: ['trabajos.index', 'trabajos.edit'],
+                    })
                     : null,
                 canCreateWorks && !isExcelMode
                     ? makeItem({
-                          id: 'create-work',
-                          key: 'nav.createWork',
-                          label: createWorkLabel,
-                          routeName: 'trabajos.create',
-                          activePatterns: ['trabajos.create'],
-                      })
+                        id: 'create-work',
+                        key: 'nav.createWork',
+                        label: createWorkLabel,
+                        routeName: 'trabajos.create',
+                        activePatterns: ['trabajos.create'],
+                    })
                     : null,
                 canViewStations
                     ? makeItem({
-                          id: 'stations',
-                          key: 'nav.stations',
-                          label: t('nav.stations'),
-                          routeName: 'estaciones.index',
-                          activePatterns: ['estaciones.*'],
-                      })
+                        id: 'stations',
+                        key: 'nav.stations',
+                        label: t('nav.stations'),
+                        routeName: 'estaciones.index',
+                        activePatterns: ['estaciones.*'],
+                    })
                     : null,
                 canViewOrders
                     ? makeItem({
-                          id: 'orders',
-                          key: 'nav.orders',
-                          label: ordersLabel,
-                          routeName: 'pedidos.index',
-                          activePatterns: ['pedidos.*'],
-                      })
+                        id: 'orders',
+                        key: 'nav.orders',
+                        label: ordersLabel,
+                        routeName: 'pedidos.index',
+                        activePatterns: ['pedidos.*'],
+                    })
                     : null,
                 canViewInvoices
                     ? makeItem({
-                          id: 'invoices',
-                          key: 'nav.invoices',
-                          label: t('nav.invoices'),
-                          routeName: 'facturas.index',
-                          activePatterns: ['facturas.*'],
-                      })
+                        id: 'invoices',
+                        key: 'nav.invoices',
+                        label: t('nav.invoices'),
+                        routeName: 'facturas.index',
+                        activePatterns: ['facturas.*'],
+                    })
                     : null,
             ])
         );
@@ -316,46 +275,46 @@ export function buildSidebarSections(t, user) {
             section('accounting', t('nav.groups.accounting'), [
                 canViewOrders
                     ? makeItem({
-                          id: 'orders',
-                          key: 'nav.orders',
-                          label: t('nav.orders'),
-                          routeName: 'pedidos.index',
-                          activePatterns: ['pedidos.*'],
-                      })
+                        id: 'orders',
+                        key: 'nav.orders',
+                        label: t('nav.orders'),
+                        routeName: 'pedidos.index',
+                        activePatterns: ['pedidos.*'],
+                    })
                     : null,
                 canViewInvoices
                     ? makeItem({
-                          id: 'invoices',
-                          key: 'nav.invoices',
-                          label: t('nav.invoices'),
-                          routeName: 'facturas.index',
-                          activePatterns: ['facturas.*'],
-                      })
+                        id: 'invoices',
+                        key: 'nav.invoices',
+                        label: t('nav.invoices'),
+                        routeName: 'facturas.index',
+                        activePatterns: ['facturas.*'],
+                    })
                     : null,
                 canViewAudit
                     ? makeItem({
-                          id: 'audit',
-                          key: 'nav.audit',
-                          label: t('nav.audit'),
-                          routeName: 'admin.audit',
-                          activePatterns: ['admin.audit'],
-                      })
+                        id: 'activity-log',
+                        key: 'nav.activityLog',
+                        label: t('nav.activityLog'),
+                        routeName: 'registro.actividad.index',
+                        activePatterns: ['registro.actividad.*'],
+                    })
                     : null,
             ])
         );
     }
 
-    if (!user.is_admin && !user.can_access_direction_panel && !user.is_accounting && canViewAudit) {
+    if (!canAccessAdminPanel && !user.can_access_direction_panel && !user.is_accounting && canViewAudit) {
         const generalSection = sections.find((sectionItem) => sectionItem?.id === 'general');
 
         if (generalSection) {
             generalSection.items.push(
                 makeItem({
-                    id: 'audit',
-                    key: 'nav.audit',
-                    label: t('nav.audit'),
-                    routeName: 'admin.audit',
-                    activePatterns: ['admin.audit'],
+                    id: 'activity-log',
+                    key: 'nav.activityLog',
+                    label: t('nav.activityLog'),
+                    routeName: 'registro.actividad.index',
+                    activePatterns: ['registro.actividad.*'],
                 }),
             );
         }

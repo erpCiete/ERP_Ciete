@@ -1,5 +1,7 @@
 import EstacionesExcelView from '@/Components/ui/EstacionesExcelView';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import OperationalReadOnlyNotice from '@/Components/OperationalReadOnlyNotice';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import { useClientes } from '@/Hooks/useClientes';
 import { useEstaciones } from '@/Hooks/useEstaciones';
@@ -125,6 +127,7 @@ export default function EstacionesIndex({ canCreate = true }) {
     const [provincia, setProvincia] = useState('');
     const [codigo, setCodigo] = useState('');
     const [activoFilter, setActivoFilter] = useState('');
+    const [page, setPage] = useState(1);
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     const deferredSearch = useDeferredValue(search);
@@ -166,7 +169,8 @@ export default function EstacionesIndex({ canCreate = true }) {
                 provincia: deferredProvincia || undefined,
                 codigo: deferredCodigo || undefined,
                 activo: deferredActivoFilter || undefined,
-                per_page: 50,
+                page,
+                per_page: 10,
             });
 
             const nextResponse = result ?? { data: [], meta: {} };
@@ -175,14 +179,20 @@ export default function EstacionesIndex({ canCreate = true }) {
         } catch {
             setStatus('error');
         }
-    }, [clienteId, deferredActivoFilter, deferredCodigo, deferredMunicipio, deferredProvincia, deferredSearch, getEstaciones]);
+    }, [clienteId, deferredActivoFilter, deferredCodigo, deferredMunicipio, deferredProvincia, deferredSearch, getEstaciones, page]);
 
     useEffect(() => {
         loadEstaciones();
     }, [loadEstaciones]);
 
     const rows = response.data ?? [];
-    const total = response.meta?.pagination?.total ?? rows.length;
+    const pagination = response.meta?.pagination ?? {};
+    const total = pagination.total ?? rows.length;
+    const currentPage = pagination.current_page ?? page;
+    const lastPage = pagination.last_page ?? 1;
+    const perPage = pagination.per_page ?? 10;
+    const from = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+    const to = total === 0 ? 0 : Math.min(currentPage * perPage, total);
     const hasFilters = search !== ''
         || clienteId !== ''
         || municipio !== ''
@@ -211,6 +221,15 @@ export default function EstacionesIndex({ canCreate = true }) {
         setProvincia('');
         setCodigo('');
         setActivoFilter('');
+        setPage(1);
+    };
+
+    const goToPage = (nextPage) => {
+        if (nextPage < 1 || nextPage > lastPage || nextPage === currentPage) {
+            return;
+        }
+
+        setPage(nextPage);
     };
 
     return (
@@ -245,6 +264,8 @@ export default function EstacionesIndex({ canCreate = true }) {
                     ) : null}
                 />
 
+                <OperationalReadOnlyNotice />
+
                 {canRequestCreateEstaciones && activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                         {t('estaciones.activeContextWarning')}
@@ -263,17 +284,35 @@ export default function EstacionesIndex({ canCreate = true }) {
                         onDelete={setDeleteTarget}
                         onReload={loadEstaciones}
                         search={search}
-                        setSearch={setSearch}
+                        setSearch={(value) => {
+                            setSearch(value);
+                            setPage(1);
+                        }}
                         clienteId={clienteId}
-                        setClienteId={setClienteId}
+                        setClienteId={(value) => {
+                            setClienteId(value);
+                            setPage(1);
+                        }}
                         municipio={municipio}
-                        setMunicipio={setMunicipio}
+                        setMunicipio={(value) => {
+                            setMunicipio(value);
+                            setPage(1);
+                        }}
                         provincia={provincia}
-                        setProvincia={setProvincia}
+                        setProvincia={(value) => {
+                            setProvincia(value);
+                            setPage(1);
+                        }}
                         codigo={codigo}
-                        setCodigo={setCodigo}
+                        setCodigo={(value) => {
+                            setCodigo(value);
+                            setPage(1);
+                        }}
                         activoFilter={activoFilter}
-                        setActivoFilter={setActivoFilter}
+                        setActivoFilter={(value) => {
+                            setActivoFilter(value);
+                            setPage(1);
+                        }}
                         hasFilters={hasFilters}
                         onClearFilters={clearFilters}
                         total={total}
@@ -285,7 +324,10 @@ export default function EstacionesIndex({ canCreate = true }) {
                                 <input
                                     type="search"
                                     value={search}
-                                    onChange={(event) => setSearch(event.target.value)}
+                                    onChange={(event) => {
+                                        setSearch(event.target.value);
+                                        setPage(1);
+                                    }}
                                     placeholder={t('estaciones.searchPlaceholder')}
                                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:flex-1"
                                 />
@@ -293,14 +335,20 @@ export default function EstacionesIndex({ canCreate = true }) {
                                 <input
                                     type="search"
                                     value={codigo}
-                                    onChange={(event) => setCodigo(event.target.value)}
+                                    onChange={(event) => {
+                                        setCodigo(event.target.value);
+                                        setPage(1);
+                                    }}
                                     placeholder={t('estaciones.filters.code')}
                                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:w-40"
                                 />
 
                                 <select
                                     value={clienteId}
-                                    onChange={(event) => setClienteId(event.target.value)}
+                                    onChange={(event) => {
+                                        setClienteId(event.target.value);
+                                        setPage(1);
+                                    }}
                                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:w-72"
                                 >
                                     <option value="">{t('estaciones.allClients')}</option>
@@ -314,7 +362,10 @@ export default function EstacionesIndex({ canCreate = true }) {
                                 <input
                                     type="search"
                                     value={municipio}
-                                    onChange={(event) => setMunicipio(event.target.value)}
+                                    onChange={(event) => {
+                                        setMunicipio(event.target.value);
+                                        setPage(1);
+                                    }}
                                     placeholder={t('estaciones.filters.municipality')}
                                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:w-44"
                                 />
@@ -322,14 +373,20 @@ export default function EstacionesIndex({ canCreate = true }) {
                                 <input
                                     type="search"
                                     value={provincia}
-                                    onChange={(event) => setProvincia(event.target.value)}
+                                    onChange={(event) => {
+                                        setProvincia(event.target.value);
+                                        setPage(1);
+                                    }}
                                     placeholder={t('estaciones.filters.province')}
                                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main placeholder:text-text-hint/70 focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:w-44"
                                 />
 
                                 <select
                                     value={activoFilter}
-                                    onChange={(event) => setActivoFilter(event.target.value)}
+                                    onChange={(event) => {
+                                        setActivoFilter(event.target.value);
+                                        setPage(1);
+                                    }}
                                     className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:w-40"
                                 >
                                     <option value="">{t('estaciones.allStatuses')}</option>
@@ -410,6 +467,11 @@ export default function EstacionesIndex({ canCreate = true }) {
                         </section>
                     </>
                 )}
+
+                <PaginationControls
+                    pagination={{ current_page: currentPage, last_page: lastPage, total, from, to }}
+                    onPageChange={goToPage}
+                />
             </div>
         </AuthenticatedLayout>
     );

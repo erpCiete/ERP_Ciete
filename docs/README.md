@@ -1,73 +1,70 @@
 # Documentacion ERP CIETE
 
-> **Documento vivo.**  
-> Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+Indice canonico y vigente de documentacion del proyecto.
 
-Estado: indice canonico de documentacion.
+## Estructura activa
 
-Este repositorio conserva documentos historicos, bitacoras, planes de sprint, materiales recibidos del cliente y documentos tecnicos. Para evitar duplicados funcionales, la lectura debe hacerse con este orden.
+```
+docs/
+├── README.md
+├── 00_FUENTES_CLIENTE/
+├── 01_ORGANIZACION/
+├── 02_CLIENTE/
+├── 03_API_ERP/
+├── 04_DISENO_UI/
+├── 04_EVIDENCIAS/
+├── 05-SPRINTS/
+├── 06_GIT/
+├── 07_REVISIONES_DOCUMENTALES/
+└── _archivo_historico/
+```
 
-## 1. Fuente de verdad vigente
+## Fuentes, autoridad y backlog
 
-Documento principal:
+1. Fuentes de cliente: `docs/00_FUENTES_CLIENTE/` y `docs/02_CLIENTE/materiales/`.
+2. Autoridad funcional principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
+3. Traduccion operativa principal: `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`.
+4. Backlog maestro: `docs/02_CLIENTE/tareasComparar.md`.
 
-- `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`
+Si hay contradiccion entre documentos, prevalece la reunion/transcripcion salvo decision posterior explicitamente trazada.
 
-Documento de evolucion:
+## Matrices y validaciones vigentes
 
-- `docs/02_CLIENTE/HISTORIAL_DECISIONES_ERP_CIETE.md`
+- Matriz de accesos por rol: `docs/02_CLIENTE/MATRIZ_ACCESOS_ROLES_ERP_CIETE_2026-05-18.md`
+- Matriz administrador tecnico: `docs/02_CLIENTE/MATRIZ_ADMIN_TECNICO_ERP_CIETE_2026-05-18.md`
+- Matriz tipos/codigos: `docs/02_CLIENTE/MATRIZ_TIPOS_NUMERICOS_CODIGOS_A6-R_2026-05-18.md`
+- Validacion operativa por perfiles: `docs/02_CLIENTE/VALIDACION_OPERATIVA_PERFILES_ESCENARIOS_ERP_CIETE_2026-05-18.md`
+- Registro KO/evidencias: `docs/02_CLIENTE/VALIDACION_OPERATIVA_KO_EVIDENCIAS_ERP_CIETE_2026-05-18.md`
 
-Estos dos documentos mandan sobre cualquier alcance, plan, manual o contrato anterior cuando haya contradiccion funcional.
+## Historico
 
-## 2. Documentos vivos utiles
+Carpeta historica principal: `docs/_archivo_historico/`
 
-| Documento | Uso |
-|---|---|
-| `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md` | Fuente funcional vigente |
-| `docs/02_CLIENTE/HISTORIAL_DECISIONES_ERP_CIETE.md` | Trazabilidad de cambios de criterio |
-| `docs/02_CLIENTE/01_Alcance_y_No_Alcance.md` | Alcance vigente resumido |
-| `docs/02_CLIENTE/02_Requisitos_y_Acuerdos.md` | Requisitos vigentes resumidos |
-| `docs/02_CLIENTE/tareasComparar.md` | Backlog funcional vigente P0/P1/P2 |
-| `docs/03_API_ERP/Trabajos_API_Contract.md` | Contrato tecnico vigente de trabajos y flujo relacionado |
-| `docs/BIBLIA_DESARROLLO.md` | Guia tecnica viva, no historica |
+- Legacy archivado: `docs/_archivo_historico/legacy/`
+- Historial cliente previo: `docs/02_CLIENTE/historicos/`
+- Historial tecnico API: `docs/03_API_ERP/historicos/`
+- Bitacoras por sprint (no normativa funcional): `docs/05-SPRINTS/**/Bitacora/**`
 
-## 3. Documentos historicos o de evidencia
+## Documentos protegidos (NO borrar)
 
-Estos documentos se conservan, pero no son fuente funcional vigente:
+- Reunion/transcripcion CIETE.
+- Auditorias funcionales y de completitud.
+- Decisiones funcionales e historial de decisiones.
+- Backlog maestro.
+- Matrices de accesos/administracion/tipos.
+- Validaciones operativas y registro de KOs.
+- Fuentes de cliente (PDF, XLSX, material original).
+- Bitacoras de trabajo por persona.
 
-- `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`
-- `docs/02_CLIENTE/historicos/Analisis_Reunion_CIETE_Plan_2_Sprints_2026-05-04.md`
-- `docs/02_CLIENTE/historicos/Tareas_Pablo_01_02_Mayo_2026.md`
-- `docs/07_REVISIONES_DOCUMENTALES/REVISION_DOCUMENTAL_02_05_2026.md`
-- `docs/05-SPRINTS/**`
-- `docs/MemoriaProyecto/**`
-- `docs/Abaco/**`
-- PDFs, Excels, SQLs, capturas y material bruto recibido.
+## Orden recomendado de lectura
 
-## 4. Bitacoras
-
-Las bitacoras no se limpian, no se compactan y no se reinterpretan como documentacion funcional vigente.
-
-Rutas protegidas:
-
-- `docs/05-SPRINTS/**/Bitacora/**`
-
-Las bitacoras son registro historico de trabajo del equipo.
-
-## 5. Regla de limpieza documental
-
-- No duplicar decisiones funcionales fuera del documento de decisiones.
-- No tratar planes antiguos como verdad actual.
-- No borrar bitacoras.
-- No borrar material recibido del cliente.
-- Si un documento antiguo contradice la fuente de verdad, se marca como historico o se compacta hacia una referencia.
-- Los documentos vivos deben ser cortos, accionables y enlazar a la fuente de verdad.
-
-## 6. Lectura recomendada para implementar
-
-1. Leer `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
-2. Revisar `docs/02_CLIENTE/tareasComparar.md` para prioridad P0/P1/P2.
-3. Revisar `docs/03_API_ERP/Trabajos_API_Contract.md` si se toca backend/API.
-4. Revisar `BIBLIA_DESARROLLO.md` para reglas tecnicas.
-5. Consultar reunion/transcripciones solo como evidencia historica.
+1. `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`
+2. `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`
+3. `docs/02_CLIENTE/tareasComparar.md`
+4. `docs/02_CLIENTE/MATRIZ_ACCESOS_ROLES_ERP_CIETE_2026-05-18.md`
+5. `docs/02_CLIENTE/MATRIZ_ADMIN_TECNICO_ERP_CIETE_2026-05-18.md`
+6. `docs/02_CLIENTE/VALIDACION_OPERATIVA_PERFILES_ESCENARIOS_ERP_CIETE_2026-05-18.md`
+7. `docs/02_CLIENTE/VALIDACION_OPERATIVA_KO_EVIDENCIAS_ERP_CIETE_2026-05-18.md`
+8. `docs/02_CLIENTE/MATRIZ_TIPOS_NUMERICOS_CODIGOS_A6-R_2026-05-18.md`
+9. `docs/03_API_ERP/Mapeo_Importacion_Excel.md` y `docs/03_API_ERP/Trabajos_API_Contract.md`
+10. `docs/01_ORGANIZACION/INFORME_LIMPIEZA_DOCUMENTAL_A10_2026-05-18.md`

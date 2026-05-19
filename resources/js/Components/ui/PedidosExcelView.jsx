@@ -1,4 +1,5 @@
 import BadgePedido from '@/Components/ui/BadgePedidos';
+import PaginationControls from '@/Components/ui/PaginationControls';
 import axios from 'axios';
 import { router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
@@ -21,7 +22,12 @@ function fmtMoney(val) {
     if (val === null || val === undefined) return '—';
     const n = Number(val);
     if (isNaN(n)) return '—';
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
+    return new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(n);
 }
 
 function fmtDate(val) {
@@ -58,7 +64,7 @@ function NewPedidoRow({
     onCancel,
 }) {
     const inputClass = (field) =>
-        `h-7 w-full rounded border bg-surface px-2 text-xs text-text-main outline-none ${
+        `h-10 w-full rounded border bg-surface px-2 text-xs text-text-main outline-none ${
             fieldError(errors, field)
                 ? 'border-red-300 ring-1 ring-red-200'
                 : 'border-border focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)'
@@ -157,7 +163,7 @@ function NewPedidoRow({
                         type="button"
                         onClick={onSave}
                         disabled={isSaving}
-                        className="rounded bg-(--ciete-red) px-2 py-1 text-xs font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-50"
+                        className="rounded bg-(--ciete-red) px-2 py-2 text-xs font-semibold text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-50"
                     >
                         {isSaving ? 'Guardando' : 'Guardar'}
                     </button>
@@ -165,7 +171,7 @@ function NewPedidoRow({
                         type="button"
                         onClick={onCancel}
                         disabled={isSaving}
-                        className="rounded border border-border px-2 py-1 text-xs font-medium text-text-muted transition hover:bg-surface-2 disabled:opacity-50"
+                        className="rounded border border-border px-2 py-2 text-xs font-medium text-text-muted transition hover:bg-surface-2 disabled:opacity-50"
                     >
                         Cancelar
                     </button>
@@ -235,8 +241,17 @@ export default function PedidosExcelView({
     function validateNewRow() {
         const errors = {};
 
-        if (!String(newRow?.numero_pedido ?? '').trim()) errors.numero_pedido = 'El numero de pedido es obligatorio.';
+        if (!String(newRow?.numero_pedido ?? '').trim()) errors.numero_pedido = 'El número de pedido es obligatorio.';
         if (!String(newRow?.id_trabajo ?? '').trim()) errors.id_trabajo = 'El trabajo es obligatorio.';
+        if (isRepsol && String(newRow?.unidades_solicitadas ?? '').trim() !== '') {
+            const requestedUnits = Number(newRow.unidades_solicitadas);
+
+            if (!Number.isFinite(requestedUnits) || requestedUnits < 0) {
+                errors.unidades_solicitadas = 'Las unidades solicitadas no son válidas.';
+            } else if (!Number.isInteger(requestedUnits)) {
+                errors.unidades_solicitadas = 'Las unidades solicitadas deben ser enteras.';
+            }
+        }
 
         return errors;
     }
@@ -367,7 +382,7 @@ export default function PedidosExcelView({
 
             {/* Tabla densa */}
             <div className="overflow-x-auto rounded-xl border border-border shadow-sm">
-                <table className="w-full min-w-[700px] divide-y divide-border text-xs">
+                <table className="ciete-excel-table w-full min-w-[700px] divide-y divide-border text-xs">
                     <thead className="bg-surface-2">
                         <tr>
                             {columns.map((col) => (
@@ -478,30 +493,11 @@ export default function PedidosExcelView({
                 </table>
             </div>
 
-            {/* Paginación */}
-            {pagination && pagination.last_page > 1 && (
-                <div className="flex items-center justify-between text-xs text-text-muted">
-                    <span>Pág. {pagination.current_page} / {pagination.last_page}</span>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            disabled={pagination.current_page <= 1}
-                            onClick={() => doFilter({ page: pagination.current_page - 1 })}
-                            className="rounded border border-border px-3 py-1 hover:bg-surface-2 disabled:opacity-40"
-                        >
-                            Anterior
-                        </button>
-                        <button
-                            type="button"
-                            disabled={pagination.current_page >= pagination.last_page}
-                            onClick={() => doFilter({ page: pagination.current_page + 1 })}
-                            className="rounded border border-border px-3 py-1 hover:bg-surface-2 disabled:opacity-40"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                </div>
-            )}
+            <PaginationControls
+                pagination={pagination}
+                onPageChange={(p) => doFilter({ page: p })}
+                entityLabel="pedidos"
+            />
         </div>
     );
 }

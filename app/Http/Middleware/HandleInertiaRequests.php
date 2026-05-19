@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\MensajeInterno;
 use App\Models\ContextoCliente;
+use App\Models\User;
 use App\Support\ContextGuard;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -57,7 +58,7 @@ class HandleInertiaRequests extends Middleware
             ]);
         }
 
-        $workspaceKeyResolver = static fn (?string $code, ?string $name = null): string => ContextGuard::workspaceKey($code, $name);
+        $workspaceKeyResolver = static fn(?string $code, ?string $name = null): string => ContextGuard::workspaceKey($code, $name);
 
         $availableContexts = collect();
         $activeContextSelection = null;
@@ -66,7 +67,7 @@ class HandleInertiaRequests extends Middleware
 
         if ($user) {
             $availableContextIds = collect($user->getAccessibleContextIds())
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->values()
                 ->all();
 
@@ -77,8 +78,19 @@ class HandleInertiaRequests extends Middleware
                 ->get();
 
             $activeContextSelection = $user->getActiveContextSelection();
-            $user->setActiveContextSelection($activeContextSelection);
-            $canUseAllContexts = count($availableContextIds) > 1;
+            $canUseAllContexts = false;
+
+            if (
+                $activeContextSelection === User::ACTIVE_CONTEXT_ALL
+                && $availableContexts->isNotEmpty()
+                && ! $request->is('api/*')
+            ) {
+                $defaultContextId = (int) $user->getDefaultContextId();
+                $activeContext = $availableContexts->firstWhere('id_contexto', $defaultContextId) ?? $availableContexts->first();
+                $activeContextSelection = (int) $activeContext->id_contexto;
+            }
+
+            $activeContextSelection = $user->setActiveContextSelection($activeContextSelection);
 
             if (is_int($activeContextSelection)) {
                 $activeContext = $availableContexts->firstWhere('id_contexto', $activeContextSelection);
@@ -102,36 +114,17 @@ class HandleInertiaRequests extends Middleware
             })
             ->values();
 
-        if ($canUseAllContexts) {
-            $availableContextsPayload->prepend([
-                'id_contexto' => null,
-                'value' => 'all',
-                'codigo' => 'TODOS',
-                'nombre' => 'Todos',
-                'workspace_key' => 'todos',
-            ]);
-        }
-
-        $activeContextPayload = $activeContextSelection === \App\Models\User::ACTIVE_CONTEXT_ALL
-            ? [
-                'id_contexto' => null,
-                'value' => 'all',
-                'codigo' => 'TODOS',
-                'nombre' => 'Todos',
-                'workspace_key' => 'todos',
-                'is_all' => true,
-            ]
-            : [
-                'id_contexto' => $activeContext?->id_contexto ? (int) $activeContext->id_contexto : null,
-                'value' => $activeContext?->id_contexto ? (int) $activeContext->id_contexto : null,
-                'codigo' => $activeContext?->codigo,
-                'nombre' => ContextGuard::displayName($activeContext?->codigo, $activeContext?->nombre),
-                'workspace_key' => $workspaceKeyResolver($activeContext?->codigo, $activeContext?->nombre),
-                'is_all' => false,
-            ];
+        $activeContextPayload = [
+            'id_contexto' => $activeContext?->id_contexto ? (int) $activeContext->id_contexto : null,
+            'value' => $activeContext?->id_contexto ? (int) $activeContext->id_contexto : null,
+            'codigo' => $activeContext?->codigo,
+            'nombre' => ContextGuard::displayName($activeContext?->codigo, $activeContext?->nombre),
+            'workspace_key' => $workspaceKeyResolver($activeContext?->codigo, $activeContext?->nombre),
+            'is_all' => false,
+        ];
 
         $roleSlugs = $user
-            ? $user->roles->pluck('slug')->map(fn (string $slug): string => $slug)->values()->all()
+            ? $user->roles->pluck('slug')->map(fn(string $slug): string => $slug)->values()->all()
             : [];
         $permissionSlugs = $user?->permission_slugs ?? [];
         $primaryRole = $user?->roles->first();
@@ -156,16 +149,24 @@ class HandleInertiaRequests extends Middleware
                     'avatar_url' => $selectedAvatar ? asset($selectedAvatar['file']) : null,
                     'activo' => $user->activo,
                     'is_admin' => $user->is_admin,
+                    'is_technical_admin' => $user->isTechnicalAdmin(),
                     'is_director' => in_array('director', $roleSlugs, true)
                         || in_array('direccion', $roleSlugs, true),
                     'is_execution' => in_array('ejecucion', $roleSlugs, true),
                     'is_execution_moeve' => in_array('ejecucion_moeve', $roleSlugs, true),
                     'is_execution_repsol' => in_array('ejecucion_repsol', $roleSlugs, true),
                     'is_accounting' => in_array('contable', $roleSlugs, true),
+                    'can_access_admin_panel' => $user->canAccessAdminPanel(),
+                    'can_manage_users' => $user->canManageUsers(),
                     'can_manage_support' => $user->canManageSupport(),
-                    'can_access_direction_panel' => in_array('admin', $roleSlugs, true)
-                        || in_array('director', $roleSlugs, true)
-                        || in_array('direccion', $roleSlugs, true),
+                    'can_manage_maintenance' => $user->canManageMaintenance(),
+                    'can_manage_notices' => $user->canManageNotices(),
+                    'can_view_audit' => $user->canViewAudit(),
+                    'can_manage_imports' => $user->canManageImports(),
+                    'can_view_operational_data' => $user->canViewOperationalData(),
+                    'can_mutate_operational_data' => $user->canMutateOperationalData(),
+                    'can_access_direction_panel' => $user->canAccessDirectionPanel(),
+                    'can_access_closure' => $user->canAccessClosure(),
                     'primary_role_slug' => $primaryRole?->slug,
                     'primary_role_name' => $primaryRole?->nombre,
                     'roles' => $user->roles->map(fn($role) => [

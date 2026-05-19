@@ -2,11 +2,11 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
 Estado: documento vivo resumido. Sustituye versiones anteriores de alcance que hablaban de obras, Cepsa, cierre legacy, cobros o legalizaciones como flujo principal.
 
-Fuente de verdad: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+Referencia de autoridad: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`, aterrizada en `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md` y priorizada en `docs/02_CLIENTE/tareasComparar.md`.
 
 ## Alcance P0
 
@@ -19,16 +19,16 @@ Fuente de verdad: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.m
 - Pedido 1:N `pedido_items`.
 - `pedido_item` como unidad economica/facturable real.
 - Facturacion por items:
-  - `factura -> factura_items -> pedido_items -> pedidos -> trabajos`.
+    - `factura -> factura_items -> pedido_items -> pedidos -> trabajos`.
 - Validacion de contrato/tarifa comun en los items facturados.
 - Validacion de sociedad/CIF permitida para contrato/tarifa/grupo.
 - Estados funcionales de trabajo:
-  - `en_curso`
-  - `terminado`
-  - `pendiente_facturar`
-  - `facturado`
-  - `finalizado`
-  - `cancelado`
+    - `en_curso`
+    - `terminado`
+    - `pendiente_facturar`
+    - `facturado`
+    - `finalizado`
+    - `cancelado`
 - Ciete Excel como vista operativa diaria.
 - Ciete Moderno como ficha/formulario/detalle.
 - Auditoria operativa relevante, sin ruido visual.
@@ -40,10 +40,10 @@ Fuente de verdad: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.m
 - Exportacion individual de factura con detalle.
 - Sustitucion de borrados fisicos por baja/anulacion/cancelacion donde exista historico.
 - Estaciones con columnas principales:
-  - codigo estacion
-  - nombre estacion
-  - municipio
-  - provincia
+    - codigo estacion
+    - nombre estacion
+    - municipio
+    - provincia
 - Control optimista extendido a otros modulos que adopten edicion tipo Excel.
 - Limpieza visual de Ciete Moderno.
 

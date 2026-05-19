@@ -2,13 +2,13 @@
 
 > **Documento vivo.**  
 > Este documento debe mantenerse alineado con la fuente de verdad funcional vigente del ERP CIETE.  
-> Fuente principal: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`.
+> Fuente principal: `docs/02_CLIENTE/reunionCieteCompletaFormato.txt`.
 
-Estado: fuente de verdad funcional vigente para decisiones de producto, arquitectura y priorizacion.
+Estado: sintesis interpretativa secundaria vigente de la reunion y de las notas funcionales posteriores.
 
-Este documento recoge las decisiones cerradas tras la revision de la reunion con CIETE y las matizaciones posteriores de Pablo. Debe usarse como referencia principal para implementar, revisar y defender el comportamiento funcional del ERP CIETE.
+Este documento recoge las decisiones cerradas tras la revision de la reunion con CIETE y las matizaciones posteriores de Pablo. Debe usarse como sintesis interpretativa secundaria para implementar, revisar y defender el comportamiento funcional del ERP CIETE, pero no sustituye a la reunion/transcripcion como voz funcional primaria del cliente ni a la auditoria/backlog vigentes como traduccion operativa.
 
-No sustituye ni borra documentos historicos, bitacoras ni planes anteriores. Cuando exista contradiccion, este documento prevalece como criterio funcional actual.
+No sustituye ni borra documentos historicos, bitacoras ni planes anteriores. Cuando exista contradiccion entre este documento y la reunion/transcripcion, prevalece la reunion salvo que la discrepancia quede documentada como duda pendiente de decision.
 
 ## 1. Resumen ejecutivo
 
@@ -53,12 +53,12 @@ El ERP termina en factura. Cobros, presupuestos, legalizaciones completas e impo
 - Direccion y admin tecnico pueden gestionar usuarios.
 - Direccion no debe ver botones, accesos o pantallas tecnicas innecesarias de admin.
 - Roles funcionales principales:
-  - Direccion.
-  - Ejecucion.
-  - Ejecucion MOEVE.
-  - Ejecucion REPSOL.
-  - Contabilidad.
-  - Soporte/admin tecnico.
+    - Direccion.
+    - Ejecucion.
+    - Ejecucion MOEVE.
+    - Ejecucion REPSOL.
+    - Contabilidad.
+    - Soporte/admin tecnico.
 
 ### 2.3 Estaciones
 
@@ -70,10 +70,10 @@ El ERP termina en factura. Cobros, presupuestos, legalizaciones completas e impo
 - El codigo puede repetirse entre contextos/clientes distintos.
 - El codigo no puede repetirse dentro del mismo contexto/cliente.
 - Columnas principales del listado:
-  - Codigo estacion.
-  - Nombre estacion.
-  - Municipio.
-  - Provincia.
+    - Codigo estacion.
+    - Nombre estacion.
+    - Municipio.
+    - Provincia.
 - La fecha de baja se conserva, pero no se muestra como columna protagonista.
 - Las estaciones nunca se borran fisicamente.
 - Una estacion dada de baja puede mantener trabajos historicos.
@@ -87,12 +87,12 @@ El ERP termina en factura. Cobros, presupuestos, legalizaciones completas e impo
 - Un pedido pertenece a un solo trabajo.
 - Estado inicial funcional: `en_curso`.
 - Estados funcionales:
-  - `en_curso`.
-  - `terminado`.
-  - `pendiente_facturar`.
-  - `facturado`.
-  - `finalizado`.
-  - `cancelado`.
+    - `en_curso`.
+    - `terminado`.
+    - `pendiente_facturar`.
+    - `facturado`.
+    - `finalizado`.
+    - `cancelado`.
 - `terminado` significa que el tecnico ha terminado la ejecucion.
 - `finalizado` significa que el trabajo esta terminado y economicamente resuelto, facturado y cuadrado.
 - El cobro lo gestiona otro departamento.
@@ -132,7 +132,7 @@ El ERP termina en factura. Cobros, presupuestos, legalizaciones completas e impo
 
 - La relacion principal es:
 
-  `factura -> factura_items -> pedido_items -> pedidos -> trabajos`
+    `factura -> factura_items -> pedido_items -> pedidos -> trabajos`
 
 - `facturas.id_trabajo` queda nullable y legacy.
 - `factura_pedidos` queda temporal y legacy.
@@ -141,14 +141,14 @@ El ERP termina en factura. Cobros, presupuestos, legalizaciones completas e impo
 - Todos los items de una factura deben pertenecer a contrato/tarifa compatible.
 - La sociedad/CIF debe estar permitida para el contrato/tarifa/grupo correspondiente.
 - El listado plano de facturas debe mostrar:
-  - Numero de factura.
-  - Sociedad.
-  - CIF.
-  - Fecha.
-  - Importe.
-  - Importe asignado.
-  - Diferencia.
-  - Estado de cuadre.
+    - Numero de factura.
+    - Sociedad.
+    - CIF.
+    - Fecha.
+    - Importe.
+    - Importe asignado.
+    - Diferencia.
+    - Estado de cuadre.
 - Debe poder exportarse el listado filtrado o seleccionado.
 - Debe poder exportarse una factura individual con detalle completo si se desea.
 - Cobros quedan fuera del flujo principal.
@@ -167,18 +167,18 @@ El ERP termina en factura. Cobros, presupuestos, legalizaciones completas e impo
 - El nombre visible del modulo es Auditoria.
 - Auditoria muestra por defecto solo actividad operativa relevante.
 - No se auditan como actividad relevante cambios de:
-  - `interface_mode`.
-  - Tema visual.
-  - Idioma.
-  - Preferencias visuales.
-  - Otros cambios cosmeticos o de experiencia.
+    - `interface_mode`.
+    - Tema visual.
+    - Idioma.
+    - Preferencias visuales.
+    - Otros cambios cosmeticos o de experiencia.
 - Exportar logs: solo Direccion.
 - Limpiar logs: solo Direccion.
 - La limpieza debe registrar:
-  - Usuario que limpio.
-  - Fecha y hora.
-  - Filtros aplicados.
-  - Numero de registros afectados.
+    - Usuario que limpio.
+    - Fecha y hora.
+    - Filtros aplicados.
+    - Numero de registros afectados.
 - El registro de limpieza no puede borrarse en la misma operacion de limpieza.
 
 ### 2.10 Fuera de alcance inmediato

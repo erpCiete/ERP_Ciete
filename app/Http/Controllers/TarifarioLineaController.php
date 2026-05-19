@@ -61,7 +61,7 @@ class TarifarioLineaController extends Controller
             ->orderBy('id_contexto')
             ->orderBy('id_tarifario')
             ->orderBy('codigo_tarifa')
-            ->paginate(30)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Tarifarios/Lineas', [

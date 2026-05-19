@@ -36,7 +36,7 @@ class ClienteController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max((int) $request->integer('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->integer('per_page', 10), 1), 100);
         $search = trim((string) $request->input('search', ''));
         $contexto = trim((string) $request->input('contexto', ''));
 

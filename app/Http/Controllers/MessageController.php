@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Messages\BroadcastMessageRequest;
 use App\Models\MensajeInterno;
 use App\Models\User;
 use Illuminate\Database\Query\Builder as QueryBuilder;
@@ -27,7 +28,7 @@ class MessageController extends Controller
         $messages = $query
             ->with(['remitente:id_usuario,nombre,apellidos,avatar_key', 'destinatario:id_usuario,nombre,apellidos'])
             ->orderByDesc('created_at')
-            ->paginate(20)
+            ->paginate(10)
             ->withQueryString();
 
         $unreadCount = MensajeInterno::where('id_destinatario', $user->id_usuario)
@@ -114,14 +115,8 @@ class MessageController extends Controller
         return back();
     }
 
-    public function broadcast(Request $request): RedirectResponse
+    public function broadcast(BroadcastMessageRequest $request): RedirectResponse
     {
-        $request->validate([
-            'asunto' => ['required', 'string', 'max:255'],
-            'cuerpo' => ['required', 'string', 'max:5000'],
-            'prioridad' => ['sometimes', 'in:normal,alta,urgente'],
-        ]);
-
         $sender = $request->user();
 
         $recipients = User::where('id_usuario', '!=', $sender->id_usuario)

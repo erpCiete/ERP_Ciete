@@ -20,7 +20,7 @@ class RoleMiddleware
         }
 
         if ($roles === [] || ! $user->hasAnyRole($roles)) {
-            abort(403, 'No tienes el rol necesario para acceder a este recurso.');
+            abort(403, 'No tienes permiso para acceder a este módulo.');
         }
 
         return $next($request);

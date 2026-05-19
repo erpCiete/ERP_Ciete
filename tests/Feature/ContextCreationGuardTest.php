@@ -11,6 +11,7 @@ use App\Models\Trabajo;
 use App\Models\User;
 use App\Support\ContextGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ContextCreationGuardTest extends TestCase
@@ -53,10 +54,6 @@ class ContextCreationGuardTest extends TestCase
                 ->assertStatus(403)
                 ->assertJsonPath('message', ContextGuard::CREATE_FROM_ALL_MESSAGE);
         }
-
-        $this->get('/importaciones/subir')
-            ->assertRedirect(route('importaciones.index'))
-            ->assertSessionHas('error', ContextGuard::CREATE_FROM_ALL_MESSAGE);
     }
 
     public function test_all_context_can_edit_existing_records_from_accessible_contexts(): void
@@ -223,6 +220,32 @@ class ContextCreationGuardTest extends TestCase
             'id_contexto' => 3,
             'codigo_servicio' => 'OTROS-SRV',
         ]);
+    }
+
+    public function test_active_context_endpoint_rejects_all_selection(): void
+    {
+        $user = $this->createUserWithPermissions([
+            'trabajos.ver',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('contexto.activo.update'), ['contexto' => 'all'])
+            ->assertSessionHasErrors(['contexto']);
+    }
+
+    public function test_available_contexts_payload_does_not_expose_todos_option(): void
+    {
+        $user = $this->createUserWithPermissions([
+            'trabajos.ver',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('trabajos.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.user.available_contexts', fn ($contexts) => collect($contexts)->every(
+                    fn ($context) => ($context['workspace_key'] ?? null) !== 'todos' && (string) ($context['value'] ?? '') !== 'all'
+                ))
+            );
     }
 
     /**

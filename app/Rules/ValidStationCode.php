@@ -33,7 +33,7 @@ class ValidStationCode implements ValidationRule
             $fail(
                 app()->isLocale('en')
                     ? 'Enter a valid station code. Example: MOEVE-EST-001.'
-                    : 'Introduce un codigo de estacion valido. Ejemplo: MOEVE-EST-001.'
+                    : 'Introduce un código de estación válido. Ejemplo: MOEVE-EST-001.'
             );
         }
     }

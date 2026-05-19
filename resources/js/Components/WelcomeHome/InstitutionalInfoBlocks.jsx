@@ -20,12 +20,17 @@ function InstitutionalCard({ title, items, shouldReduceMotion = false }) {
             </h3>
             <ul className="mt-4 space-y-3">
                 {items.slice(0, 3).map((item) => (
-                    <li key={item} className="flex items-start gap-3">
+                    <li key={item.id ?? `${item.title}-${item.body}`} className="flex items-start gap-3">
                         <span
                             aria-hidden
                             className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-(--ciete-red)"
                         />
-                        <span className="text-sm leading-relaxed text-text-muted">{item}</span>
+                        <span className="min-w-0 text-sm leading-relaxed text-text-muted">
+                            {item.title ? (
+                                <span className="block font-medium text-text-main">{item.title}</span>
+                            ) : null}
+                            {item.body ? <span className="block">{item.body}</span> : null}
+                        </span>
                     </li>
                 ))}
             </ul>
