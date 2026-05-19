@@ -6,6 +6,7 @@
 > Traducción operativa vigente: `docs/02_CLIENTE/AUDITORIA_ALINEACION_FUNCIONAL_ERP_CIETE_2026-05-17.md`  
 > Síntesis interpretativa secundaria: `docs/02_CLIENTE/DECISIONES_FUNCIONALES_ERP_CIETE_2026-05-03.md`  
 > Última auditoría: **2026-05-17**, auditoría de alineación funcional basada en reunión/transcripción; avance operativo estimado mantenido en **86,2%** hasta cerrar la primera ola correctiva.  
+> **2026-05-19:** Creada documentación de apoyo para presentación práctica v2.1.0. Tres documentos en `docs/02_CLIENTE/`: tutorial práctico, guion de demostración y resumen ejecutivo imprimible.  
 > Responsable funcional: Pablo Sevillano.  
 > Uso del documento: backlog maestro de fase actual.  
 > No usar como contrato técnico detallado ni como memoria histórica.

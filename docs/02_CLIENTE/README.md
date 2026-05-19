@@ -6,6 +6,14 @@
 
 Estado: indice de documentos de cliente.
 
+## Documentos de presentacion v2.1.0
+
+| Documento | Rol |
+| -------------------------------------------------------- | --------------------------------------------- |
+| `TUTORIAL_PRACTICO_ERP_CIETE_V210_2026-05-19.md` | Tutorial práctico completo de uso del ERP |
+| `GUION_DEMO_PRACTICA_ERP_CIETE_V210_2026-05-19.md` | Guion para presentación oral |
+| `RESUMEN_IMPRIMIBLE_ERP_CIETE_V210_2026-05-19.md` | Resumen ejecutivo imprimible |
+
 ## Documentos vigentes
 
 | Documento                                                | Rol                                           |
