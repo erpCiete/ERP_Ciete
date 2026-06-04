@@ -56,7 +56,6 @@ class StorePedidoRequest extends BaseApiRequest
             ]);
         }
 
-        // Limpieza y estructuración de los items anidados (Esquema Real de abaco_ciete)
         if ($this->has('items') && is_array($this->input('items'))) {
             $items = collect($this->input('items'))->map(function ($item) {
                 $idPedidoItem = $item['id_pedido_item'] ?? $item['id'] ?? null;
@@ -79,9 +78,6 @@ class StorePedidoRequest extends BaseApiRequest
         }
     }
 
-    /**
-     * Reglas de validación.
-     */
     public function rules(): array
     {
         $user = $this->currentUser();
@@ -94,7 +90,6 @@ class StorePedidoRequest extends BaseApiRequest
         $pedidoId = $pedido instanceof Pedido ? $pedido->id_pedido : $pedido;
 
         return [
-            // Relaciones
             'id_trabajo' => [
                 'required',
                 'integer',
@@ -108,7 +103,6 @@ class StorePedidoRequest extends BaseApiRequest
                     ->when($targetContextId !== null, fn($query) => $query->where('id_contexto', $targetContextId)),
             ],
 
-            // Datos Base
             'numero_pedido' => [
                 'required',
                 'string',
@@ -120,22 +114,20 @@ class StorePedidoRequest extends BaseApiRequest
             'fecha_solicitud' => ['nullable', 'date'],
             'fecha_recepcion' => ['nullable', 'date'],
 
-            // Control Económico y de Cantidades
             'importe_pedido' => ['sometimes', 'required', 'numeric', 'min:0'],
             'importe_solicitado' => ['sometimes', 'required', 'numeric', 'min:0'],
             'importe_facturado' => ['sometimes', 'required', 'numeric', 'min:0'],
             'unidades_pedido' => ['sometimes', 'required', 'numeric', 'min:0'],
             'unidades_solicitadas' => ['sometimes', 'required', 'numeric', 'min:0'],
 
-            // Flags y Estado
             'estado' => ['sometimes', 'required', Rule::in(self::ALLOWED_STATUSES)],
             'pedido_completo' => ['sometimes', 'boolean'],
             'tiene_mas_de_1_item' => ['sometimes', 'boolean'],
             'facturado_completo' => ['sometimes', 'boolean'],
             'observaciones' => ['nullable', 'string'],
 
-            // Validaciones para Líneas de Pedido (Items)
-            'items' => ['required', 'array', 'min:1'],
+            // Líneas opcionales: el Bloque 1/B permite crear la cabecera del pedido desde Trabajo.
+            'items' => ['sometimes', 'array'],
             'items.*.id_pedido_item' => ['nullable', 'integer', 'min:1'],
             'items.*.id_tarifario_linea' => [
                 'nullable',
@@ -155,17 +147,27 @@ class StorePedidoRequest extends BaseApiRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            $this->validateWholeNumberField(
-                $validator,
-                'unidades_solicitadas',
-                'Las unidades solicitadas deben ser enteras en la operativa actual.'
-            );
-
             $trabajo = $this->input('id_trabajo')
                 ? Trabajo::query()->withoutGlobalScopes()->find($this->input('id_trabajo'))
                 : null;
 
-            if (! $trabajo || ! is_array($this->input('items'))) {
+            if (! $trabajo) {
+                return;
+            }
+
+            if (! $trabajo->id_tarifario) {
+                $validator->errors()->add('id_trabajo', 'El trabajo debe tener un tarifario valido antes de crear el pedido.');
+            }
+
+            if (
+                $this->filled('id_tarifario')
+                && $trabajo->id_tarifario
+                && (int) $this->input('id_tarifario') !== (int) $trabajo->id_tarifario
+            ) {
+                $validator->errors()->add('id_tarifario', 'El pedido debe heredar el mismo tarifario del trabajo.');
+            }
+
+            if (! is_array($this->input('items'))) {
                 return;
             }
 
@@ -187,15 +189,20 @@ class StorePedidoRequest extends BaseApiRequest
                 })
                 ->exists();
 
-            foreach ($this->input('items', []) as $index => $item) {
-                $this->validateWholeNumberItemField(
-                    $validator,
-                    $index,
-                    $item,
-                    'cantidad',
-                    'La cantidad debe ser entera en la operativa actual.'
-                );
+            $items = $this->input('items', []);
+            $hasMeaningfulItems = collect($items)->contains(function ($item): bool {
+                return ($item['id_tarifario_linea'] ?? null)
+                    || trim((string) ($item['codigo_servicio'] ?? '')) !== ''
+                    || trim((string) ($item['descripcion_servicio'] ?? '')) !== ''
+                    || (float) ($item['cantidad'] ?? 0) > 0
+                    || (float) ($item['precio_unitario'] ?? 0) > 0;
+            });
 
+            if ($lineasDisponibles && ! $hasMeaningfulItems) {
+                $validator->errors()->add('items', 'Añade al menos una línea del tarifario del trabajo.');
+            }
+
+            foreach ($items as $index => $item) {
                 $lineaId = $item['id_tarifario_linea'] ?? null;
 
                 if (! $lineaId) {
@@ -224,50 +231,16 @@ class StorePedidoRequest extends BaseApiRequest
                 if ($trabajo->id_contrato && (int) ($linea->tarifario?->id_contrato ?? 0) !== (int) $trabajo->id_contrato) {
                     $validator->errors()->add("items.{$index}.id_tarifario_linea", 'La línea de tarifa no pertenece al contrato del trabajo.');
                 }
+
+                $cantidad = (float) ($item['cantidad'] ?? 0);
+                $precioUnitario = (float) ($item['precio_unitario'] ?? 0);
+                $totalLinea = round((float) ($item['total_linea'] ?? 0), 2);
+                $totalEsperado = round($cantidad * $precioUnitario, 2);
+
+                if (abs($totalLinea - $totalEsperado) > 0.01) {
+                    $validator->errors()->add("items.{$index}.total_linea", 'El importe de la línea no coincide con cantidad por precio unitario.');
+                }
             }
         });
-    }
-
-    private function validateWholeNumberField(Validator $validator, string $field, string $message): void
-    {
-        if ($validator->errors()->has($field)) {
-            return;
-        }
-
-        if ($this->hasFractionalPart($this->input($field))) {
-            $validator->errors()->add($field, $message);
-        }
-    }
-
-    /**
-     * @param  array<string, mixed>  $item
-     */
-    private function validateWholeNumberItemField(
-        Validator $validator,
-        int $index,
-        array $item,
-        string $field,
-        string $message
-    ): void {
-        $key = "items.{$index}.{$field}";
-
-        if ($validator->errors()->has($key)) {
-            return;
-        }
-
-        if ($this->hasFractionalPart($item[$field] ?? null)) {
-            $validator->errors()->add($key, $message);
-        }
-    }
-
-    private function hasFractionalPart(mixed $value): bool
-    {
-        if ($value === null || $value === '') {
-            return false;
-        }
-
-        $number = (float) $value;
-
-        return abs($number - round($number)) > 0.000001;
     }
 }

@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import { useMastersBackLink } from '@/Hooks/useMastersBackLink';
 import { useClientes } from '@/Hooks/useClientes';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { useI18n } from '@/i18n';
@@ -65,6 +66,7 @@ function normalizeCliente(cliente) {
 export default function ClientesForm({ clienteId = null }) {
     const { t } = useI18n();
     const { getCliente, saveCliente, loading, errors, clearErrors, clearFieldError } = useClientes();
+    const mastersBack = useMastersBackLink();
 
     const [form, setForm] = useState(EMPTY_FORM);
     const [status, setStatus] = useState(clienteId ? 'loading' : 'idle');
@@ -184,10 +186,10 @@ export default function ClientesForm({ clienteId = null }) {
                     <p>{t('clientes.loadError')}</p>
                     <button
                         type="button"
-                        onClick={() => router.visit(route('maestros.index'))}
+                        onClick={() => mastersBack.href && router.visit(mastersBack.href)}
                         className="mt-4 text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
                     >
-                        {t('common.actions.back')}
+                        {mastersBack.label}
                     </button>
                 </div>
             </AuthenticatedLayout>
@@ -316,7 +318,7 @@ export default function ClientesForm({ clienteId = null }) {
                     <div className="ciete-form-actions border-0 border-t bg-transparent px-0 py-4 shadow-none sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => router.visit(route('maestros.index'))}
+                            onClick={() => mastersBack.href && router.visit(mastersBack.href)}
                             className="inline-flex w-full items-center justify-center text-sm font-medium text-text-muted transition hover:text-text-main sm:w-auto"
                         >
                             {t('common.actions.cancel')}

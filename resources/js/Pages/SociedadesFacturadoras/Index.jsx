@@ -1,4 +1,5 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import MaestrosPricingNav from '@/Components/MaestrosPricingNav';
 import InputError from '@/Components/InputError';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import PaginationControls from '@/Components/ui/PaginationControls';
@@ -133,15 +134,16 @@ export default function SociedadesFacturadorasIndex({
                 <ContextualPageHeader
                     eyebrow="Maestros"
                     title="Sociedades facturadoras permitidas"
-                    description="Relacion entre contrato y empresa facturadora. Esta relacion sigue validando sociedad/CIF en facturas."
                     backHref={route('maestros.index')}
                 />
 
                 {activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                        Selecciona MOEVE, REPSOL u OTROS CLIENTES para crear datos maestros.
+                        Selecciona un contexto real para crear maestros.
                     </div>
                 )}
+
+                <MaestrosPricingNav current="sociedades" />
 
                 {canCreate && (
                     <form onSubmit={submit} className="mb-5 rounded-lg border border-border bg-surface p-4">
@@ -326,7 +328,7 @@ export default function SociedadesFacturadorasIndex({
                                                     <button
                                                         type="button"
                                                         onClick={() => setDeactivateTarget(relacion)}
-                                                        className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                        className="ciete-table-danger-action rounded-md border px-3 py-1.5 text-xs font-semibold"
                                                     >
                                                         Desactivar
                                                     </button>

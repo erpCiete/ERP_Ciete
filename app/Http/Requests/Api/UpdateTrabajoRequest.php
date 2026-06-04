@@ -27,6 +27,13 @@ class UpdateTrabajoRequest extends FormRequest
 
     public function rules(): array
     {
+        $trabajo = $this->route('trabajo');
+        $allowedStatuses = Trabajo::ESTADOS_MANUALES;
+
+        if ($trabajo instanceof Trabajo && filled($trabajo->estado)) {
+            $allowedStatuses = array_values(array_unique([...$allowedStatuses, (string) $trabajo->estado]));
+        }
+
         return [
             'id_contexto' => ['nullable', 'integer'],
             'numero_trabajo' => ['sometimes', 'required', 'integer'],
@@ -35,7 +42,7 @@ class UpdateTrabajoRequest extends FormRequest
             'id_estacion_servicio' => ['sometimes', 'required', 'exists:estaciones_servicio,id_estacion_servicio'],
             'fecha_encargo' => ['sometimes', 'required', 'date'],
             'fecha_terminacion' => ['nullable', 'date'],
-            'estado' => ['sometimes', 'required', Rule::in(Trabajo::ESTADOS_FUNCIONALES)],
+            'estado' => ['sometimes', 'required', Rule::in($allowedStatuses)],
             'observaciones' => ['nullable', 'string'],
             'id_responsable_ciete' => [
                 'nullable',
@@ -59,6 +66,7 @@ class UpdateTrabajoRequest extends FormRequest
                 'integer',
             ],
             'numero_aviso' => ['nullable', 'string', 'max:80'],
+            'updated_at'   => ['nullable', 'string'],
         ];
     }
 

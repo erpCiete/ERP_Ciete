@@ -424,21 +424,21 @@ export default function PedidosExcelView({
                                     className={`hover:bg-surface-2/50 ${isCancelled ? 'opacity-50' : ''}`}
                                 >
                                     {/* Nº pedido */}
-                                    <td className="whitespace-nowrap px-2 py-1.5 font-mono font-semibold text-(--ciete-red)">
+                                    <td className="ciete-dark-table-accent whitespace-nowrap px-2 py-1.5 font-mono font-semibold">
                                         {fmt(pedido.numero_pedido)}
                                     </td>
 
                                     {/* Trabajo vinculado */}
                                     <td className="whitespace-nowrap px-2 py-1.5 text-text-muted">
                                         {pedido.trabajo ? (
-                                            <span className="font-mono font-semibold text-(--ciete-red)">
+                                            <span className="ciete-dark-table-accent font-mono font-semibold">
                                                 {String(pedido.trabajo.numero_trabajo).padStart(4, '0')}
                                             </span>
                                         ) : '—'}
                                     </td>
 
                                     {/* Cód. estación */}
-                                    <td className="whitespace-nowrap px-2 py-1.5 font-mono font-semibold text-(--ciete-red)">
+                                    <td className="ciete-dark-table-accent whitespace-nowrap px-2 py-1.5 font-mono font-semibold">
                                         {pedido.trabajo?.codigo_estacion
                                             ? fmt(pedido.trabajo.codigo_estacion)
                                             : '—'}
@@ -477,7 +477,7 @@ export default function PedidosExcelView({
                                             <button
                                                 type="button"
                                                 onClick={() => router.visit(route('pedidos.edit', pedido.id_pedido))}
-                                                className="text-xs font-medium text-text-muted hover:text-(--ciete-red)"
+                                                className="text-xs font-medium text-text-muted hover:text-text-main"
                                             >
                                                 Ver ficha
                                             </button>

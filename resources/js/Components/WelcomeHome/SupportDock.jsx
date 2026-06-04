@@ -2,7 +2,7 @@ import { Activity, BookOpen, Globe, LifeBuoy, MessageSquare } from 'lucide-react
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
@@ -10,6 +10,8 @@ function clamp(value, min, max) {
 
 export default function SupportDock({ shouldReduceMotion = false }) {
     const { t } = useI18n();
+    const { auth } = usePage().props;
+    const canViewSystemStatus = Boolean(auth?.user?.can_view_system_status);
     const cieteWebsiteUrl = import.meta.env.VITE_CIETE_WEBSITE_URL || 'https://www.ciete.es';
     const dockRef = useRef(null);
     const itemRefs = useRef([]);
@@ -25,9 +27,9 @@ export default function SupportDock({ shouldReduceMotion = false }) {
             { id: 'messages', label: t('welcome.home.dock.messages'), icon: MessageSquare },
             { id: 'manual', label: t('welcome.home.dock.manual'), icon: BookOpen },
             { id: 'support', label: t('welcome.home.dock.support'), icon: LifeBuoy },
-            { id: 'status', label: t('welcome.home.dock.status'), icon: Activity },
-        ],
-        [t],
+            canViewSystemStatus ? { id: 'status', label: t('welcome.home.dock.status'), icon: Activity } : null,
+        ].filter(Boolean),
+        [canViewSystemStatus, t],
     );
 
     useEffect(() => {

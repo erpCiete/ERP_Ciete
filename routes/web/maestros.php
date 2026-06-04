@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ContratoEmpresaFacturadoraController;
+use App\Http\Controllers\ContratosTarifasController;
 use App\Http\Controllers\MaestroController;
 use App\Http\Controllers\TarifarioController;
 use App\Http\Controllers\TarifarioLineaController;
@@ -75,6 +76,10 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                 ->middleware('permission:maestros.ver')
                 ->name('index');
 
+            Route::get('/contratos-tarifas', ContratosTarifasController::class)
+                ->middleware('permission:maestros.ver')
+                ->name('contratos-tarifas');
+
             Route::get('/contratos', [ContratoController::class, 'index'])
                 ->middleware('permission:contratos.ver')
                 ->name('contratos.index');
@@ -122,6 +127,9 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             Route::put('/tarifarios/{tarifario}', [TarifarioController::class, 'update'])
                 ->middleware('permission:tarifarios.editar')
                 ->name('tarifarios.update');
+            Route::put('/tarifarios/{tarifario}/predeterminado', [TarifarioController::class, 'markAsDefault'])
+                ->middleware('permission:tarifarios.editar')
+                ->name('tarifarios.set-default');
             Route::delete('/tarifarios/{tarifario}', [TarifarioController::class, 'destroy'])
                 ->middleware('permission:tarifarios.eliminar')
                 ->name('tarifarios.destroy');

@@ -28,7 +28,7 @@ class HomeNoticeAdminTest extends TestCase
 
         $this->assertDatabaseHas('home_notices', [
             'category' => HomeNotice::CATEGORY_INTERNAL_NOTICE,
-            'title_es' => 'Demo CIETE v2.1.0 preparada para revisión',
+            'title_es' => 'ERP Ciete v2.2.0 listo para demo con CIETE',
             'is_active' => true,
             'is_featured' => true,
         ]);
@@ -53,7 +53,7 @@ class HomeNoticeAdminTest extends TestCase
                 ->has('homeNotices.notices', 3)
                 ->has('homeNotices.updates', 3)
                 ->has('homeNotices.companyNews', 3)
-                ->where('featuredNotice.title_es', 'Demo CIETE v2.1.0 preparada para revisión'));
+                ->where('featuredNotice.title_es', 'ERP Ciete v2.2.0 listo para demo con CIETE'));
     }
 
     public function test_admin_can_manage_home_notices_and_only_one_active_featured_notice_remains(): void
@@ -96,7 +96,7 @@ class HomeNoticeAdminTest extends TestCase
             ->where('is_featured', true)
             ->count());
         $this->assertDatabaseHas('home_notices', [
-            'title_es' => 'Demo CIETE v2.1.0 preparada para revisión',
+            'title_es' => 'ERP Ciete v2.2.0 listo para demo con CIETE',
             'is_featured' => false,
         ]);
 

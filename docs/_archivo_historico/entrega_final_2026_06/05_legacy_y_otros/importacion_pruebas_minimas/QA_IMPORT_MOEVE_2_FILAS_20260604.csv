@@ -1,0 +1,3 @@
+numero_trabajo;descripcion_trabajo;codigo_estacion;fecha_encargo;observaciones
+QA-TEST-MOE-001;Trabajo QA Moeve linea 1;33450;2026-06-04;Prueba importacion QA
+QA-TEST-MOE-002;Trabajo QA Moeve linea 2;20673;2026-06-04;Prueba importacion QA

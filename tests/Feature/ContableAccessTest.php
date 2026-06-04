@@ -22,8 +22,6 @@ class ContableAccessTest extends TestCase
         $this->actingAs($contable)->get('/pedidos')->assertOk();
         $this->actingAs($contable)->get('/facturas')->assertOk();
         $this->actingAs($contable)->get('/mensajes')->assertOk();
-        $this->actingAs($contable)->get('/soporte')->assertOk();
-        $this->actingAs($contable)->get('/estado')->assertOk();
         $this->actingAs($contable)->get('/ayuda')->assertOk();
     }
 
@@ -42,5 +40,7 @@ class ContableAccessTest extends TestCase
         $this->actingAs($contable)->get('/estaciones')->assertForbidden();
         $this->actingAs($contable)->get('/importaciones')->assertForbidden();
         $this->actingAs($contable)->get('/dashboard')->assertForbidden();
+        $this->actingAs($contable)->get('/estado')->assertForbidden();
+        $this->actingAs($contable)->get('/soporte')->assertOk();
     }
 }

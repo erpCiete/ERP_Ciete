@@ -405,6 +405,15 @@ class User extends Authenticatable
         return $this->hasPermission('soporte.gestionar');
     }
 
+    public function canViewSystemStatus(): bool
+    {
+        if (! $this->exists) {
+            return false;
+        }
+
+        return $this->canAccessAdminPanel() || $this->canManageSupport();
+    }
+
     public function canManageUsers(): bool
     {
         if (! $this->exists) {

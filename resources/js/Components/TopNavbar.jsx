@@ -6,6 +6,7 @@ import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
 import { buildSidebarSections, buildTopNavbarItems } from '@/navigation/sidebar';
 import { Link, usePage } from '@inertiajs/react';
+import { Menu } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 function getFocusable(container) {
@@ -18,7 +19,12 @@ function getFocusable(container) {
     ).filter((el) => !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden'));
 }
 
-export default function TopNavbar({ header }) {
+export default function TopNavbar({
+    header,
+    showDesktopSidebarToggle = false,
+    isDesktopSidebarOpen = true,
+    onDesktopSidebarToggle = null,
+}) {
     const { t } = useI18n();
     const { auth } = usePage().props;
     const user = auth.user;
@@ -186,6 +192,23 @@ export default function TopNavbar({ header }) {
                         >
                             <CieteMark className="h-5 w-5" />
                         </button>
+
+                        {showDesktopSidebarToggle && (
+                            <button
+                                type="button"
+                                onClick={onDesktopSidebarToggle}
+                                aria-label={
+                                    isDesktopSidebarOpen
+                                        ? t('common.aria.closeNavigation')
+                                        : t('common.aria.openNavigation')
+                                }
+                                aria-expanded={isDesktopSidebarOpen}
+                                className="hidden h-9 items-center gap-2 rounded-md border border-border bg-surface-2 px-3 text-xs font-bold uppercase tracking-widest text-text-main transition hover:bg-surface xl:inline-flex"
+                            >
+                                <Menu className="h-4 w-4" />
+                                {t('common.actions.menu')}
+                            </button>
+                        )}
 
                         <div className="min-w-0 flex-1">
                             <p className="truncate pb-0.5 text-[11px] font-black uppercase tracking-[0.14em] text-text-main/78 sm:text-[12px]">

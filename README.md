@@ -1,192 +1,293 @@
 <p align="center">
-  <img src="public/favicon.svg" alt="ERP Ciete Logo" width="108">
+  <img src="public/favicon.svg" alt="Logotipo de ERP Ciete" width="108">
 </p>
 
-<h1 align="center">ERP Ciete — Plataforma de gestión para ingeniería</h1>
+<h1 align="center">ERP Ciete</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 12">
-  <img src="https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+">
-  <img src="https://img.shields.io/badge/Inertia.js-2/3-9553E9?style=for-the-badge" alt="Inertia.js">
-  <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111827" alt="React 19">
-  <img src="https://img.shields.io/badge/TailwindCSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
-  <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8">
+  Plataforma interna para gestionar trabajos de ingeniería, pedidos, facturas, cierres y exportaciones operativas.
 </p>
 
-ERP interno para gestión operativa de empresas de ingeniería. Centraliza control de trabajos, clientes, estaciones, importaciones y administración de usuarios bajo un sistema de roles, permisos y contextos (MOEVE / REPSOL).
+<p align="center">
+  <img src="https://img.shields.io/badge/Laravel-12.54-FF2D20?style=flat-square&logo=laravel&logoColor=white" alt="Laravel 12.54">
+  <img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.2 o superior">
+  <img src="https://img.shields.io/badge/Inertia.js-3-9553E9?style=flat-square" alt="Inertia.js 3">
+  <img src="https://img.shields.io/badge/React-19.2-61DAFB?style=flat-square&logo=react&logoColor=111827" alt="React 19.2">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4.2-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4.2">
+  <img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 8.0">
+</p>
 
-Desarrollado por ABACO para Ciete Ingenieros.
+ERP Ciete centraliza la operativa de Ciete Ingenieros S.A. para los contextos **MOEVE**, **REPSOL** y **OTROS CLIENTES**. La aplicación cubre el ciclo completo desde el alta de un trabajo hasta su facturación y cierre, con permisos por rol, trazabilidad y exportaciones específicas para MOEVE y ARIBA.
+
+Desarrollado por ABACO para Ciete Ingenieros S.A.
 
 ## Estado del proyecto
 
-| Dato          | Valor                                                  |
-| ------------- | ------------------------------------------------------ |
-| Versión       | v2.0                                                   |
-| Sprint actual | Sprint 03 cerrado — Sprint 04 en preparación           |
-| Tests         | 65 pass (2 fail preexistentes en `TrabajoRequestTest`) |
-| Build         | Vite 8 — OK                                            |
+| Dato | Valor |
+| --- | --- |
+| Versión funcional | `v2.2.0` |
+| Estado | En revisión funcional |
+| Build verificado | `npm run build` correcto |
+| Tests verificados | 270 correctos, 3 fallidos, 1679 aserciones |
+| Documentación actualizada | 4 de junio de 2026 |
 
-## Stack técnico
+La fuente de verdad documental está en [`docs/00_ENTREGA_FINAL/`](docs/00_ENTREGA_FINAL/). Para una primera lectura, consulta [`00_LÉEME_PRIMERO.md`](docs/00_ENTREGA_FINAL/00_LÉEME_PRIMERO.md).
 
-| Capa          | Tecnología      | Versión (composer/package.json) |
-| ------------- | --------------- | ------------------------------- |
-| Backend       | Laravel         | `^12.0` (runtime 12.54.1)       |
-| PHP           | PHP             | `^8.2` (runtime 8.4.12)         |
-| Adapter SSR   | Inertia Laravel | `^2.0`                          |
-| Frontend SPA  | Inertia React   | `^3.0.3`                        |
-| UI framework  | React           | `^19.2.5`                       |
-| CSS           | Tailwind CSS    | `^4.2.2`                        |
-| Bundler       | Vite            | `^8.0.8`                        |
-| Auth          | Laravel Sanctum | sesiones cookie                 |
-| BD local      | SQLite          | —                               |
-| BD producción | MySQL           | —                               |
+Fallos conocidos de la última ejecución completa:
 
-## Módulos funcionales
+- `AdminAccessTest`: el acceso de administración a `/dashboard` devuelve `403` en lugar de `200`.
+- `ContextCreationGuardTest`: la creación de un pedido de OTROS CLIENTES exige un tarifario válido.
+- `ImportacionesAccessTest`: falta `resources/js/Pages/Importaciones/Form.jsx` en el manifest de Vite.
 
-### Operativos (usuario autenticado)
+## Funcionalidades principales
 
-- **Trabajos** — CRUD completo con aislamiento por contexto. Permisos: `trabajos.ver`, `trabajos.crear`, `trabajos.editar`, `trabajos.eliminar`.
-- **Clientes** — CRUD web + API REST (`/api/v1/clientes`).
-- **Estaciones de servicio** — CRUD web + API REST (`/api/v1/estaciones`). Modelos diferenciados por contexto (MOEVE/REPSOL + extensiones).
-- **Importaciones** — Carga de datos desde Excel con `ExcelParserService`.
-- **Dashboard usuario** — Panel post-login con resumen operativo.
+- Gestión de trabajos por contexto, contrato, estación, responsable y estado.
+- Pedidos con líneas de tarifario y bloqueo de tarifa cuando comienza la operativa.
+- Facturación, control de importes y panel de cierre para Dirección.
+- Maestros de clientes, estaciones, contratos, tarifarios y sociedades facturadoras.
+- Exportaciones MOEVE en PDF, CSV y cuadro ARIBA.
+- Importación controlada de Excel y CSV.
+- Usuarios, roles, permisos, auditoría, avisos, soporte y estado del sistema.
+- Interfaz en español e inglés, con vistas moderna y tipo Excel.
 
-### Administración (`/admin`, rol `admin`)
+## Requisitos
 
-- **Dashboard admin** — Estadísticas generales, listado de usuarios, actividad reciente (auditoría).
-- **Gestión de usuarios** — Crear, editar, activar/desactivar usuarios. Asignación de roles y contextos.
-- **Auditoría** — Registro de actividad por usuario (`AuditLog`).
-- **Modo mantenimiento** — Toggle desde panel admin.
-- **Avisos del sistema** — Editor bilingüe (ES/EN) de avisos, actualizaciones y noticias. Se muestran en la pantalla de inicio según el idioma del usuario. Persistencia en `storage/app/notices.json`.
+| Herramienta | Versión |
+| --- | --- |
+| PHP | `8.2+` |
+| Composer | `2.x` |
+| Node.js | `^20.19.0` o `>=22.12.0` |
+| npm | `10+` |
+| MySQL / MariaDB | MySQL `8+` o MariaDB compatible |
 
-### Transversales
+Composer comprobará las extensiones PHP necesarias durante la instalación. En XAMPP deben estar disponibles, entre otras, `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `zip` y `gd`.
 
-- **Autenticación** — Login, logout, recuperación y cambio de contraseña.
-- **Roles y permisos** — `admin`, `usuario`, `cierre`, `gestor_moeve`, `gestor_repsol`. Middleware `role:` y `permission:`.
-- **Contextos** — MOEVE (id=1) y REPSOL (id=2). Aislamiento de datos por contexto del usuario.
-- **i18n** — Interfaz bilingüe ES/EN con hook `useI18n`. Archivos en `resources/js/i18n/locales/`.
-- **Perfil** — Edición de datos, cambio de password, selección de avatar corporativo.
-- **Pantalla de inicio** — Welcome institucional con avisos dinámicos por idioma.
+> En Windows con XAMPP, añade `C:\xampp\php` y `C:\xampp\mysql\bin` al `PATH` para poder ejecutar `php` y `mysql` desde cualquier terminal.
 
-## Estructura del proyecto
+## Instalación rápida con datos demo
 
-```
-app/
-  Http/
-    Controllers/
-      Admin/              # DashboardController, UserController, NoticeController, MaintenanceController
-      Api/                # TrabajoController, ClienteController, EstacionController...
-    Middleware/            # HandleInertiaRequests, EnsureMaintenanceMode, CheckRole, CheckPermission
-    Requests/             # Validaciones (Store/Update para cada recurso)
-    Resources/            # API Resources (Trabajo, Contrato, Estacion, TipoTrabajo...)
-  Models/                 # Eloquent: User, Trabajo, Contrato, Empresa, EstacionServicio, AuditLog...
-  Services/               # ExcelParserService
-  Traits/                 # Reutilizables
-resources/js/
-  Pages/                  # Inertia pages (Welcome, Dashboard, Admin/*, Trabajos/*, Clientes/*, Estaciones/*)
-  Components/ui/          # BadgeTrabajo, TrabajosColumnas...
-  Hooks/                  # useTrabajos, useEstaciones, useI18n, useTheme...
-  Layouts/                # AuthenticatedLayout
-  i18n/locales/           # es.js, en.js
-routes/
-  web.php                 # Rutas web (Inertia) + admin
-  api.php                 # API REST v1
-  auth.php                # Rutas de autenticación
-database/
-  migrations/             # Esquema de BD
-  seeders/                # DatosBaseSeeder (roles, permisos, contextos, usuarios iniciales)
-  factories/              # TrabajoFactory
-docs/
-  01_ORGANIZACION/        # Normas de equipo y flujo Git
-  02_CLIENTE/             # Requisitos y contexto de negocio
-  03_API_ERP/             # Contratos API y mapeos
-  04_DISENO_UI/           # Guías de diseño
-  05-SPRINTS/             # Entregables y bitácoras por sprint
-tests/
-  Feature/                # TrabajoTest, Auth, Seeder, ErrorPages, Maintenance, RoleAccess...
-```
+Esta es la opción recomendada para revisar todas las funciones con información de ejemplo.
 
-## Puesta en marcha local
-
-### Requisitos
-
-- PHP 8.2 o superior
-- Composer 2
-- Node.js 18 o superior
-- npm 10 o superior
-
-### Instalación
+### 1. Descargar e instalar dependencias
 
 ```bash
 git clone https://github.com/erpCiete/ERP_Ciete.git
 cd ERP_Ciete
+
 composer install
-npm install
+npm ci
+```
+
+### 2. Crear el archivo de entorno
+
+En Linux, macOS, Git Bash o WSL:
+
+```bash
 cp .env.example .env
 php artisan key:generate
 ```
 
-Con SQLite (por defecto en local):
+En PowerShell:
 
-```bash
-php artisan migrate --seed
+```powershell
+Copy-Item .env.example .env
+php artisan key:generate
 ```
 
-### Ejecución
+Configura estas variables en `.env`:
+
+```env
+APP_URL=http://127.0.0.1:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=abaco_ciete
+DB_USERNAME=root
+DB_PASSWORD=
+
+MAIL_MAILER=log
+```
+
+### 3. Restaurar la base de datos demo
+
+El volcado crea la base `abaco_ciete` e incluye estructura, catálogos, usuarios y datos demo.
+
+```bash
+mysql -u root < database/schema/abaco_ciete_v220_2026-06-04.sql
+php artisan optimize:clear
+```
+
+Si el usuario de MySQL tiene contraseña:
+
+```bash
+mysql -u root -p < database/schema/abaco_ciete_v220_2026-06-04.sql
+```
+
+### 4. Iniciar la aplicación
 
 ```bash
 composer run dev
 ```
 
-O en terminales separadas:
+Este comando inicia Laravel, la cola y Vite. Abre **http://127.0.0.1:8000**.
+
+## Instalación limpia
+
+Utiliza esta alternativa cuando necesites una base sin trabajos, pedidos ni facturas demo.
+
+```sql
+CREATE DATABASE abaco_ciete
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+```
+
+Después de configurar `.env`:
 
 ```bash
+php artisan migrate --seed
+composer run dev
+```
+
+`DatabaseSeeder` crea los contextos, roles, permisos, catálogos, usuarios iniciales y avisos del sistema.
+
+## Usuarios iniciales
+
+| Rol | Correo | Contraseña |
+| --- | --- | --- |
+| Administración técnica | `admin@ciete.es` | `Admin1234!` |
+| Dirección | `cesar@ciete.es` | `Cesar1234!` |
+| Ejecución general | `usuario@ciete.es` | `Usuario1234!` |
+| Ejecución MOEVE | `moeve@ciete.es` | `Moeve1234!` |
+| Ejecución REPSOL | `repsol@ciete.es` | `Repsol1234!` |
+| Contabilidad | `contable@ciete.es` | `Contable1234!` |
+
+Estas credenciales son exclusivamente para entornos locales y demo. Deben sustituirse antes de cualquier despliegue real.
+
+## Flujo funcional
+
+1. El usuario accede con un rol y un contexto activo.
+2. Crea o consulta un trabajo asociado a cliente, estación, contrato y tarifario.
+3. Genera pedidos y añade líneas del tarifario.
+4. Registra facturas vinculadas a los pedidos.
+5. Dirección revisa y cierra los trabajos completados.
+6. Cuando corresponde, se generan exportaciones MOEVE, CSV o ARIBA.
+
+Los estados del trabajo se calculan a partir de su operativa. No deben modificarse directamente salvo en los flujos expresamente habilitados.
+
+## Comandos habituales
+
+```bash
+# Entorno de desarrollo: Laravel + cola + Vite
+composer run dev
+
+# Servidor y frontend en terminales separadas
 php artisan serve
 npm run dev
+
+# Build de producción
+npm run build
+
+# Ejecutar migraciones pendientes
+php artisan migrate
+
+# Limpiar todas las cachés de Laravel
+php artisan optimize:clear
+
+# Formatear PHP
+./vendor/bin/pint
 ```
 
-### Comandos útiles
+### Tests
+
+La suite usa una base MySQL independiente llamada `abaco_ciete_testing`. Créala una vez antes de ejecutar los tests:
+
+```sql
+CREATE DATABASE abaco_ciete_testing
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+```
 
 ```bash
-php artisan test                    # Tests (65 pass)
-php artisan migrate:fresh --seed    # Resetear BD con datos base
-php artisan optimize:clear          # Limpiar cachés
-./vendor/bin/pint                   # Formateo de código PHP
-npm run build                       # Build de producción
+php artisan test
 ```
 
-## Seeders
+No apuntes `phpunit.xml` a una base con datos que necesites conservar ni ejecutes varias suites simultáneamente sobre `abaco_ciete_testing`.
 
-`DatosBaseSeeder` carga:
+## Estructura del repositorio
 
-- Roles: admin, usuario, cierre, gestor_moeve, gestor_repsol
-- Permisos por módulo (trabajos, clientes, estaciones, importaciones, admin)
-- Contextos: MOEVE, REPSOL
-- Usuarios iniciales con asignación de rol y contexto
+```text
+app/
+├── Http/                 Controladores, middleware, requests y resources
+├── Models/               Modelos Eloquent
+└── Services/             Lógica de negocio, importaciones y exportaciones
+database/
+├── migrations/           Fuente de verdad del esquema
+├── seeders/              Datos mínimos de instalación
+├── schema/               Volcado completo de la demo
+└── manual/               Scripts locales; no ejecutar en producción
+resources/
+├── js/                   Aplicación React + Inertia
+└── css/                  Estilos Tailwind CSS
+routes/
+├── web/                  Rutas web separadas por módulo
+└── api.php               API REST
+tests/                    Tests unitarios y funcionales
+docs/
+├── 00_ENTREGA_FINAL/     Documentación vigente
+├── 00_FUENTES_CLIENTE/   Fuentes originales
+└── _archivo_historico/   Trazabilidad; no usar como guía actual
+```
 
-## Flujo Git
+## Documentación
 
-| Rama                    | Propósito                                                        |
-| ----------------------- | ---------------------------------------------------------------- |
-| `main`                  | Producción estable. Solo recibe merges de `develop` mediante PR. |
-| `develop`               | Integración. Recibe features cerradas.                           |
-| `versionDesplegada`     | Snapshot del último despliegue real.                             |
-| `feature/*`, `chore/*`  | Ramas de trabajo. Se abren desde `develop`.                      |
-| `back-dev`, `front-dev` | Ramas de integración por equipo (back/front).                    |
+| Necesidad | Documento |
+| --- | --- |
+| Empezar y entender el estado actual | [`00_LÉEME_PRIMERO.md`](docs/00_ENTREGA_FINAL/00_LÉEME_PRIMERO.md) |
+| Instalación detallada | [`01_INSTALACIÓN_LOCAL.md`](docs/00_ENTREGA_FINAL/01_INSTALACIÓN_LOCAL.md) |
+| Resumen y estado funcional | [`02_RESUMEN_PROYECTO_Y_ESTADO.md`](docs/00_ENTREGA_FINAL/02_RESUMEN_PROYECTO_Y_ESTADO.md) |
+| Arquitectura técnica | [`04_ARQUITECTURA_TÉCNICA.md`](docs/00_ENTREGA_FINAL/04_ARQUITECTURA_TÉCNICA.md) |
+| Base de datos | [`05_BASE_DATOS_DECISIONES.md`](docs/00_ENTREGA_FINAL/05_BASE_DATOS_DECISIONES.md) |
+| Uso por roles | [`06_GUÍA_USO_POR_ROLES.md`](docs/00_ENTREGA_FINAL/06_GUÍA_USO_POR_ROLES.md) |
+| Flujo de trabajos a cierre | [`08_TRABAJOS_PEDIDOS_FACTURAS_CIERRE.md`](docs/00_ENTREGA_FINAL/08_TRABAJOS_PEDIDOS_FACTURAS_CIERRE.md) |
+| Exportaciones MOEVE y ARIBA | [`09_EXPORTACIÓN_MOEVE_ARIBA_CORREO.md`](docs/00_ENTREGA_FINAL/09_EXPORTACIÓN_MOEVE_ARIBA_CORREO.md) |
+| Tests y validación | [`13_TESTING_VALIDACIÓN.md`](docs/00_ENTREGA_FINAL/13_TESTING_VALIDACIÓN.md) |
+| Despliegue | [`14_DESPLIEGUE.md`](docs/00_ENTREGA_FINAL/14_DESPLIEGUE.md) |
+| Pendientes y riesgos | [`15_PENDIENTES_Y_RIESGOS.md`](docs/00_ENTREGA_FINAL/15_PENDIENTES_Y_RIESGOS.md) |
+| Consulta operativa rápida | [`16_GUÍA_RÁPIDA.md`](docs/00_ENTREGA_FINAL/16_GUÍA_RÁPIDA.md) |
 
-## Documentación técnica
+## Reglas de seguridad y datos
 
-La documentación vive en `docs/` y se organiza por sprint:
+- No subas `.env`, credenciales, backups locales ni datos reales del cliente.
+- No ejecutes `migrate:fresh` sobre `abaco_ciete` si necesitas conservar su contenido.
+- No ejecutes los scripts de `database/manual/` en producción.
+- Cambia los usuarios y contraseñas iniciales antes de desplegar.
+- Configura los campos ARIBA reales del contrato antes de generar documentación definitiva.
 
-- `docs/01_ORGANIZACION/` — Normas, flujo Git, convenciones
-- `docs/02_CLIENTE/` — Requisitos de negocio
-- `docs/03_API_ERP/` — Contratos API (Trabajos, importaciones)
-- `docs/04_DISENO_UI/` — Guías de interfaz y tokens de diseño
-- `docs/05-SPRINTS/` — Entregables y bitácoras por sprint
+## Problemas frecuentes
 
-Cada sprint tiene su carpeta con bitácoras por persona en `Bitacora/General/`, `Bitacora/BACK/` o `Bitacora/FRONT/`.
+**`php`, `composer` o `mysql` no se reconocen**
 
-## Contacto
+Añade sus directorios al `PATH` o ejecuta los binarios desde la instalación de XAMPP.
 
-Desarrollado por ABACO para Ciete Ingenieros.  
-Para continuidad: revisar `docs/` y las bitácoras del sprint correspondiente.
+**Falta `APP_KEY`**
+
+```bash
+php artisan key:generate
+```
+
+**La interfaz no carga estilos o JavaScript**
+
+```bash
+npm ci
+npm run build
+php artisan optimize:clear
+```
+
+**Error de conexión a MySQL**
+
+Comprueba que MySQL está iniciado y revisa `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` y `DB_PASSWORD` en `.env`.
+
+**Los correos fallan en local**
+
+Usa `MAIL_MAILER=log`. Los mensajes quedarán registrados en `storage/logs/laravel.log`.

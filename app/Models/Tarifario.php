@@ -27,6 +27,7 @@ class Tarifario extends Model
         'factor_multiplicador',
         'moneda',
         'observaciones',
+        'es_predeterminado',
         'activo',
     ];
 
@@ -36,6 +37,7 @@ class Tarifario extends Model
             'fecha_inicio_vigencia' => 'date',
             'fecha_fin_vigencia' => 'date',
             'factor_multiplicador' => 'decimal:4',
+            'es_predeterminado' => 'boolean',
             'activo' => 'boolean',
         ];
     }

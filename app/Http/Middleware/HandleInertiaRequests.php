@@ -159,6 +159,7 @@ class HandleInertiaRequests extends Middleware
                     'can_access_admin_panel' => $user->canAccessAdminPanel(),
                     'can_manage_users' => $user->canManageUsers(),
                     'can_manage_support' => $user->canManageSupport(),
+                    'can_view_system_status' => $user->canViewSystemStatus(),
                     'can_manage_maintenance' => $user->canManageMaintenance(),
                     'can_manage_notices' => $user->canManageNotices(),
                     'can_view_audit' => $user->canViewAudit(),
@@ -190,6 +191,11 @@ class HandleInertiaRequests extends Middleware
             'locale' => [
                 'current' => $currentLocale,
                 'supported' => $supportedLocales->values()->all(),
+            ],
+            'flash' => [
+                'success'          => $request->session()->get('success'),
+                'error'            => $request->session()->get('error'),
+                'conflict_warning' => $request->session()->get('conflict_warning'),
             ],
             'maintenance' => [
                 'active' => file_exists(storage_path('framework/maintenance_mode')),

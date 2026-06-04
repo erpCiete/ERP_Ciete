@@ -90,6 +90,25 @@ class TrabajoRequestTest extends TestCase
             ->assertJsonPath('data.numero_trabajo', 91001);
     }
 
+    public function test_store_trabajo_request_accepts_valid_repsol_payload_without_work_number(): void
+    {
+        $user = User::factory()->create(['id_contexto' => 2]);
+        $estacion = $this->createStationForContext(2);
+
+        $response = $this->actingAs($user)->postJson('/test/store-trabajo', [
+            'descripcion_trabajo' => 'Trabajo válido Repsol autogenerado',
+            'id_estacion_servicio' => $estacion->id_estacion_servicio,
+            'fecha_encargo' => now()->toDateString(),
+            'estado' => 'en_curso',
+            'id_tipo_documento' => 4,
+            'id_tipo_trabajo' => 8,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
+
     public function test_store_trabajo_request_rejects_textual_internal_work_number_when_other_required_fields_are_valid(): void
     {
         $user = User::factory()->create(['id_contexto' => 2]);
@@ -153,6 +172,35 @@ class TrabajoRequestTest extends TestCase
             'estado' => 'cerrado',
             'id_tipo_documento' => 4,
             'id_tipo_trabajo' => 8,
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['estado']);
+    }
+
+    public function test_store_trabajo_request_rejects_derived_status_for_new_work(): void
+    {
+        $user = User::factory()->create(['id_contexto' => 2]);
+        $estacion = $this->createStationForContext(2);
+
+        $response = $this->actingAs($user)->postJson('/test/store-trabajo', [
+            'numero_trabajo' => 91002,
+            'descripcion_trabajo' => 'Trabajo con estado derivado no permitido',
+            'id_estacion_servicio' => $estacion->id_estacion_servicio,
+            'fecha_encargo' => now()->toDateString(),
+            'estado' => 'facturado',
+            'id_tipo_documento' => 4,
+            'id_tipo_trabajo' => 8,
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['estado']);
+    }
+
+    public function test_update_trabajo_request_rejects_derived_status_in_full_form_flow(): void
+    {
+        $user = User::factory()->create(['id_contexto' => 2]);
+
+        $response = $this->actingAs($user)->patchJson('/test/update-trabajo', [
+            'estado' => 'finalizado',
         ]);
 
         $response->assertStatus(422)->assertJsonValidationErrors(['estado']);

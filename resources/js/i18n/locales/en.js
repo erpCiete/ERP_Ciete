@@ -7,7 +7,7 @@ const en = {
         panel: 'Panel',
         preferences: 'Preferences',
         footer: {
-            projectVersion: 'Ciete ERP v2.1.0',
+            projectVersion: 'Ciete ERP v2.2.0',
         },
         actions: {
             save: 'Save',
@@ -19,8 +19,9 @@ const en = {
             edit: 'Edit',
             delete: 'Delete',
             logOut: 'Log out',
-            deleteAccount: 'Delete account',
-            viewAll: 'View all',
+        deleteAccount: 'Delete account',
+        viewAll: 'View all',
+        menu: 'Menu',
         },
         validation: {
             required: 'This field is required.',
@@ -168,6 +169,7 @@ const en = {
         works: 'Works',
         orders: 'Orders',
         invoices: 'Invoices',
+        support: 'Tickets',
         legalizations: 'Legalizations',
         audit: 'Audit',
         technicalAudit: 'Technical audit',
@@ -195,7 +197,7 @@ const en = {
             headTitle: 'Home - Ciete ERP',
             hero: {
                 badgeErp: 'Ciete ERP',
-                badgeVersion: 'v2.1.0',
+                badgeVersion: 'v2.2.0',
                 featuredBadge: 'Featured notice',
                 title: 'Operations hub for the team',
                 subtitle: 'Prioritize notices, shortcuts, and useful context before starting the day.',
@@ -1125,7 +1127,7 @@ const en = {
             support: {
                 title: 'Technical support',
                 intro: 'If you find an error, unexpected behaviour or need help with the ERP, you can submit a support request directly from the application. The support team will receive an email with your enquiry details.',
-                step1: 'Access Support from the bottom dock (lifebuoy icon) or sidebar navigation. Select the most appropriate topic for your enquiry: Access and authentication, Incorrect data, Technical error, Slow performance, Feature request, Permissions and roles, Billing, Works and projects, Legalizations or Other.',
+                step1: 'Access Support from the home bottom dock (lifebuoy icon) or from the "Quick access and context" button. Select the most appropriate topic for your enquiry: Access and authentication, Incorrect data, Technical error, Slow performance, Feature request, Permissions and roles, Billing, Works and projects, Legalizations or Other.',
                 step2: 'Write a descriptive subject (e.g. "Error saving station in Moeve context") and describe the problem in the message field with as much detail as possible: which screen you were using, what action you performed, what error you saw and whether the problem is reproducible or intermittent.',
                 step3: 'Select the priority (Normal for general enquiries, High if it affects your daily work, Urgent if it completely blocks your operations). Press "Submit request". You will receive on-screen confirmation and the team will respond by email.',
             },
@@ -1214,7 +1216,7 @@ const en = {
                 q6: 'How do I send an internal message?',
                 a6: 'Go to Messages (bottom dock or sidebar), click "New message", select a recipient from the dropdown, write the subject and body, choose the priority and press "Send". The recipient will see it in their inbox.',
                 q7: 'How do I request technical support?',
-                a7: 'Go to Support (bottom dock or navigation), select the topic that best describes your problem, write a subject and detailed description, select the priority and press "Submit request". The team will respond by email.',
+                a7: 'Go to Support from the home bottom dock or from "Quick access and context", select the topic that best describes your problem, write a subject and detailed description, select the priority and press "Submit request". The team will respond by email.',
                 q8: 'Where can I see the system status?',
                 a8: 'Access Status from the bottom dock (pulse icon) or the sidebar. You will see the status of each component: database, storage, email, task queue, application and maintenance. Green = all correct.',
             },
@@ -1393,6 +1395,10 @@ const en = {
             urgente: 'Urgent',
         },
         submit: 'Submit request',
+        myTickets: 'My recent tickets',
+        noTicketsYet: 'You have not created any support tickets yet.',
+        openTicket: 'Open ticket',
+        lastUpdate: 'Last update',
         footer: 'Ciete Ingenieros S.A. — Internal technical support',
     },
     supportAdmin: {

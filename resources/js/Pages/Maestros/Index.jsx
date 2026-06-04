@@ -1,16 +1,8 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
-import {
-    Building2,
-    Factory,
-    FileBadge,
-    ListChecks,
-    MapPin,
-    ReceiptText,
-    Tags,
-    Users,
-} from 'lucide-react';
+import { AlertTriangle, Building2, MapPin, Tags, Users } from 'lucide-react';
+import { useState } from 'react';
 
 const hasRoute = (name) => {
     try {
@@ -21,11 +13,11 @@ const hasRoute = (name) => {
     }
 };
 
-const modules = [
+const baseRows = [
     {
         key: 'usuarios',
         title: 'Usuarios',
-        description: 'Usuarios reales, roles, contexto principal y activación de acceso.',
+        subtitle: 'Roles y acceso',
         routeName: 'admin.users.index',
         permissionKey: 'usuarios',
         icon: Users,
@@ -33,7 +25,7 @@ const modules = [
     {
         key: 'empresas',
         title: 'Empresas / clientes',
-        description: 'Clientes y empresas base que se seleccionan en trabajos, contratos y facturación.',
+        subtitle: 'Base de empresa',
         routeName: 'clientes.index',
         permissionKey: 'clientes',
         icon: Building2,
@@ -41,56 +33,105 @@ const modules = [
     {
         key: 'estaciones',
         title: 'Estaciones',
-        description: 'Código, nombre, municipio y provincia de estaciones por contexto.',
+        subtitle: 'Codigo y localidad',
         routeName: 'estaciones.index',
         permissionKey: 'estaciones',
         icon: MapPin,
     },
+];
+
+const pricingRows = [
     {
         key: 'contratos',
         title: 'Contratos',
-        description: 'Contratos marco o directos asociados a cliente y contexto.',
         routeName: 'maestros.contratos.index',
         permissionKey: 'contratos',
-        icon: FileBadge,
     },
     {
         key: 'sociedades',
-        title: 'Sociedades facturadoras',
-        description: 'Relaciones contrato-sociedad/CIF permitidas para validar facturas.',
+        title: 'Sociedades / CIF',
         routeName: 'maestros.sociedades.index',
         permissionKey: 'sociedades',
-        icon: Factory,
     },
     {
         key: 'tarifarios',
         title: 'Tarifarios',
-        description: 'Versiones de tarifa vigentes por contrato y contexto.',
         routeName: 'maestros.tarifarios.index',
         permissionKey: 'tarifarios',
-        icon: ReceiptText,
     },
     {
-        key: 'lineas_tarifario',
-        title: 'Líneas de tarifario',
-        description: 'Códigos, actuaciones, importes y unidades facturables.',
+        key: 'lineas',
+        title: 'Lineas de tarifa',
         routeName: 'maestros.tarifario-lineas.index',
         permissionKey: 'lineas',
-        icon: ListChecks,
-    },
-    {
-        key: 'catalogos',
-        title: 'Catálogos auxiliares',
-        description: 'Unidades, tipos de documento y tipos de trabajo en lectura de apoyo.',
-        routeName: null,
-        permissionKey: null,
-        icon: Tags,
     },
 ];
 
+function CompactLink({ href, children }) {
+    return (
+        <Link
+            href={href}
+            className="inline-flex items-center rounded border border-border px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-main transition hover:bg-surface-2"
+        >
+            {children}
+        </Link>
+    );
+}
+
+function SectionRow({ icon: Icon, title, subtitle, count, href, createHref }) {
+    return (
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-border px-3 py-2 first:border-t-0">
+            <div className="min-w-0">
+                <div className="flex items-center gap-2 text-sm font-medium text-text-main">
+                    <Icon className="size-4 text-(--ciete-red)" />
+                    <span>{title}</span>
+                    <span className="text-xs font-semibold text-text-hint">{count ?? 0}</span>
+                </div>
+                <div className="mt-0.5 text-xs text-text-muted">{subtitle}</div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
+                {createHref && <CompactLink href={createHref}>Nuevo</CompactLink>}
+                {href && <CompactLink href={href}>Abrir</CompactLink>}
+            </div>
+        </div>
+    );
+}
+
+function DiagnosticRow({ diagnostic, can }) {
+    const canView = diagnostic.permissionKey ? Boolean(can[diagnostic.permissionKey]?.view) : true;
+    const href = diagnostic.routeName && canView && hasRoute(diagnostic.routeName)
+        ? route(diagnostic.routeName)
+        : null;
+    const tone = diagnostic.severity === 'critical'
+        ? 'border-red-500/40 text-red-200'
+        : 'border-amber-500/40 text-amber-200';
+
+    return (
+        <div className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-t border-border px-3 py-2 first:border-t-0 ${tone}`}>
+            <span className="rounded border border-current/50 px-2 py-0.5 text-[11px] font-semibold">{diagnostic.count}</span>
+            <div className="min-w-0">
+                <div className="truncate text-sm font-medium">{diagnostic.title}</div>
+                <div className="truncate text-xs text-text-muted">{diagnostic.description}</div>
+            </div>
+            {href ? <CompactLink href={href}>{diagnostic.actionLabel}</CompactLink> : <span />}
+        </div>
+    );
+}
+
 export default function MaestrosIndex({ summary = {}, diagnostics = [], can = {} }) {
     const { auth } = usePage().props;
-    const activeContext = auth?.user?.active_context;
+    const [showDiagnostics, setShowDiagnostics] = useState(false);
+
+    const user = auth?.user;
+    const activeContext = user?.active_context;
+    const canSeeSystemCatalogs = Boolean(
+        user?.is_admin
+        || user?.is_technical_admin
+        || user?.can_manage_support
+        || user?.can_manage_maintenance
+        || user?.can_access_admin_panel,
+    );
 
     return (
         <AuthenticatedLayout
@@ -102,126 +143,140 @@ export default function MaestrosIndex({ summary = {}, diagnostics = [], can = {}
                 <ContextualPageHeader
                     eyebrow="Datos maestros"
                     title="Maestros"
-                    description="Panel separado de la operativa diaria para preparar y mantener datos base del ERP CIETE."
+                    description="Base operativa y arbol de contratos y tarifas."
                 />
 
                 {activeContext?.is_all && (
-                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                        Selecciona MOEVE, REPSOL u OTROS CLIENTES para crear datos maestros.
+                    <div className="mb-4 rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                        Selecciona un contexto concreto para crear o mantener maestros.
                     </div>
                 )}
 
-                <section className="mb-6 rounded-lg border border-border bg-surface px-4 py-4">
-                    <h3 className="text-sm font-semibold text-text-main">Separacion funcional</h3>
-                    <p className="mt-1 text-sm text-text-muted">
-                        Este panel gobierna empresas, estaciones, contratos, sociedades, tarifarios y catalogos. Trabajos,
-                        pedidos, facturas, cierre y auditoria siguen en sus modulos operativos.
-                    </p>
-                </section>
+                {diagnostics.length > 0 && (
+                    <section className="mb-4 overflow-hidden rounded-lg border border-border bg-surface">
+                        <div className="flex items-center justify-between gap-3 px-3 py-2">
+                            <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-text-main">
+                                <AlertTriangle className="size-4 text-amber-300" />
+                                <span>{diagnostics.length} alerta{diagnostics.length === 1 ? '' : 's'} operativa{diagnostics.length === 1 ? '' : 's'}</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowDiagnostics((value) => !value)}
+                                className="rounded border border-border px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-text-main transition hover:bg-surface-2"
+                            >
+                                {showDiagnostics ? 'Ocultar' : 'Ver'}
+                            </button>
+                        </div>
 
-                <section className="mb-6 rounded-lg border border-border bg-surface px-4 py-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        {showDiagnostics && (
+                            <div className="border-t border-border">
+                                {diagnostics.map((diagnostic) => (
+                                    <DiagnosticRow key={diagnostic.key} diagnostic={diagnostic} can={can} />
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                <div className="space-y-4">
+                    <section className="overflow-hidden rounded-lg border border-border bg-surface">
+                        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+                            <div>
+                                <h3 className="text-sm font-semibold text-text-main">Base operativa</h3>
+                                <p className="text-xs text-text-muted">Usuarios, empresas y estaciones.</p>
+                            </div>
+                        </div>
+
                         <div>
-                            <h3 className="text-sm font-semibold text-text-main">Diagnostico funcional</h3>
-                            <p className="mt-1 text-sm text-text-muted">
-                                Antes de tocar la operativa, revisa los huecos de maestro que pueden dejar formularios sin opciones validas.
-                            </p>
-                        </div>
-                        <span className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-text-main">
-                            {diagnostics.length === 0 ? 'Sin alertas prioritarias' : `${diagnostics.length} alertas activas`}
-                        </span>
-                    </div>
+                            {baseRows.map((item) => {
+                                const permissions = item.permissionKey ? can[item.permissionKey] : null;
+                                const canView = item.permissionKey ? Boolean(permissions?.view) : true;
 
-                    {diagnostics.length === 0 ? (
-                        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                            No se han detectado huecos maestros prioritarios en el contexto activo para contrato-sociedad o CIF.
-                        </div>
-                    ) : (
-                        <div className="mt-4 grid gap-3 xl:grid-cols-2">
-                            {diagnostics.map((diagnostic) => {
-                                const canView = diagnostic.permissionKey ? Boolean(can[diagnostic.permissionKey]?.view) : true;
-                                const href = diagnostic.routeName && canView && hasRoute(diagnostic.routeName)
-                                    ? route(diagnostic.routeName)
+                                if (!canView) {
+                                    return null;
+                                }
+
+                                const href = item.routeName && hasRoute(item.routeName) ? route(item.routeName) : null;
+                                const createRouteName = item.key === 'empresas'
+                                    ? 'clientes.create'
+                                    : item.key === 'estaciones'
+                                        ? 'estaciones.create'
+                                        : null;
+                                const createHref = can.create_contextual && createRouteName && hasRoute(createRouteName)
+                                    ? route(createRouteName)
                                     : null;
-                                const tone = diagnostic.severity === 'critical'
-                                    ? 'border-red-200 bg-red-50 text-red-800'
-                                    : 'border-amber-200 bg-amber-50 text-amber-800';
 
                                 return (
-                                    <article key={diagnostic.key} className={`rounded-lg border px-4 py-4 ${tone}`}>
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <h4 className="text-sm font-semibold">{diagnostic.title}</h4>
-                                                <p className="mt-1 text-sm opacity-90">{diagnostic.description}</p>
-                                            </div>
-                                            <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-text-main shadow-sm">
-                                                {diagnostic.count}
-                                            </span>
-                                        </div>
-
-                                        {href && (
-                                            <div className="mt-4">
-                                                <Link
-                                                    href={href}
-                                                    className="inline-flex items-center rounded-md border border-current px-3 py-2 text-xs font-semibold uppercase tracking-widest transition hover:bg-white/60"
-                                                >
-                                                    {diagnostic.actionLabel}
-                                                </Link>
-                                            </div>
-                                        )}
-                                    </article>
+                                    <SectionRow
+                                        key={item.key}
+                                        icon={item.icon}
+                                        title={item.title}
+                                        subtitle={item.subtitle}
+                                        count={summary[item.key] ?? 0}
+                                        href={href}
+                                        createHref={createHref}
+                                    />
                                 );
                             })}
                         </div>
+                    </section>
+
+                    <section className="overflow-hidden rounded-lg border border-border bg-surface">
+                        <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
+                            <div>
+                                <h3 className="text-sm font-semibold text-text-main">Arbol contratos y tarifas</h3>
+                                <p className="text-xs text-text-muted">Empresa - sociedades/CIF - contratos - tarifarios - lineas.</p>
+                            </div>
+                            {hasRoute('maestros.contratos-tarifas') && (
+                                <CompactLink href={route('maestros.contratos-tarifas')}>Abrir</CompactLink>
+                            )}
+                        </div>
+
+                        <div className="border-b border-border px-3 py-2 text-xs text-text-muted">
+                            {summary.contratos ?? 0} contratos · {summary.sociedades ?? 0} sociedades/CIF · {summary.tarifarios ?? 0} tarifarios · {summary.lineas_tarifario ?? 0} lineas
+                        </div>
+
+                        <div className="grid gap-2 px-3 py-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+                            <div className="min-w-0">
+                                <div className="text-sm font-medium text-text-main">Entrada principal</div>
+                                <div className="mt-1 text-xs text-text-muted">Vista unica en arbol para trabajo operativo y revision rapida.</div>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                                {pricingRows.map((item) => {
+                                    const permissions = item.permissionKey ? can[item.permissionKey] : null;
+                                    const canView = item.permissionKey ? Boolean(permissions?.view) : true;
+                                    const href = item.routeName && canView && hasRoute(item.routeName) ? route(item.routeName) : null;
+
+                                    if (!href) {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <CompactLink key={item.key} href={href}>
+                                            {item.title}
+                                        </CompactLink>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </section>
+
+                    {canSeeSystemCatalogs && (
+                        <section className="overflow-hidden rounded-lg border border-border bg-surface">
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-2">
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2 text-sm font-medium text-text-main">
+                                        <Tags className="size-4 text-(--ciete-red)" />
+                                        <span>Catalogos de sistema</span>
+                                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-hint">Solo tecnico</span>
+                                    </div>
+                                    <div className="mt-0.5 text-xs text-text-muted">
+                                        Unidades, tipos de documento y tipos de trabajo de apoyo interno.
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     )}
-                </section>
-
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {modules.map((module) => {
-                        const Icon = module.icon;
-                        const permissions = module.permissionKey ? can[module.permissionKey] : null;
-                        const canView = module.permissionKey ? Boolean(permissions?.view) : true;
-                        const href = module.routeName && hasRoute(module.routeName) ? route(module.routeName) : null;
-
-                        if (!canView) {
-                            return null;
-                        }
-
-                        return (
-                            <article
-                                key={module.key}
-                                className="rounded-lg border border-border bg-surface p-4 shadow-sm"
-                            >
-                                <div className="flex items-start gap-3">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-(--ciete-red)">
-                                        <Icon className="size-5" aria-hidden="true" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="text-base font-semibold text-text-main">{module.title}</h3>
-                                        <p className="mt-1 text-sm text-text-muted">{module.description}</p>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 flex items-center justify-between gap-3">
-                                    <span className="text-sm font-semibold text-text-main">
-                                        {summary[module.key] ?? 0}
-                                    </span>
-                                    {href ? (
-                                        <Link
-                                            href={href}
-                                            className="inline-flex items-center rounded-md border border-border px-3 py-2 text-xs font-semibold uppercase tracking-widest text-text-main transition hover:bg-surface-2"
-                                        >
-                                            Abrir
-                                        </Link>
-                                    ) : (
-                                        <span className="text-xs font-semibold uppercase tracking-widest text-text-hint">
-                                            Lectura
-                                        </span>
-                                    )}
-                                </div>
-                            </article>
-                        );
-                    })}
                 </div>
             </div>
         </AuthenticatedLayout>

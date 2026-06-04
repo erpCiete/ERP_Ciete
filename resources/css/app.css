@@ -145,6 +145,10 @@
     @apply max-w-full;
 }
 
+@utility ciete-page-operations {
+    @apply max-w-[1920px];
+}
+
 @utility ciete-page-reading {
     @apply max-w-5xl;
 }
@@ -186,6 +190,32 @@
 }
 
 @layer components {
+    .ciete-dark-table-accent {
+        color: var(--color-primary);
+    }
+
+    [data-theme='dark'] .ciete-dark-table-accent {
+        color: var(--theme-text-main);
+    }
+
+    .ciete-table-danger-action {
+        border-color: #fecdd3;
+        color: #be123c;
+    }
+
+    .ciete-table-danger-action:hover {
+        background-color: #fff1f2;
+    }
+
+    [data-theme='dark'] .ciete-table-danger-action {
+        border-color: var(--theme-border-heavy);
+        color: var(--theme-text-main);
+    }
+
+    [data-theme='dark'] .ciete-table-danger-action:hover {
+        background-color: var(--theme-surface-2);
+    }
+
     .ciete-excel-table th {
         padding-top: 1rem !important;
         padding-bottom: 1rem !important;

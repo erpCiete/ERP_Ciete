@@ -851,6 +851,93 @@ class FacturaTest extends TestCase
         ]);
     }
 
+    public function test_store_syncs_related_pedido_and_trabajo_states_after_full_billing(): void
+    {
+        $contrato = $this->createContratoForContext(1);
+        $trabajo = $this->createTrabajoForContext(1, $contrato);
+        $trabajo->update([
+            'estado' => 'terminado',
+            'fecha_terminacion' => '2026-05-20',
+        ]);
+        $empresaFacturadora = $this->createEmpresaFacturadoraPermitida($contrato);
+        $item = $this->createPedidoItem($trabajo, 'PED-SYNC-STATE', 1, 100);
+
+        $this->actingAs($this->gestorInterno);
+        $this->gestorInterno->setActiveContextSelection(1);
+
+        $this->postJson('/api/v1/facturas', [
+                'numero_factura' => 'FAC-SYNC-STATE',
+                'numero_factura_ccp' => 'CCP-SYNC-STATE',
+                'fecha_emision' => '2026-05-06',
+                'estado' => 'emitida',
+                'base_imponible' => 100,
+                'iva' => 0,
+                'total' => 100,
+                'id_empresa_facturadora' => $empresaFacturadora->id_empresa,
+                'items' => [
+                    ['id_pedido_item' => $item->id_pedido_item, 'importe_facturado' => 100],
+                ],
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $item->id_pedido,
+            'importe_facturado' => 100,
+            'estado' => 'facturado',
+            'facturado_completo' => true,
+        ]);
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'estado' => 'facturado',
+        ]);
+    }
+
+    public function test_annulling_invoice_recalculates_related_pedido_and_trabajo_states(): void
+    {
+        $contrato = $this->createContratoForContext(1);
+        $trabajo = $this->createTrabajoForContext(1, $contrato);
+        $trabajo->update([
+            'estado' => 'terminado',
+            'fecha_terminacion' => '2026-05-20',
+        ]);
+        $empresaFacturadora = $this->createEmpresaFacturadoraPermitida($contrato);
+        $item = $this->createPedidoItem($trabajo, 'PED-SYNC-VOID', 1, 100);
+
+        $this->actingAs($this->gestorInterno);
+        $this->gestorInterno->setActiveContextSelection(1);
+
+        $response = $this->postJson('/api/v1/facturas', [
+            'numero_factura' => 'FAC-SYNC-VOID',
+            'numero_factura_ccp' => 'CCP-SYNC-VOID',
+            'fecha_emision' => '2026-05-06',
+            'estado' => 'emitida',
+            'base_imponible' => 100,
+            'iva' => 0,
+            'total' => 100,
+            'id_empresa_facturadora' => $empresaFacturadora->id_empresa,
+            'items' => [
+                ['id_pedido_item' => $item->id_pedido_item, 'importe_facturado' => 100],
+            ],
+        ])->assertCreated();
+
+        $facturaId = $response->json('data.id_factura');
+
+        $this->deleteJson("/api/v1/facturas/{$facturaId}")
+            ->assertOk()
+            ->assertJsonPath('data.estado', 'anulada');
+
+        $this->assertDatabaseHas('pedidos', [
+            'id_pedido' => $item->id_pedido,
+            'importe_facturado' => 0,
+            'estado' => 'recibido',
+            'facturado_completo' => false,
+        ]);
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'estado' => 'pendiente_facturar',
+        ]);
+    }
+
     private function createTrabajoForContext(int $contextId, ?Contrato $contrato = null): Trabajo
     {
         $empresa = $contrato

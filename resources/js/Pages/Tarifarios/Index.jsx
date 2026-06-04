@@ -1,4 +1,5 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import MaestrosPricingNav from '@/Components/MaestrosPricingNav';
 import ModalConfirmacion from '@/Components/ui/ModalConfirmacion';
 import PaginationControls from '@/Components/ui/PaginationControls';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -8,6 +9,24 @@ import { useState } from 'react';
 
 const deactivateMessage =
     'Vas a desactivar este registro maestro. No se eliminará el histórico relacionado, pero dejará de estar disponible para nuevas operaciones. ¿Quieres continuar?';
+
+function tarifarioDeactivateMessage(tarifario) {
+    if (!tarifario) {
+        return deactivateMessage;
+    }
+
+    const impacts = [
+        tarifario.trabajos_count ? `${tarifario.trabajos_count} trabajo(s)` : null,
+        tarifario.pedidos_count ? `${tarifario.pedidos_count} pedido(s)` : null,
+        tarifario.lineas_count ? `${tarifario.lineas_count} línea(s)` : null,
+    ].filter(Boolean);
+
+    if (impacts.length === 0) {
+        return deactivateMessage;
+    }
+
+    return `Este tarifario ya está en uso por ${impacts.join(', ')}. Se desactivará sin borrar histórico ni líneas existentes. ¿Quieres continuar?`;
+}
 
 const hasPermission = (user, permission) => Boolean(user?.permission_slugs?.includes(permission));
 
@@ -23,7 +42,7 @@ function Badge({ active, children }) {
     );
 }
 
-export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = false }) {
+export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = false, supportsPredeterminado = false }) {
     const { auth } = usePage().props;
     const activeContext = auth?.user?.active_context;
     const [search, setSearch] = useState(filters.search ?? '');
@@ -53,6 +72,12 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
         });
     };
 
+    const markAsDefault = (tarifarioId) => {
+        router.put(route('maestros.tarifarios.set-default', tarifarioId), {}, {
+            preserveScroll: true,
+        });
+    };
+
     const goToPage = (page) => {
         if (page < 1 || page > lastPage || page === currentPage) {
             return;
@@ -68,7 +93,7 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
             <ModalConfirmacion
                 isOpen={Boolean(deactivateTarget)}
                 title="Desactivar tarifario"
-                message={deactivateMessage}
+                message={tarifarioDeactivateMessage(deactivateTarget)}
                 confirmLabel="Confirmar desactivacion"
                 onClose={() => setDeactivateTarget(null)}
                 onConfirm={deactivate}
@@ -78,7 +103,6 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
                 <ContextualPageHeader
                     eyebrow="Maestros"
                     title="Tarifarios"
-                    description="Versiones de tarifa por contrato. Las lineas se mantienen separadas para preservar su trazabilidad."
                     backHref={route('maestros.index')}
                     actions={
                         canCreate ? (
@@ -95,9 +119,11 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
 
                 {activeContext?.is_all && (
                     <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                        Selecciona MOEVE, REPSOL u OTROS CLIENTES para crear datos maestros.
+                        Selecciona un contexto real para crear maestros.
                     </div>
                 )}
+
+                <MaestrosPricingNav current="tarifarios" />
 
                 <form onSubmit={applyFilters} className="ciete-filter-bar">
                     <div className="ciete-filter-row">
@@ -108,13 +134,13 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                                 placeholder="Buscar por nombre, version o contrato"
-                                className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm"
+                                className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text-main"
                             />
                         </div>
                         <select
                             value={activo}
                             onChange={(event) => setActivo(event.target.value)}
-                            className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                            className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-main"
                         >
                             <option value="">Activo e inactivo</option>
                             <option value="1">Activo</option>
@@ -135,6 +161,7 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
                                     <th className="px-4 py-3">Version</th>
                                     <th className="px-4 py-3">Contrato</th>
                                     <th className="px-4 py-3">Vigencia</th>
+                                    <th className="px-4 py-3">Predeterminado</th>
                                     <th className="px-4 py-3">Estado</th>
                                     <th className="px-4 py-3">Lineas</th>
                                     <th className="px-4 py-3 text-right">Acciones</th>
@@ -152,9 +179,28 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
                                             {tarifario.fecha_inicio_vigencia || '-'} / {tarifario.fecha_fin_vigencia || '-'}
                                         </td>
                                         <td className="px-4 py-3">
+                                            {tarifario.es_predeterminado ? (
+                                                <Badge active>Predeterminado</Badge>
+                                            ) : canEdit && tarifario.activo ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => markAsDefault(tarifario.id_tarifario)}
+                                                    disabled={!supportsPredeterminado}
+                                                    title={supportsPredeterminado ? 'Marcar como predeterminado' : 'No disponible en este entorno'}
+                                                    className="rounded border border-border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:cursor-not-allowed disabled:opacity-50"
+                                                >
+                                                    Marcar
+                                                </button>
+                                            ) : (
+                                                <span className="text-text-muted">-</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3">
                                             <Badge active={tarifario.activo}>{tarifario.activo ? 'Activo' : 'Inactivo'}</Badge>
                                         </td>
-                                        <td className="px-4 py-3 text-text-muted">{tarifario.lineas_count}</td>
+                                        <td className="px-4 py-3 text-text-muted">
+                                            {tarifario.lineas_count} líneas · {tarifario.trabajos_count} trabajos · {tarifario.pedidos_count} pedidos
+                                        </td>
                                         <td className="px-4 py-3 text-right">
                                             <div className="inline-flex gap-2">
                                                 <Link
@@ -177,7 +223,7 @@ export default function TarifariosIndex({ tarifarios, filters = {}, canCreate = 
                                                     <button
                                                         type="button"
                                                         onClick={() => setDeactivateTarget(tarifario)}
-                                                        className="rounded-md border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50"
+                                                        className="ciete-table-danger-action rounded-md border px-3 py-1.5 text-xs font-semibold"
                                                     >
                                                         Desactivar
                                                     </button>

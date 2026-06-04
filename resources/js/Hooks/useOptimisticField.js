@@ -17,9 +17,8 @@ function readConflict(responseData, attemptedValue, fieldName) {
     };
 }
 
-/**
- * Optimistic single-field persistence with updated_at conflict detection.
- */
+// Guarda un campo individual enviando el updated_at original para detectar edición concurrente.
+// Si otro usuario modificó el mismo campo en los últimos 60 min el servidor responde 409.
 export function useOptimisticField({
     entityId,
     entityUpdatedAt,
@@ -105,6 +104,12 @@ export function useOptimisticField({
         setConflict(null);
     }
 
+    // Cierra el ConflictDialog sin descartar el borrador del usuario.
+    function dismissConflict() {
+        setConflict(null);
+        setError(null);
+    }
+
     async function resolveConflict(action = 'reload') {
         if (!conflict) {
             return false;
@@ -149,6 +154,7 @@ export function useOptimisticField({
         conflict,
         save,
         cancel,
+        dismissConflict,
         resolveConflict,
     };
 }

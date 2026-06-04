@@ -1,6 +1,5 @@
 import Modal from '@/Components/Modal';
 import WorkspaceContextIndicator from '@/Components/WorkspaceContextIndicator';
-import BadgeTrabajo from '@/Components/ui/BadgeTrabajo';
 import PaginationControls from '@/Components/ui/PaginationControls';
 import { useOptimisticField } from '@/Hooks/useOptimisticField';
 import { router, usePage } from '@inertiajs/react';
@@ -8,16 +7,24 @@ import axios from 'axios';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 const ESTADO_OPTIONS = [
-    { value: 'en_curso', label: 'En curso' },
-    { value: 'terminado', label: 'Terminado por ejecución' },
+    { value: 'en_curso', label: 'Trabajo en curso' },
+    { value: 'terminado', label: 'Terminado' },
     { value: 'pendiente_facturar', label: 'Pendiente de facturar' },
     { value: 'facturado', label: 'Facturado' },
     { value: 'finalizado', label: 'Finalizado' },
     { value: 'cancelado', label: 'Cancelado' },
 ];
 
+const ESTADO_OPTIONS_EDITABLES = [
+    { value: 'en_curso', label: 'Trabajo en curso' },
+    { value: 'terminado', label: 'Terminado' },
+    { value: 'cancelado', label: 'Cancelado' },
+];
+
 const ESTADO_LABEL = Object.fromEntries(ESTADO_OPTIONS.map((option) => [option.value, option.label]));
 const ESTADO_ORDER = Object.fromEntries(ESTADO_OPTIONS.map((option, index) => [option.value, index]));
+const hasPermission = (user, permission, aliases = []) =>
+    Boolean(user?.permission_slugs?.some((slug) => slug === permission || aliases.includes(slug)));
 
 const FIELD_LABELS = {
     estado: 'Estado',
@@ -27,37 +34,38 @@ const FIELD_LABELS = {
     id_responsable_ciete: 'Responsable',
     observaciones: 'Observaciones',
     numero_trabajo: 'Nº trabajo',
-    numero_trabajo_operativo: 'Nº trabajo CIETE',
-    codigo_estacion: 'Código estación',
+    numero_trabajo_operativo: 'Nº trabajo',
+    codigo_estacion: 'Nº estación',
     nombre_estacion: 'Nombre estación',
     municipio: 'Municipio',
     provincia: 'Provincia',
-    categoria: 'Categoría',
-    id_pedido_principal: 'Nº pedido',
-    id_tipo_documento: 'Tipo documental',
+    categoria: 'Categoría de trabajo',
+    id_tarifario: 'Tarifario',
+    id_tipo_documento: 'Categoría de trabajo',
     id_tipo_trabajo: 'Tipo de trabajo',
 };
 
 const TABLE_COLUMNS = [
-    { label: 'Nº CIETE / interno', width: 'w-44' },
-    { label: 'Código estación', width: 'w-32' },
-    { label: 'Nombre estación', width: 'w-56' },
-    { label: 'Municipio', width: 'w-36' },
-    { label: 'Provincia', width: 'w-32' },
-    { label: 'Tipo / categoría de trabajo', width: 'w-48' },
-    { label: 'Descripción', width: 'w-72' },
-    { label: 'Nº pedido', width: 'w-40' },
-    { label: 'Contrato / tarifa', width: 'w-56' },
-    { label: 'Importe pedido', width: 'w-32 text-right' },
-    { label: 'Importe solicitado', width: 'w-36 text-right' },
-    { label: 'Importe facturado', width: 'w-36 text-right' },
-    { label: 'Estado', width: 'w-48' },
-    { label: 'Responsable', width: 'w-48' },
-    { label: 'Fecha encargo', width: 'w-32' },
-    { label: 'Fecha solicitud pedido', width: 'w-40' },
-    { label: 'Fecha terminación', width: 'w-36' },
-    { label: 'Observaciones', width: 'w-64' },
-    { label: 'Acciones', width: 'w-32' },
+    { id: 'numero_trabajo', label: 'Nº trabajo', width: 'w-44', sortKey: 'numero_trabajo' },
+    { id: 'codigo_estacion', label: 'Nº estación', width: 'w-52', sortKey: 'codigo_estacion' },
+    { id: 'nombre_estacion', label: 'Nombre estación', width: 'w-52', sortKey: 'nombre_estacion' },
+    { id: 'municipio', label: 'Municipio', width: 'w-32', sortKey: 'municipio' },
+    { id: 'provincia', label: 'Provincia', width: 'w-28', sortKey: 'provincia' },
+    { id: 'categoria', label: 'Categoría de trabajo', width: 'w-48', sortKey: 'categoria' },
+    { id: 'descripcion_trabajo', label: 'Descripción', width: 'w-64', sortKey: 'descripcion_trabajo' },
+    { id: 'tarifario', label: 'Tarifario', width: 'w-64', sortKey: 'tarifario' },
+    { id: 'pedidos', label: 'Pedidos', width: 'w-64' },
+    { id: 'accion_pedido', label: 'Acción pedido', width: 'w-40' },
+    { id: 'importe_pedido_total', label: 'Importe pedido', width: 'w-28 text-right', sortKey: 'importe_pedido_total' },
+    { id: 'importe_solicitado_total', label: 'Solicitado', width: 'w-28 text-right', sortKey: 'importe_solicitado_total' },
+    { id: 'importe_facturado_total', label: 'Facturado', width: 'w-28 text-right', sortKey: 'importe_facturado_total' },
+    { id: 'estado', label: 'Estado', width: 'w-72', sortKey: 'estado' },
+    { id: 'responsable', label: 'Responsable', width: 'w-44', sortKey: 'responsable' },
+    { id: 'fecha_encargo', label: 'Fecha encargo', width: 'w-32', sortKey: 'fecha_encargo' },
+    { id: 'fecha_solicitud_pedido', label: 'Fecha solicitud pedido', width: 'w-44', sortKey: 'fecha_solicitud_pedido' },
+    { id: 'fecha_terminacion', label: 'Fecha terminación', width: 'w-40', sortKey: 'fecha_terminacion' },
+    { id: 'observaciones', label: 'Observaciones', width: 'w-56' },
+    { id: 'acciones', label: 'Acciones', width: 'w-28' },
 ];
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -86,6 +94,7 @@ function emptyNewTrabajo(activeContext) {
         descripcion_trabajo: '',
         categoria: '',
         id_contrato: '',
+        id_tarifario: '',
         id_tipo_documento: '',
         id_tipo_trabajo: '',
         id_responsable_ciete: '',
@@ -140,9 +149,138 @@ function workNumberForDisplay(trabajo) {
         ?? null;
 }
 
+function internalWorkReference(trabajo) {
+    const visibleNumber = String(trabajo?.numero_trabajo_operativo ?? '').trim();
+    if (!visibleNumber) return null;
+
+    const internalNumber = formatWorkNumber(trabajo?.numero_trabajo);
+    const rawInternalNumber = String(trabajo?.numero_trabajo ?? '').trim();
+    if (visibleNumber === rawInternalNumber || visibleNumber === internalNumber) return null;
+
+    return internalNumber === '—' ? null : `Ref. interna ${internalNumber}`;
+}
+
 function contractTariff(trabajo) {
     const parts = [trabajo.nombre_contrato, trabajo.nombre_tarifa].filter(Boolean);
     return parts.length ? parts.join(' / ') : null;
+}
+
+function tarifarioOptionLabel(option) {
+    const contract = option?.nombre_contrato ?? '';
+    const tariff = option?.nombre_tarifa ?? '';
+    const code = option?.codigo_contrato ? `${option.codigo_contrato} · ` : '';
+
+    if (contract && tariff) {
+        return `${code}${contract} / ${tariff}`;
+    }
+
+    return `${code}${contract || tariff || 'Seleccionar tarifario'}`;
+}
+
+function EstadoBadge({ estado }) {
+    const normalized = String(estado ?? '').trim().toLowerCase();
+    const label = ESTADO_LABEL[normalized] ?? estado ?? '—';
+    const palette = {
+        en_curso: {
+            bg: 'var(--color-state-progress-bg)',
+            text: 'var(--color-state-progress-text)',
+            dot: 'var(--color-state-progress-dot)',
+        },
+        terminado: {
+            bg: 'var(--color-state-done-bg)',
+            text: 'var(--color-state-done-text)',
+            dot: 'var(--color-state-done-dot)',
+        },
+        pendiente_facturar: {
+            bg: 'var(--color-state-pending-bg)',
+            text: 'var(--color-state-pending-text)',
+            dot: 'var(--color-state-pending-dot)',
+        },
+        facturado: {
+            bg: 'var(--color-state-billed-bg)',
+            text: 'var(--color-state-billed-text)',
+            dot: 'var(--color-state-billed-dot)',
+        },
+        finalizado: {
+            bg: 'var(--color-state-closed-bg)',
+            text: 'var(--color-state-closed-text)',
+            dot: 'var(--color-state-closed-dot)',
+        },
+        cancelado: {
+            bg: 'var(--color-state-blocked-bg)',
+            text: 'var(--color-state-blocked-text)',
+            dot: 'var(--color-state-blocked-dot)',
+        },
+    }[normalized] ?? {
+        bg: 'var(--color-state-closed-bg)',
+        text: 'var(--color-state-closed-text)',
+        dot: 'var(--color-state-closed-dot)',
+    };
+
+    return (
+        <span
+            className="inline-flex whitespace-nowrap items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+            style={{ backgroundColor: palette.bg, color: palette.text }}
+        >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: palette.dot }} />
+            {label}
+        </span>
+    );
+}
+
+function SecondaryStatusChip({ label, tone = 'neutral' }) {
+    const palette = {
+        neutral: {
+            bg: 'rgba(148, 163, 184, 0.16)',
+            text: 'var(--color-text-muted)',
+            border: 'rgba(148, 163, 184, 0.22)',
+        },
+        pending: {
+            bg: 'var(--color-state-pending-bg)',
+            text: 'var(--color-state-pending-text)',
+            border: 'rgba(217, 119, 6, 0.18)',
+        },
+        blocked: {
+            bg: 'var(--color-state-blocked-bg)',
+            text: 'var(--color-state-blocked-text)',
+            border: 'rgba(220, 38, 38, 0.18)',
+        },
+    }[tone];
+
+    return (
+        <span
+            className="inline-flex whitespace-nowrap items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"
+            style={{ backgroundColor: palette.bg, color: palette.text, borderColor: palette.border }}
+        >
+            {label}
+        </span>
+    );
+}
+
+function EstadoMeta({ trabajo }) {
+    const chips = [];
+
+    if (trabajo?.estado_facturacion === 'facturado_parcial') {
+        chips.push({ key: 'facturacion-parcial', label: 'Facturación parcial', tone: 'pending' });
+    }
+
+    if (trabajo?.cierre_secundario === 'listo_para_cierre') {
+        chips.push({ key: 'cierre-pendiente', label: 'Cierre pendiente', tone: 'neutral' });
+    }
+
+    if (trabajo?.cierre_secundario === 'bloqueado') {
+        chips.push({ key: 'cierre-bloqueado', label: 'Cierre bloqueado', tone: 'blocked' });
+    }
+
+    if (chips.length === 0) return null;
+
+    return (
+        <span className="inline-flex max-w-full flex-nowrap items-center gap-1 overflow-hidden whitespace-nowrap">
+            {chips.map((chip) => (
+                <SecondaryStatusChip key={chip.key} label={chip.label} tone={chip.tone} />
+            ))}
+        </span>
+    );
 }
 
 function responsableName(responsables, value) {
@@ -150,22 +288,44 @@ function responsableName(responsables, value) {
     return responsables.find((responsable) => String(responsable.id) === String(value))?.nombre ?? null;
 }
 
-function pedidoLabel(pedido) {
-    if (!pedido) return null;
+function pedidoCreateFromTrabajoUrl(trabajo) {
+    if (!trabajo?.id_trabajo) return null;
 
-    const parts = [
-        pedido.numero,
-        pedido.id_trabajo ? `Trabajo ${pedido.id_trabajo}` : null,
-        pedido.fecha_solicitud,
-    ].filter(Boolean);
+    return `${route('pedidos.create')}?trabajo_id=${encodeURIComponent(trabajo.id_trabajo)}`;
+}
 
-    return parts.join(' - ');
+function pedidoLookupUrl(numeroPedido) {
+    if (!numeroPedido) return null;
+
+    return `${route('pedidos.index')}?search=${encodeURIComponent(numeroPedido)}`;
+}
+
+function pedidoDisplayLabel(pedido, index) {
+    const number = pedido?.numero_pedido ?? pedido?.numero ?? '';
+    return `Pedido ${index + 1} · ${number || 'Sin número'}`;
+}
+
+function normalizePedidoSummary(trabajo) {
+    return [...(trabajo?.pedidos_resumen ?? [])].sort((a, b) => (Number(a.id_pedido) || 0) - (Number(b.id_pedido) || 0));
 }
 
 function stationLabel(estacion) {
     if (!estacion) return null;
 
     return `${estacion.codigo ? `${estacion.codigo} - ` : ''}${estacion.nombre ?? 'Sin nombre'}`;
+}
+
+function contractOptionLabel(contract) {
+    if (!contract) return null;
+
+    const code = contract.codigo ? `${contract.codigo} · ` : '';
+    return `${code}${contract.nombre ?? 'Contrato sin nombre'}`;
+}
+
+function categoryOptionLabel(option) {
+    if (!option) return null;
+
+    return option.codigo ? `${option.codigo} · ${option.nombre}` : option.nombre;
 }
 
 function formatConflictValue(fieldName, value, responsables = []) {
@@ -206,6 +366,153 @@ function FieldError({ message }) {
         <span className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-full border border-red-200 bg-red-50 text-[10px] font-bold text-red-700" title={message}>
             !
         </span>
+    );
+}
+
+function normalizeSearch(value) {
+    return String(value ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+}
+
+function SearchableInlineSelect({
+    value,
+    options = [],
+    onSelect,
+    placeholder,
+    searchPlaceholder,
+    disabled = false,
+    error = '',
+    emptyLabel = 'Sin resultados',
+    selectedLabel = '',
+    className = '',
+    openOnMount = false,
+    onClose,
+}) {
+    const wrapperRef = useRef(null);
+    const inputRef = useRef(null);
+    const [open, setOpen] = useState(openOnMount);
+    const [search, setSearch] = useState('');
+    const selected = options.find((option) => String(option.value) === String(value)) ?? null;
+    const label = selected?.label ?? selectedLabel ?? '';
+    const filteredOptions = useMemo(() => {
+        const needle = normalizeSearch(search);
+        const source = needle
+            ? options.filter((option) => normalizeSearch(option.searchText ?? option.label).includes(needle))
+            : options;
+
+        return source.slice(0, 80);
+    }, [options, search]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const timer = window.setTimeout(() => inputRef.current?.focus(), 30);
+        return () => window.clearTimeout(timer);
+    }, [open]);
+
+    function close() {
+        setOpen(false);
+        setSearch('');
+        onClose?.();
+    }
+
+    async function commit(nextValue) {
+        if (disabled) return;
+
+        await onSelect(nextValue);
+        close();
+    }
+
+    return (
+        <div
+            ref={wrapperRef}
+            className={`relative min-w-0 ${className}`}
+            onBlur={(event) => {
+                if (!wrapperRef.current?.contains(event.relatedTarget)) {
+                    close();
+                }
+            }}
+        >
+            <button
+                type="button"
+                onClick={() => {
+                    if (disabled) return;
+                    if (open) {
+                        close();
+                        return;
+                    }
+                    setOpen(true);
+                }}
+                disabled={disabled}
+                className={`flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-md border bg-surface px-2 text-left text-[11px] leading-4 text-text-main outline-none transition hover:bg-surface-2 focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-hint ${
+                    error ? 'border-red-300 bg-red-50/40' : 'border-border'
+                }`}
+                title={error || label || placeholder}
+            >
+                <span className="truncate font-mono">{label || placeholder}</span>
+                <span className="shrink-0 text-[10px] text-text-hint">{open ? '▲' : '⌕'}</span>
+            </button>
+
+            {open && (
+                <div className="absolute left-0 top-9 z-30 w-[min(24rem,calc(100vw-2rem))] rounded-lg border border-border bg-surface p-2 shadow-xl">
+                    <input
+                        ref={inputRef}
+                        type="search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                                event.preventDefault();
+                                close();
+                            }
+                            if (event.key === 'Enter' && filteredOptions.length === 1) {
+                                event.preventDefault();
+                                commit(filteredOptions[0].value);
+                            }
+                        }}
+                        placeholder={searchPlaceholder}
+                        className="h-8 w-full rounded-md border border-border bg-surface-2 px-2 text-xs text-text-main outline-none placeholder:text-text-hint focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
+                    />
+                    <div className="mt-2 max-h-64 overflow-y-auto rounded-md border border-border/70">
+                        {filteredOptions.length === 0 ? (
+                            <div className="px-3 py-3 text-xs text-text-hint">{emptyLabel}</div>
+                        ) : (
+                            filteredOptions.map((option) => {
+                                const isSelected = String(option.value) === String(value);
+
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onMouseDown={(event) => event.preventDefault()}
+                                        onClick={() => commit(option.value)}
+                                        className={`block w-full px-3 py-2 text-left text-xs transition ${
+                                            isSelected
+                                                ? 'bg-(--ciete-red)/10 font-semibold text-(--ciete-red)'
+                                                : 'text-text-main hover:bg-surface-2'
+                                        }`}
+                                        title={option.label}
+                                    >
+                                        <span className="block truncate">{option.label}</span>
+                                        {option.hint && (
+                                            <span className="mt-0.5 block truncate text-[10px] font-normal text-text-hint">
+                                                {option.hint}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+                    <p className="mt-1 text-[10px] text-text-hint">
+                        {filteredOptions.length} de {options.length} visibles. Escribe código, nombre o número.
+                    </p>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -483,6 +790,12 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
         onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, fieldName),
     });
     const [editing, setEditing] = useState(false);
+    const estadoOptions = ESTADO_OPTIONS_EDITABLES.some((option) => option.value === value)
+        ? ESTADO_OPTIONS_EDITABLES
+        : [
+            { value, label: ESTADO_LABEL[String(value ?? '').trim().toLowerCase()] ?? value ?? '—' },
+            ...ESTADO_OPTIONS_EDITABLES,
+        ];
 
     function rollback() {
         cancel();
@@ -490,7 +803,12 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
     }
 
     if (!canEdit) {
-        return <BadgeTrabajo estado={value} />;
+        return (
+            <span className="inline-flex max-w-full flex-nowrap items-center gap-1 overflow-hidden whitespace-nowrap">
+                <EstadoBadge estado={value} />
+                <EstadoMeta trabajo={trabajo} />
+            </span>
+        );
     }
 
     return (
@@ -527,7 +845,7 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
                     }}
                     className="h-9 min-w-[12rem] rounded-lg border border-(--ciete-red) bg-surface px-3 pr-9 text-sm text-text-main outline-none ring-1 ring-(--ciete-red)"
                 >
-                    {ESTADO_OPTIONS.map((option) => (
+                    {estadoOptions.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                 </select>
@@ -536,10 +854,11 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
                     type="button"
                     onClick={() => setEditing(true)}
                     disabled={isSaving}
-                    className="inline-flex items-center rounded px-1 py-0.5 transition hover:bg-surface-2 disabled:cursor-wait"
+                    className="inline-flex max-w-full flex-nowrap items-center gap-1 overflow-hidden whitespace-nowrap rounded px-1 py-0.5 transition hover:bg-surface-2 disabled:cursor-wait"
                     title="Editar estado"
                 >
-                    <BadgeTrabajo estado={value} />
+                    <EstadoBadge estado={value} />
+                    <EstadoMeta trabajo={trabajo} />
                     <SavingMark show={isSaving} />
                     <FieldError message={error && !conflict ? error : null} />
                 </button>
@@ -632,39 +951,100 @@ function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdi
     );
 }
 
-function EditablePedidoCell({ trabajo, pedidos = [], onPatched, canEdit = false }) {
-    const fieldName = 'id_pedido_principal';
-    const contextOptions = pedidos.filter((pedido) => String(pedido.id_contexto) === String(trabajo.id_contexto));
-    const hasCurrentPedido = contextOptions.some((pedido) => String(pedido.id) === String(trabajo.id_pedido_principal));
-    const options = !hasCurrentPedido && trabajo.id_pedido_principal
-        ? [
-            {
-                id: trabajo.id_pedido_principal,
-                id_contexto: trabajo.id_contexto,
-                id_trabajo: trabajo.id_trabajo,
-                numero: trabajo.numero_pedido_principal,
-                fecha_solicitud: trabajo.fecha_solicitud_pedido,
-            },
-            ...contextOptions,
-        ]
-        : contextOptions;
-    const selectedPedido = options.find((pedido) => String(pedido.id) === String(trabajo.id_pedido_principal)) ?? null;
-    const selectedLabel = pedidoLabel(selectedPedido) ?? trabajo.numero_pedido_principal;
-    const { value, isSaving, error, conflict, save, resolveConflict } = useOptimisticField({
+function TrabajoPedidoFlowCells({
+    trabajo,
+    tarifarios = [],
+    onPatched,
+    canEdit = false,
+    canCreatePedidos = false,
+    canEditPedidos = false,
+}) {
+    const fieldName = 'id_tarifario';
+    const pedidosResumen = useMemo(() => normalizePedidoSummary(trabajo), [trabajo]);
+    const hasPedidos = pedidosResumen.length > 0 || Number(trabajo.pedidos_count ?? 0) > 0;
+    const options = useMemo(() => {
+        return tarifarios.filter((item) => {
+            if (String(item.id_contexto) !== String(trabajo.id_contexto)) {
+                return false;
+            }
+
+            if (!trabajo.id_empresa_cliente) {
+                return true;
+            }
+
+            return String(item.id_empresa_cliente) === String(trabajo.id_empresa_cliente);
+        });
+    }, [tarifarios, trabajo.id_contexto, trabajo.id_empresa_cliente]);
+    const currentOption = options.find((item) => String(item.id) === String(trabajo.id_tarifario)) ?? null;
+    const defaultOption = options.find((item) => Boolean(item.is_default)) ?? null;
+    const suggestedOption = currentOption ?? defaultOption ?? (options.length === 1 ? options[0] : null);
+    const [selectedTarifario, setSelectedTarifario] = useState(() => String(suggestedOption?.id ?? ''));
+    const [showAllPedidos, setShowAllPedidos] = useState(false);
+    const { value, isSaving, error, conflict, save, resolveConflict, cancel } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
-        initialValue: trabajo.id_pedido_principal ?? '',
+        initialValue: trabajo.id_tarifario ?? '',
         patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
         onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, fieldName),
     });
 
-    if (!canEdit) {
-        return (
-            <span className="block max-w-[190px] truncate font-mono text-text-muted" title={selectedLabel ?? trabajo.numero_pedido_principal}>
-                {fmt(trabajo.numero_pedido_principal)}
-            </span>
-        );
+    useEffect(() => {
+        setSelectedTarifario(String(suggestedOption?.id ?? ''));
+    }, [trabajo.id_trabajo, trabajo.id_tarifario, suggestedOption?.id]);
+
+    useEffect(() => {
+        setShowAllPedidos(false);
+    }, [trabajo.id_trabajo, pedidosResumen.length]);
+
+    const persistedTarifario = String(value ?? '');
+    const effectiveTarifario = hasPedidos ? persistedTarifario : String(selectedTarifario ?? '');
+    const selectedOption = options.find((item) => String(item.id) === effectiveTarifario) ?? currentOption ?? suggestedOption;
+    const currentLabel = selectedOption ? tarifarioOptionLabel(selectedOption) : contractTariff(trabajo);
+    const visiblePedidos = showAllPedidos ? pedidosResumen : pedidosResumen.slice(0, 3);
+    const hiddenPedidosCount = Math.max(0, pedidosResumen.length - 3);
+    const shouldShowPlaceholderOption = options.length === 0 || (!currentOption && !defaultOption && options.length > 1);
+    const actionLabel = effectiveTarifario
+        ? (hasPedidos ? 'Crear otro pedido' : 'Crear pedido')
+        : 'Seleccionar tarifario';
+    const actionDisabled = isSaving || !canCreatePedidos || !effectiveTarifario;
+
+    function openPedido(pedido) {
+        if (canEditPedidos) {
+            router.visit(route('pedidos.edit', pedido.id_pedido));
+            return;
+        }
+
+        const lookupUrl = pedidoLookupUrl(pedido.numero_pedido ?? pedido.numero);
+        router.visit(lookupUrl ?? route('pedidos.index'));
+    }
+
+    async function persistTarifarioIfNeeded() {
+        if (!effectiveTarifario) {
+            return false;
+        }
+
+        if (String(persistedTarifario) === String(effectiveTarifario)) {
+            return true;
+        }
+
+        return save(Number(effectiveTarifario));
+    }
+
+    async function handleCreatePedido() {
+        if (actionDisabled) {
+            return;
+        }
+
+        const ok = await persistTarifarioIfNeeded();
+        if (!ok) {
+            return;
+        }
+
+        const createUrl = pedidoCreateFromTrabajoUrl(trabajo);
+        if (createUrl) {
+            router.visit(createUrl);
+        }
     }
 
     return (
@@ -672,32 +1052,109 @@ function EditablePedidoCell({ trabajo, pedidos = [], onPatched, canEdit = false 
             <ConflictDialog
                 conflict={conflict}
                 fieldName={fieldName}
-                canKeepMine={canEdit}
+                canKeepMine={canEdit && !hasPedidos}
                 isSaving={isSaving}
-                onReload={() => resolveConflict('reload')}
-                onCancel={() => resolveConflict('cancel')}
-                onKeepMine={() => resolveConflict('keepMine')}
+                onReload={async () => {
+                    await resolveConflict('reload');
+                    setSelectedTarifario(String(conflict?.currentValue ?? currentOption?.id ?? ''));
+                }}
+                onCancel={() => {
+                    cancel();
+                    setSelectedTarifario(String(suggestedOption?.id ?? ''));
+                }}
+                onKeepMine={async () => {
+                    const ok = await resolveConflict('keepMine');
+                    if (ok) {
+                        setSelectedTarifario(String(conflict?.myValue ?? effectiveTarifario ?? ''));
+                    }
+                }}
             />
-            <div className="flex items-center">
-                <select
-                    value={value}
-                    onChange={(event) => save(event.target.value)}
-                    disabled={isSaving || options.length === 0}
-                    className={`h-9 w-full min-w-[14rem] rounded-lg border bg-surface px-3 pr-9 font-mono text-sm leading-5 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-hint ${
-                        error ? 'border-red-300 bg-red-50/40' : 'border-border'
+
+            <td className="max-w-[320px] px-3 py-2.5 align-top">
+                {canEdit && !hasPedidos ? (
+                    <div className="flex min-w-0 items-center gap-1">
+                        <select
+                            value={effectiveTarifario}
+                            onChange={async (event) => {
+                                const nextValue = event.target.value;
+                                setSelectedTarifario(nextValue);
+                                if (nextValue) {
+                                    await save(Number(nextValue));
+                                }
+                            }}
+                            disabled={isSaving || options.length === 0}
+                            className={`h-8 w-full min-w-[15rem] rounded-md border bg-surface px-2 pr-8 text-[11px] leading-4 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-hint ${
+                                error ? 'border-red-300 bg-red-50/40' : 'border-border'
+                            }`}
+                        >
+                            {shouldShowPlaceholderOption && (
+                                <option value="">{options.length === 0 ? 'Sin opciones disponibles' : 'Seleccionar tarifario'}</option>
+                            )}
+                            {options.map((option) => (
+                                <option key={option.id} value={option.id}>
+                                    {tarifarioOptionLabel(option)}
+                                </option>
+                            ))}
+                        </select>
+                        <SavingMark show={isSaving} />
+                        <FieldError message={error && !conflict ? error : null} />
+                    </div>
+                ) : (
+                    <span className="block max-w-[320px] truncate leading-5 text-text-main">
+                        {currentLabel || 'Seleccionar tarifario'}
+                    </span>
+                )}
+            </td>
+
+            <td className="max-w-[320px] px-3 py-2.5 align-top">
+                {pedidosResumen.length === 0 ? (
+                    <span className="block text-text-muted">Sin pedidos</span>
+                ) : (
+                    <div className="space-y-1">
+                        {visiblePedidos.map((pedido, index) => {
+                            const absoluteIndex = showAllPedidos ? index : index;
+                            const displayIndex = showAllPedidos ? index : index;
+                            const label = pedidoDisplayLabel(pedido, showAllPedidos ? absoluteIndex : displayIndex);
+
+                            return (
+                                <button
+                                    key={pedido.id_pedido}
+                                    type="button"
+                                    onClick={() => openPedido(pedido)}
+                                    className="block max-w-[300px] truncate rounded px-1 py-0.5 text-left text-text-main transition hover:bg-surface-2 hover:text-(--ciete-red)"
+                                    title={label}
+                                >
+                                    {pedidoDisplayLabel(pedido, pedidosResumen.findIndex((item) => item.id_pedido === pedido.id_pedido))}
+                                </button>
+                            );
+                        })}
+                        {hiddenPedidosCount > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowAllPedidos((current) => !current)}
+                                className="rounded border border-border bg-surface px-2 py-1 text-[11px] font-medium text-text-muted transition hover:bg-surface-2 hover:text-text-main"
+                            >
+                                {showAllPedidos ? 'Ver menos' : `Ver ${pedidosResumen.length} pedidos`}
+                            </button>
+                        )}
+                    </div>
+                )}
+            </td>
+
+            <td className="whitespace-nowrap px-3 py-2.5 align-top">
+                <button
+                    type="button"
+                    onClick={handleCreatePedido}
+                    disabled={actionDisabled}
+                    className={`rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                        actionDisabled
+                            ? 'cursor-not-allowed border-border bg-surface-2 text-text-hint'
+                            : 'border-border bg-surface text-text-main hover:bg-surface-2 hover:text-(--ciete-red)'
                     }`}
-                    title={error ?? selectedLabel ?? 'Selecciona pedido'}
                 >
-                    <option value="" disabled>{options.length === 0 ? 'Sin pedidos disponibles' : 'Selecciona pedido'}</option>
-                    {options.map((pedido) => (
-                        <option key={pedido.id} value={pedido.id}>
-                            {pedidoLabel(pedido)}
-                        </option>
-                    ))}
-                </select>
-                <SavingMark show={isSaving} />
-                <FieldError message={error} />
-            </div>
+                    {actionLabel}
+                </button>
+            </td>
         </>
     );
 }
@@ -729,6 +1186,12 @@ function EditableStationCell({ trabajo, estaciones = [], onPatched, canEdit = fa
         patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
         onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, fieldName),
     });
+    const stationOptions = options.map((estacion) => ({
+        value: estacion.id,
+        label: stationLabel(estacion),
+        hint: [estacion.municipio, estacion.provincia].filter(Boolean).join(' · '),
+        searchText: [estacion.codigo, estacion.nombre, estacion.municipio, estacion.provincia].filter(Boolean).join(' '),
+    }));
 
     if (!canEdit) {
         return (
@@ -749,23 +1212,18 @@ function EditableStationCell({ trabajo, estaciones = [], onPatched, canEdit = fa
                 onCancel={() => resolveConflict('cancel')}
                 onKeepMine={() => resolveConflict('keepMine')}
             />
-            <div className="flex items-center">
-                <select
+            <div className="flex min-w-0 items-center gap-1">
+                <SearchableInlineSelect
                     value={value}
-                    onChange={(event) => save(event.target.value)}
+                    options={stationOptions}
+                    onSelect={(nextValue) => save(nextValue)}
                     disabled={isSaving || options.length === 0}
-                    className={`h-9 w-full min-w-[15rem] rounded-lg border bg-surface px-3 pr-9 font-mono text-sm leading-5 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-text-hint ${
-                        error ? 'border-red-300 bg-red-50/40' : 'border-border'
-                    }`}
-                    title={error ?? selectedLabel ?? 'Selecciona estacion'}
-                >
-                    <option value="" disabled>{options.length === 0 ? 'Sin estaciones disponibles' : 'Selecciona estacion'}</option>
-                    {options.map((estacion) => (
-                        <option key={estacion.id} value={estacion.id}>
-                            {stationLabel(estacion)}
-                        </option>
-                    ))}
-                </select>
+                    error={error}
+                    selectedLabel={selectedLabel ?? trabajo.codigo_estacion}
+                    placeholder={options.length === 0 ? 'Sin estaciones' : 'Buscar nº estación'}
+                    searchPlaceholder="Buscar por nº, nombre o municipio"
+                    emptyLabel="No hay estaciones con esa búsqueda"
+                />
                 <SavingMark show={isSaving} />
                 <FieldError message={error} />
             </div>
@@ -781,15 +1239,16 @@ function EditableCategoriaCell({
     canEdit = false,
 }) {
     const isRepsol = Number(trabajo.id_contexto) === 2;
+    const [editing, setEditing] = useState(false);
     const contextDocumentTypes = tiposDocumento.filter((tipo) => String(tipo.id_contexto) === String(trabajo.id_contexto));
     const contextWorkTypes = tiposTrabajo.filter((tipo) => String(tipo.id_contexto) === String(trabajo.id_contexto));
-    const documentField = useOptimisticField({
+    const categoriaField = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
-        fieldName: 'id_tipo_documento',
-        initialValue: trabajo.id_tipo_documento ?? '',
+        fieldName: 'categoria',
+        initialValue: trabajo.categoria ?? '',
         patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
-        onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, 'id_tipo_documento'),
+        onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, 'categoria'),
     });
     const workTypeField = useOptimisticField({
         entityId: trabajo.id_trabajo,
@@ -799,86 +1258,96 @@ function EditableCategoriaCell({
         patchRoute: route('trabajos.patch-field', trabajo.id_trabajo),
         onSaved: (payload) => onPatched(trabajo.id_trabajo, payload, 'id_tipo_trabajo'),
     });
+    const documentTypesById = new Map(contextDocumentTypes.map((item) => [String(item.id), item]));
+    const categoryCatalogOptions = isRepsol
+        ? contextWorkTypes.map((tipo) => {
+            const documentType = documentTypesById.get(String(tipo.id_tipo_documento));
 
-    if (!isRepsol) {
-        return (
-            <EditableTextCell
-                trabajo={trabajo}
-                fieldName="categoria"
-                onPatched={onPatched}
-                canEdit={canEdit}
-            />
-        );
-    }
+            return {
+                value: String(tipo.id),
+                label: categoryOptionLabel(tipo),
+                hint: documentType ? categoryOptionLabel(documentType) : null,
+                searchText: [tipo.codigo, tipo.nombre, documentType?.codigo, documentType?.nombre].filter(Boolean).join(' '),
+            };
+        })
+        : (() => {
+            const contextCategorySource = contextWorkTypes.length > 0 ? contextWorkTypes : contextDocumentTypes;
+
+            return contextCategorySource.map((item) => ({
+                value: String(item.nombre ?? ''),
+                label: categoryOptionLabel(item),
+                hint: item.codigo ? `Código ${item.codigo}` : null,
+                searchText: [item.codigo, item.nombre].filter(Boolean).join(' '),
+            }));
+        })();
 
     if (!canEdit) {
         return (
-            <span className="block max-w-[220px] truncate text-text-muted" title={trabajo.tipo_trabajo_nombre}>
-                {fmt(trabajo.tipo_trabajo_nombre)}
+            <span className="block max-w-[220px] truncate text-text-muted" title={trabajo.tipo_trabajo_nombre ?? trabajo.categoria}>
+                {fmt(trabajo.tipo_trabajo_nombre ?? trabajo.categoria)}
             </span>
         );
     }
 
-    const selectedDocumentId = documentField.value || trabajo.id_tipo_documento || '';
-    const availableWorkTypes = selectedDocumentId
-        ? contextWorkTypes.filter((tipo) => String(tipo.id_tipo_documento) === String(selectedDocumentId))
-        : contextWorkTypes;
-    const isSaving = documentField.isSaving || workTypeField.isSaving;
-    const error = documentField.error || workTypeField.error;
+    if (categoryCatalogOptions.length === 0) {
+        return (
+            <span
+                className="inline-flex min-h-9 items-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-900"
+                title="Este contexto no tiene catálogo real de categorías/tipos activo."
+            >
+                Catálogo pendiente
+            </span>
+        );
+    }
+
+    const isSaving = isRepsol ? workTypeField.isSaving : categoriaField.isSaving;
+    const error = isRepsol ? workTypeField.error : categoriaField.error;
+    const selectedValue = isRepsol ? String(workTypeField.value ?? trabajo.id_tipo_trabajo ?? '') : String(categoriaField.value ?? trabajo.categoria ?? '');
+    const selectedLabel = isRepsol
+        ? (categoryCatalogOptions.find((option) => String(option.value) === selectedValue)?.label ?? trabajo.tipo_trabajo_nombre ?? '')
+        : String(categoriaField.value ?? trabajo.categoria ?? '');
+
+    if (!editing) {
+        return (
+            <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="block max-w-[220px] truncate text-left leading-5 text-text-muted transition hover:text-(--ciete-red)"
+                title={selectedLabel || 'Editar categoría de trabajo'}
+            >
+                {fmt(selectedLabel)}
+            </button>
+        );
+    }
 
     return (
         <>
             <ConflictDialog
-                conflict={documentField.conflict}
-                fieldName="id_tipo_documento"
+                conflict={isRepsol ? workTypeField.conflict : categoriaField.conflict}
+                fieldName={isRepsol ? 'id_tipo_trabajo' : 'categoria'}
                 canKeepMine={canEdit}
-                isSaving={documentField.isSaving}
-                onReload={() => documentField.resolveConflict('reload')}
-                onCancel={() => documentField.resolveConflict('cancel')}
-                onKeepMine={() => documentField.resolveConflict('keepMine')}
+                isSaving={isSaving}
+                onReload={() => (isRepsol ? workTypeField.resolveConflict('reload') : categoriaField.resolveConflict('reload'))}
+                onCancel={() => (isRepsol ? workTypeField.resolveConflict('cancel') : categoriaField.resolveConflict('cancel'))}
+                onKeepMine={() => (isRepsol ? workTypeField.resolveConflict('keepMine') : categoriaField.resolveConflict('keepMine'))}
             />
-            <ConflictDialog
-                conflict={workTypeField.conflict}
-                fieldName="id_tipo_trabajo"
-                canKeepMine={canEdit}
-                isSaving={workTypeField.isSaving}
-                onReload={() => workTypeField.resolveConflict('reload')}
-                onCancel={() => workTypeField.resolveConflict('cancel')}
-                onKeepMine={() => workTypeField.resolveConflict('keepMine')}
-            />
-            <div className="grid min-w-52 gap-1.5">
-                <select
-                    value={documentField.value}
-                    onChange={(event) => documentField.save(event.target.value)}
-                    disabled={isSaving || contextDocumentTypes.length === 0}
-                    className={`h-9 rounded-lg border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:bg-surface-2 disabled:text-text-hint ${
-                        documentField.error ? 'border-red-300 bg-red-50/40' : 'border-border'
-                    }`}
-                    title={documentField.error ?? 'Tipo documental'}
-                >
-                    <option value="" disabled>Tipo doc...</option>
-                    {contextDocumentTypes.map((tipo) => (
-                        <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                    ))}
-                </select>
-                <div className="flex items-center">
-                    <select
-                        value={workTypeField.value}
-                        onChange={(event) => workTypeField.save(event.target.value)}
-                        disabled={isSaving || availableWorkTypes.length === 0}
-                        className={`h-9 w-full rounded-lg border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:bg-surface-2 disabled:text-text-hint ${
-                            workTypeField.error ? 'border-red-300 bg-red-50/40' : 'border-border'
-                        }`}
-                        title={workTypeField.error ?? 'Tipo de trabajo'}
-                    >
-                        <option value="" disabled>Tipo trabajo...</option>
-                        {availableWorkTypes.map((tipo) => (
-                            <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                        ))}
-                    </select>
-                    <SavingMark show={isSaving} />
-                    <FieldError message={error} />
-                </div>
+            <div className="flex min-w-0 items-center gap-1">
+                <SearchableInlineSelect
+                    value={selectedValue}
+                    options={categoryCatalogOptions}
+                    onSelect={(nextValue) => (isRepsol ? workTypeField.save(nextValue) : categoriaField.save(nextValue))}
+                    disabled={isSaving}
+                    error={error}
+                    selectedLabel={selectedLabel}
+                    placeholder="Buscar categoría"
+                    searchPlaceholder="Código o nombre"
+                    emptyLabel="No hay categorías con esa búsqueda"
+                    className="min-w-[12rem]"
+                    openOnMount
+                    onClose={() => setEditing(false)}
+                />
+                <SavingMark show={isSaving} />
+                <FieldError message={error} />
             </div>
         </>
     );
@@ -887,7 +1356,7 @@ function EditableCategoriaCell({
 function ObservacionesModal({ trabajo, onClose, onPatched, canEdit = false }) {
     const fieldName = 'observaciones';
     const textareaRef = useRef(null);
-    const { isSaving, error, conflict, save, resolveConflict, cancel } = useOptimisticField({
+    const { isSaving, error, conflict, save, resolveConflict, cancel, dismissConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -916,6 +1385,11 @@ function ObservacionesModal({ trabajo, onClose, onPatched, canEdit = false }) {
     function handleCancel() {
         cancel();
         onClose();
+    }
+
+    // Cierra solo el ConflictDialog y vuelve al modal principal con el borrador intacto.
+    function handleDismissConflict() {
+        dismissConflict();
     }
 
     return (
@@ -988,7 +1462,7 @@ function ObservacionesModal({ trabajo, onClose, onPatched, canEdit = false }) {
                     setDraft(serverValue);
                     await resolveConflict('reload');
                 }}
-                onCancel={handleCancel}
+                onCancel={handleDismissConflict}
                 onKeepMine={async () => {
                     const ok = await resolveConflict('keepMine');
                     if (ok) onClose();
@@ -1113,63 +1587,135 @@ function NewTrabajoRow({
     isSaving,
     onChange,
     onSave,
+    onSaveAndCreatePedido,
     onCancel,
 }) {
     const estaciones = creationCatalogs?.estaciones ?? [];
-    const contratos = creationCatalogs?.contratos ?? [];
+    const tarifarios = creationCatalogs?.tarifarios ?? [];
     const tiposDocumento = creationCatalogs?.tiposDocumento ?? [];
     const tiposTrabajo = creationCatalogs?.tiposTrabajo ?? [];
     const selectedStation = estaciones.find((item) => String(item.id) === String(row.id_estacion_servicio)) ?? null;
-    const isMoeve = isMoeveContext(activeContext);
     const isRepsol = isRepsolContext(activeContext);
+    const contextId = String(row.id_contexto || activeContext?.id_contexto || '');
+    const contextDocumentTypes = tiposDocumento.filter((item) => String(item.id_contexto) === contextId);
+    const contextWorkTypes = tiposTrabajo.filter((item) => String(item.id_contexto) === contextId);
     const availableWorkTypes = row.id_tipo_documento
-        ? tiposTrabajo.filter((item) => String(item.id_tipo_documento) === String(row.id_tipo_documento))
-        : tiposTrabajo;
+        ? contextWorkTypes.filter((item) => String(item.id_tipo_documento) === String(row.id_tipo_documento))
+        : contextWorkTypes;
+    const documentTypesById = new Map(contextDocumentTypes.map((item) => [String(item.id), item]));
+    const categoryCatalogOptions = isRepsol
+        ? availableWorkTypes.map((tipo) => {
+            const documentType = documentTypesById.get(String(tipo.id_tipo_documento));
+
+            return {
+                value: String(tipo.id),
+                label: categoryOptionLabel(tipo),
+                hint: documentType ? categoryOptionLabel(documentType) : null,
+                searchText: [tipo.codigo, tipo.nombre, documentType?.codigo, documentType?.nombre].filter(Boolean).join(' '),
+            };
+        })
+        : (() => {
+            const contextCategorySource = contextWorkTypes.length > 0 ? contextWorkTypes : contextDocumentTypes;
+
+            return contextCategorySource.map((item) => ({
+                value: String(item.nombre ?? ''),
+                label: categoryOptionLabel(item),
+                hint: item.codigo ? `Código ${item.codigo}` : null,
+                searchText: [item.codigo, item.nombre].filter(Boolean).join(' '),
+            }));
+        })();
+    const availableTarifarios = tarifarios.filter((item) => {
+        if (String(item.id_contexto) !== contextId) {
+            return false;
+        }
+
+        if (!selectedStation?.id_empresa_cliente) {
+            return false;
+        }
+
+        return String(item.id_empresa_cliente) === String(selectedStation.id_empresa_cliente);
+    });
+    const defaultTarifario = availableTarifarios.find((item) => Boolean(item.is_default)) ?? null;
+    const selectedTarifario = availableTarifarios.find((item) => String(item.id) === String(row.id_tarifario)) ?? null;
+    const tarifarioOptions = availableTarifarios.map((option) => ({
+        value: String(option.id),
+        label: tarifarioOptionLabel(option),
+        hint: null,
+        searchText: [option.codigo_contrato, option.nombre_contrato, option.nombre_tarifa].filter(Boolean).join(' '),
+    }));
+    const stationOptions = estaciones.map((estacion) => ({
+        value: estacion.id,
+        label: stationLabel(estacion),
+        hint: [estacion.municipio, estacion.provincia].filter(Boolean).join(' · '),
+        searchText: [estacion.codigo, estacion.nombre, estacion.municipio, estacion.provincia].filter(Boolean).join(' '),
+    }));
+    const categoryError = errors?.id_tipo_trabajo || errors?.id_tipo_documento || errors?.categoria || '';
+    const tarifaError = errors?.id_tarifario || errors?.id_contrato || '';
+    const pedidoActionLabel = row.id_tarifario ? 'Crear pedido' : 'Seleccionar tarifario';
 
     const cellInput = (field) => `h-11 w-full rounded-lg border bg-surface px-3 text-sm leading-5 text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) ${
         errors?.[field] ? 'border-red-300 bg-red-50/40' : 'border-border'
     }`;
-    const cellSelect = (field) => `${cellInput(field)} pr-10`;
     const readOnlyCell = 'block max-w-[220px] truncate text-[12px] leading-5 text-text-muted';
+
+    useEffect(() => {
+        if (selectedTarifario) {
+            if (String(row.id_contrato ?? '') !== String(selectedTarifario.id_contrato ?? '')) {
+                onChange('id_contrato', String(selectedTarifario.id_contrato ?? ''));
+            }
+            return;
+        }
+
+        if (defaultTarifario) {
+            if (String(row.id_tarifario ?? '') !== String(defaultTarifario.id)) {
+                onChange('id_tarifario', String(defaultTarifario.id));
+            }
+            if (String(row.id_contrato ?? '') !== String(defaultTarifario.id_contrato ?? '')) {
+                onChange('id_contrato', String(defaultTarifario.id_contrato ?? ''));
+            }
+            return;
+        }
+
+        if (availableTarifarios.length === 1) {
+            const [onlyOption] = availableTarifarios;
+
+            if (String(row.id_tarifario ?? '') !== String(onlyOption.id)) {
+                onChange('id_tarifario', String(onlyOption.id));
+            }
+            if (String(row.id_contrato ?? '') !== String(onlyOption.id_contrato ?? '')) {
+                onChange('id_contrato', String(onlyOption.id_contrato ?? ''));
+            }
+            return;
+        }
+
+        if (String(row.id_tarifario ?? '').trim() !== '') {
+            onChange('id_tarifario', '');
+        }
+        if (String(row.id_contrato ?? '').trim() !== '') {
+            onChange('id_contrato', '');
+        }
+    }, [availableTarifarios, defaultTarifario, onChange, row.id_contrato, row.id_tarifario, selectedTarifario]);
 
     return (
         <tr className="border-y border-(--ciete-red)/30 bg-(--ciete-red)/[0.06] align-middle shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             <td className="whitespace-nowrap px-3 py-3 align-top">
-                <div className="grid gap-2.5">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="rounded-full border border-(--ciete-red)/25 bg-(--ciete-red)/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-(--ciete-red)">
-                            Nuevo
-                        </span>
-                        <input
-                            type="number"
-                            autoFocus
-                            value={row.numero_trabajo}
-                            onChange={(event) => onChange('numero_trabajo', event.target.value)}
-                            className={`${cellInput('numero_trabajo')} max-w-28 font-mono`}
-                            placeholder="Interno"
-                        />
-                    </div>
-                    <input
-                        value={row.numero_trabajo_operativo}
-                        onChange={(event) => onChange('numero_trabajo_operativo', event.target.value)}
-                        className={`${cellInput('numero_trabajo_operativo')} font-mono`}
-                        placeholder="Nº CIETE opcional"
-                    />
-                </div>
+                <span className="inline-flex rounded-md border border-border bg-surface px-3 py-2 text-[11px] font-medium text-text-hint">
+                    Se generará automáticamente
+                </span>
             </td>
             <td className="px-3 py-3 align-top">
-                <select
+                <SearchableInlineSelect
                     value={row.id_estacion_servicio}
-                    onChange={(event) => onChange('id_estacion_servicio', event.target.value)}
-                    className={cellSelect('id_estacion_servicio')}
-                >
-                    <option value="">Estacion...</option>
-                    {estaciones.map((estacion) => (
-                        <option key={estacion.id} value={estacion.id}>
-                            {estacion.codigo ? `${estacion.codigo} - ` : ''}{estacion.nombre}
-                        </option>
-                    ))}
-                </select>
+                    options={stationOptions}
+                    onSelect={(nextValue) => onChange('id_estacion_servicio', nextValue)}
+                    disabled={isSaving || estaciones.length === 0}
+                    error={errors?.id_estacion_servicio}
+                    selectedLabel={selectedStation ? stationLabel(selectedStation) : ''}
+                    placeholder={estaciones.length === 0 ? 'Sin estaciones' : 'Buscar nº estación'}
+                    searchPlaceholder="Nº o nombre de estación"
+                    emptyLabel="No hay estaciones con esa búsqueda"
+                    className="min-w-[12rem]"
+                />
             </td>
             <td className="px-3 py-3 align-top">
                 <span className={readOnlyCell} title={selectedStation?.nombre}>{fmt(selectedStation?.nombre)}</span>
@@ -1181,39 +1727,37 @@ function NewTrabajoRow({
                 <span className={readOnlyCell}>{fmt(selectedStation?.provincia)}</span>
             </td>
             <td className="px-3 py-3 align-top">
-                {isRepsol ? (
-                    <div className="grid gap-2">
-                        <select
-                            value={row.id_tipo_documento}
-                            onChange={(event) => {
-                                onChange('id_tipo_documento', event.target.value);
-                                onChange('id_tipo_trabajo', '');
-                            }}
-                            className={cellSelect('id_tipo_documento')}
-                        >
-                            <option value="">Tipo doc...</option>
-                            {tiposDocumento.map((tipo) => (
-                                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                            ))}
-                        </select>
-                        <select
-                            value={row.id_tipo_trabajo}
-                            onChange={(event) => onChange('id_tipo_trabajo', event.target.value)}
-                            className={cellSelect('id_tipo_trabajo')}
-                        >
-                            <option value="">Tipo trabajo...</option>
-                            {availableWorkTypes.map((tipo) => (
-                                <option key={tipo.id} value={tipo.id}>{tipo.nombre}</option>
-                            ))}
-                        </select>
-                    </div>
-                ) : (
-                    <input
-                        value={row.categoria}
-                        onChange={(event) => onChange('categoria', event.target.value)}
-                        className={cellInput('categoria')}
-                        placeholder={isMoeve ? 'Categoria' : 'Tipo / categoria'}
+                {categoryCatalogOptions.length > 0 ? (
+                    <SearchableInlineSelect
+                        value={isRepsol ? row.id_tipo_trabajo : row.categoria}
+                        options={categoryCatalogOptions}
+                        onSelect={(nextValue) => {
+                            if (isRepsol) {
+                                const selectedOption = availableWorkTypes.find((item) => String(item.id) === String(nextValue));
+                                onChange('id_tipo_trabajo', nextValue);
+                                onChange('id_tipo_documento', selectedOption?.id_tipo_documento ? String(selectedOption.id_tipo_documento) : '');
+                                return;
+                            }
+
+                            onChange('categoria', nextValue);
+                        }}
+                        disabled={isSaving}
+                        error={categoryError}
+                        selectedLabel={isRepsol
+                            ? (categoryCatalogOptions.find((option) => String(option.value) === String(row.id_tipo_trabajo))?.label ?? '')
+                            : (row.categoria || '')}
+                        placeholder="Buscar categoría"
+                        searchPlaceholder="Código o nombre"
+                        emptyLabel="No hay categorías con esa búsqueda"
+                        className="min-w-[12rem]"
                     />
+                ) : (
+                    <span
+                        className="inline-flex min-h-11 min-w-[12rem] items-center rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium leading-5 text-amber-900"
+                        title="Este contexto no tiene catálogo real de categorías/tipos activo."
+                    >
+                        Catálogo pendiente en este contexto
+                    </span>
                 )}
             </td>
             <td className="px-3 py-3 align-top">
@@ -1224,24 +1768,42 @@ function NewTrabajoRow({
                     placeholder="Descripcion"
                 />
             </td>
-            <td className="px-3 py-3 align-top text-text-hint">-</td>
             <td className="px-3 py-3 align-top">
-                {isMoeve ? (
-                    <select
-                        value={row.id_contrato}
-                        onChange={(event) => onChange('id_contrato', event.target.value)}
-                        className={cellSelect('id_contrato')}
-                    >
-                        <option value="">Contrato...</option>
-                        {contratos.map((contrato) => (
-                            <option key={contrato.id} value={contrato.id}>{contrato.nombre ?? contrato.codigo}</option>
-                        ))}
-                    </select>
-                ) : (
-                    <span className="rounded-md border border-border bg-surface-2 px-2.5 py-1.5 text-[11px] text-text-hint" title="Campo bloqueado para este contexto">
-                        No aplica
-                    </span>
-                )}
+                <SearchableInlineSelect
+                    value={row.id_tarifario}
+                    options={tarifarioOptions}
+                    onSelect={(nextValue) => {
+                        const selectedOption = availableTarifarios.find((item) => String(item.id) === String(nextValue));
+                        onChange('id_tarifario', nextValue);
+                        onChange('id_contrato', selectedOption?.id_contrato ? String(selectedOption.id_contrato) : '');
+                    }}
+                    disabled={isSaving || !selectedStation || tarifarioOptions.length === 0}
+                    error={tarifaError}
+                    selectedLabel={selectedTarifario ? tarifarioOptionLabel(selectedTarifario) : ''}
+                    placeholder={!selectedStation
+                        ? 'Selecciona estación primero'
+                        : tarifarioOptions.length === 0
+                            ? 'Sin tarifario'
+                            : 'Seleccionar tarifario'}
+                    searchPlaceholder="Código, contrato o tarifario"
+                    emptyLabel="No hay tarifarios con esa búsqueda"
+                    className="min-w-[15rem]"
+                />
+            </td>
+            <td className="px-3 py-3 align-top text-text-muted">Sin pedidos</td>
+            <td className="px-3 py-3 align-top">
+                <button
+                    type="button"
+                    onClick={onSaveAndCreatePedido}
+                    disabled={isSaving}
+                    className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                        isSaving
+                            ? 'cursor-not-allowed border-border bg-surface-2 text-text-hint'
+                            : 'border-border bg-surface text-text-main hover:bg-surface-2 hover:text-(--ciete-red)'
+                    }`}
+                >
+                    {isSaving ? 'Guardando...' : pedidoActionLabel}
+                </button>
             </td>
             <td className="px-3 py-3 text-right align-top text-text-hint">-</td>
             <td className="px-3 py-3 text-right align-top text-text-hint">-</td>
@@ -1250,7 +1812,7 @@ function NewTrabajoRow({
                 <select
                     value={row.estado}
                     onChange={(event) => onChange('estado', event.target.value)}
-                    className={cellSelect('estado')}
+                    className={`${cellInput('estado')} pr-10`}
                 >
                     {ESTADO_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
@@ -1261,7 +1823,7 @@ function NewTrabajoRow({
                 <select
                     value={row.id_responsable_ciete}
                     onChange={(event) => onChange('id_responsable_ciete', event.target.value)}
-                    className={cellSelect('id_responsable_ciete')}
+                    className={`${cellInput('id_responsable_ciete')} pr-10`}
                 >
                     <option value="">Sin responsable</option>
                     {responsables.map((responsable) => (
@@ -1323,37 +1885,85 @@ export default function TrabajosExcelView({
     creationCatalogs = {},
 }) {
     const { auth } = usePage().props;
+    const safeFilters = filters && typeof filters === 'object' ? filters : {};
+    const safeTrabajos = Array.isArray(trabajos) ? trabajos : [];
     const activeContext = auth?.user?.active_context;
-    const pedidos = creationCatalogs?.pedidos ?? [];
     const estaciones = creationCatalogs?.estaciones ?? [];
+    const contratos = creationCatalogs?.contratos ?? [];
+    const tarifarios = creationCatalogs?.tarifarios ?? [];
     const tiposDocumento = creationCatalogs?.tiposDocumento ?? [];
     const tiposTrabajo = creationCatalogs?.tiposTrabajo ?? [];
     const canCreateInContext = canCreate && !activeContext?.is_all;
-    const [rows, setRows] = useState(trabajos);
-    const [search, setSearch] = useState(filters.search ?? '');
-    const [estado, setEstado] = useState(filters.estado ?? '');
-    const [fechaDesde, setFechaDesde] = useState(filters.fecha_desde ?? '');
-    const [fechaHasta, setFechaHasta] = useState(filters.fecha_hasta ?? '');
-    const [municipio, setMunicipio] = useState(filters.municipio ?? '');
-    const [provincia, setProvincia] = useState(filters.provincia ?? '');
-    const [codigoEstacion, setCodigoEstacion] = useState(filters.codigo_estacion ?? '');
-    const [responsableId, setResponsableId] = useState(filters.id_responsable_ciete ?? '');
+    const canCreatePedidos = hasPermission(auth?.user, 'pedidos.crear') && !activeContext?.is_all;
+    const canEditPedidos = hasPermission(auth?.user, 'pedidos.editar');
+    const [rows, setRows] = useState(safeTrabajos);
+    const [search, setSearch] = useState(safeFilters.search ?? '');
+    const [estado, setEstado] = useState(safeFilters.estado ?? '');
+    const [fechaDesde, setFechaDesde] = useState(safeFilters.fecha_desde ?? '');
+    const [fechaHasta, setFechaHasta] = useState(safeFilters.fecha_hasta ?? '');
+    const [municipio, setMunicipio] = useState(safeFilters.municipio ?? '');
+    const [provincia, setProvincia] = useState(safeFilters.provincia ?? '');
+    const [codigoEstacion, setCodigoEstacion] = useState(safeFilters.codigo_estacion ?? '');
+    const [responsableId, setResponsableId] = useState(safeFilters.id_responsable_ciete ?? '');
+    const [pedidoNumero, setPedidoNumero] = useState(safeFilters.pedido_numero ?? '');
+    const [tarifarioId, setTarifarioId] = useState(safeFilters.id_tarifario ?? '');
+    const [contratoId, setContratoId] = useState(safeFilters.id_contrato ?? '');
+    const [estacionId, setEstacionId] = useState(safeFilters.id_estacion_servicio ?? '');
+    const [categoria, setCategoria] = useState(safeFilters.categoria ?? '');
+    const [hasPedidos, setHasPedidos] = useState(safeFilters.has_pedidos ?? '');
+    const [multiPedido, setMultiPedido] = useState(safeFilters.multi_pedido ?? '');
+    const [pedidoImporte, setPedidoImporte] = useState(safeFilters.pedido_importe ?? '');
+    const [facturado, setFacturado] = useState(safeFilters.facturado ?? '');
+    const [solicitado, setSolicitado] = useState(safeFilters.solicitado ?? '');
+    const [sortField, setSortField] = useState(safeFilters.sort ?? '');
+    const [sortDirection, setSortDirection] = useState(safeFilters.direction ?? '');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(() => Boolean(
+        safeFilters.pedido_numero
+        || safeFilters.id_tarifario
+        || safeFilters.id_contrato
+        || safeFilters.id_estacion_servicio
+        || safeFilters.categoria
+        || safeFilters.has_pedidos
+        || safeFilters.multi_pedido
+        || safeFilters.pedido_importe
+        || safeFilters.facturado
+        || safeFilters.solicitado
+    ));
     const [newRow, setNewRow] = useState(null);
     const [newRowErrors, setNewRowErrors] = useState({});
     const [newRowMessage, setNewRowMessage] = useState('');
     const [isCreating, setIsCreating] = useState(false);
 
     useEffect(() => {
-        setRows(trabajos);
-    }, [trabajos]);
+        setRows(safeTrabajos);
+    }, [safeTrabajos]);
 
-    const orderedRows = useMemo(() => (
-        [...rows].sort((a, b) => {
+    useEffect(() => {
+        setSortField(safeFilters.sort ?? '');
+        setSortDirection(safeFilters.direction ?? '');
+    }, [safeFilters.sort, safeFilters.direction]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            if (search !== (safeFilters.search ?? '')) {
+                doFilter({ search });
+            }
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const hasServerSort = Boolean(sortField && sortDirection);
+
+    const orderedRows = useMemo(() => {
+        if (hasServerSort) return rows;
+
+        return [...rows].sort((a, b) => {
             if (a.estado === 'cancelado' && b.estado !== 'cancelado') return 1;
             if (a.estado !== 'cancelado' && b.estado === 'cancelado') return -1;
             return (ESTADO_ORDER[a.estado] ?? 99) - (ESTADO_ORDER[b.estado] ?? 99);
-        })
-    ), [rows]);
+        });
+    }, [hasServerSort, rows]);
 
     function onPatched(idTrabajo, payload, fieldName) {
         setRows((currentRows) => currentRows.map((row) => (
@@ -1371,6 +1981,18 @@ export default function TrabajosExcelView({
             provincia: overrides.provincia !== undefined ? overrides.provincia : provincia,
             codigo_estacion: overrides.codigo_estacion !== undefined ? overrides.codigo_estacion : codigoEstacion,
             id_responsable_ciete: overrides.id_responsable_ciete !== undefined ? overrides.id_responsable_ciete : responsableId,
+            pedido_numero: overrides.pedido_numero !== undefined ? overrides.pedido_numero : pedidoNumero,
+            id_tarifario: overrides.id_tarifario !== undefined ? overrides.id_tarifario : tarifarioId,
+            id_contrato: overrides.id_contrato !== undefined ? overrides.id_contrato : contratoId,
+            id_estacion_servicio: overrides.id_estacion_servicio !== undefined ? overrides.id_estacion_servicio : estacionId,
+            categoria: overrides.categoria !== undefined ? overrides.categoria : categoria,
+            has_pedidos: overrides.has_pedidos !== undefined ? overrides.has_pedidos : hasPedidos,
+            multi_pedido: overrides.multi_pedido !== undefined ? overrides.multi_pedido : multiPedido,
+            pedido_importe: overrides.pedido_importe !== undefined ? overrides.pedido_importe : pedidoImporte,
+            facturado: overrides.facturado !== undefined ? overrides.facturado : facturado,
+            solicitado: overrides.solicitado !== undefined ? overrides.solicitado : solicitado,
+            sort: overrides.sort !== undefined ? overrides.sort : sortField,
+            direction: overrides.direction !== undefined ? overrides.direction : sortDirection,
             ...(overrides.page !== undefined ? { page: overrides.page } : {}),
         });
     }
@@ -1384,6 +2006,16 @@ export default function TrabajosExcelView({
         setProvincia('');
         setCodigoEstacion('');
         setResponsableId('');
+        setPedidoNumero('');
+        setTarifarioId('');
+        setContratoId('');
+        setEstacionId('');
+        setCategoria('');
+        setHasPedidos('');
+        setMultiPedido('');
+        setPedidoImporte('');
+        setFacturado('');
+        setSolicitado('');
         aplicarFiltros({
             search: '',
             estado: '',
@@ -1393,7 +2025,120 @@ export default function TrabajosExcelView({
             provincia: '',
             codigo_estacion: '',
             id_responsable_ciete: '',
+            pedido_numero: '',
+            id_tarifario: '',
+            id_contrato: '',
+            id_estacion_servicio: '',
+            categoria: '',
+            has_pedidos: '',
+            multi_pedido: '',
+            pedido_importe: '',
+            facturado: '',
+            solicitado: '',
+            sort: sortField,
+            direction: sortDirection,
         });
+    }
+
+    function toggleSort(nextField) {
+        let nextSort = nextField;
+        let nextDirection = 'asc';
+
+        if (sortField === nextField) {
+            if (sortDirection === 'asc') {
+                nextDirection = 'desc';
+            } else if (sortDirection === 'desc') {
+                nextSort = '';
+                nextDirection = '';
+            }
+        }
+
+        setSortField(nextSort);
+        setSortDirection(nextDirection);
+        doFilter({
+            sort: nextSort,
+            direction: nextDirection,
+            page: 1,
+        });
+    }
+
+    function clearSingleFilter(key) {
+        switch (key) {
+        case 'search':
+            setSearch('');
+            doFilter({ search: '' });
+            break;
+        case 'estado':
+            setEstado('');
+            doFilter({ estado: '' });
+            break;
+        case 'fecha_desde':
+            setFechaDesde('');
+            doFilter({ fecha_desde: '' });
+            break;
+        case 'fecha_hasta':
+            setFechaHasta('');
+            doFilter({ fecha_hasta: '' });
+            break;
+        case 'municipio':
+            setMunicipio('');
+            doFilter({ municipio: '' });
+            break;
+        case 'provincia':
+            setProvincia('');
+            doFilter({ provincia: '' });
+            break;
+        case 'codigo_estacion':
+            setCodigoEstacion('');
+            doFilter({ codigo_estacion: '' });
+            break;
+        case 'id_responsable_ciete':
+            setResponsableId('');
+            doFilter({ id_responsable_ciete: '' });
+            break;
+        case 'pedido_numero':
+            setPedidoNumero('');
+            doFilter({ pedido_numero: '' });
+            break;
+        case 'id_tarifario':
+            setTarifarioId('');
+            doFilter({ id_tarifario: '' });
+            break;
+        case 'id_contrato':
+            setContratoId('');
+            doFilter({ id_contrato: '' });
+            break;
+        case 'id_estacion_servicio':
+            setEstacionId('');
+            doFilter({ id_estacion_servicio: '' });
+            break;
+        case 'categoria':
+            setCategoria('');
+            doFilter({ categoria: '' });
+            break;
+        case 'has_pedidos':
+            setHasPedidos('');
+            doFilter({ has_pedidos: '' });
+            break;
+        case 'multi_pedido':
+            setMultiPedido('');
+            doFilter({ multi_pedido: '' });
+            break;
+        case 'pedido_importe':
+            setPedidoImporte('');
+            doFilter({ pedido_importe: '' });
+            break;
+        case 'facturado':
+            setFacturado('');
+            doFilter({ facturado: '' });
+            break;
+        case 'solicitado':
+            setSolicitado('');
+            doFilter({ solicitado: '' });
+            break;
+        default:
+            break;
+        }
     }
 
     function handleCreate() {
@@ -1422,16 +2167,16 @@ export default function TrabajosExcelView({
         });
     }
 
-    function validateNewRow() {
+    function validateNewRow({ requireTarifario = false } = {}) {
         const errors = {};
         const allowedStates = new Set(ESTADO_OPTIONS.map((option) => option.value));
 
-        if (!String(newRow?.numero_trabajo ?? '').trim()) errors.numero_trabajo = 'El número de trabajo es obligatorio.';
         if (!String(newRow?.id_estacion_servicio ?? '').trim()) errors.id_estacion_servicio = 'La estación es obligatoria.';
         if (!String(newRow?.descripcion_trabajo ?? '').trim()) errors.descripcion_trabajo = 'La descripción es obligatoria.';
         if (!String(newRow?.fecha_encargo ?? '').trim()) errors.fecha_encargo = 'La fecha de encargo es obligatoria.';
         if (newRow?.estado && !allowedStates.has(newRow.estado)) errors.estado = 'Estado no válido.';
-        if (isMoeveContext(activeContext) && !String(newRow?.id_contrato ?? '').trim()) errors.id_contrato = 'El contrato es obligatorio para MOEVE.';
+        if (isMoeveContext(activeContext) && !String(newRow?.id_tarifario ?? '').trim()) errors.id_tarifario = 'Selecciona tarifario para MOEVE.';
+        if (requireTarifario && !String(newRow?.id_tarifario ?? '').trim()) errors.id_tarifario = 'Selecciona tarifario antes de crear el pedido.';
         if (isRepsolContext(activeContext) && !String(newRow?.id_tipo_documento ?? '').trim()) errors.id_tipo_documento = 'El tipo documental es obligatorio para REPSOL.';
         if (isRepsolContext(activeContext) && !String(newRow?.id_tipo_trabajo ?? '').trim()) errors.id_tipo_trabajo = 'El tipo de trabajo es obligatorio para REPSOL.';
 
@@ -1441,8 +2186,8 @@ export default function TrabajosExcelView({
     function buildNewRowPayload() {
         return {
             id_contexto: activeContext?.id_contexto ? Number(activeContext.id_contexto) : undefined,
-            numero_trabajo: Number(newRow.numero_trabajo),
-            numero_trabajo_operativo: String(newRow.numero_trabajo_operativo ?? '').trim() || null,
+            numero_trabajo: String(newRow.numero_trabajo ?? '').trim() !== '' ? Number(newRow.numero_trabajo) : undefined,
+            numero_trabajo_operativo: String(newRow.numero_trabajo_operativo ?? '').trim() || undefined,
             id_estacion_servicio: Number(newRow.id_estacion_servicio),
             descripcion_trabajo: String(newRow.descripcion_trabajo).trim(),
             estado: newRow.estado,
@@ -1450,20 +2195,25 @@ export default function TrabajosExcelView({
             fecha_terminacion: newRow.fecha_terminacion || null,
             observaciones: newRow.observaciones || null,
             id_responsable_ciete: newRow.id_responsable_ciete ? Number(newRow.id_responsable_ciete) : null,
-            id_contrato: isMoeveContext(activeContext) && newRow.id_contrato ? Number(newRow.id_contrato) : null,
+            id_contrato: newRow.id_contrato ? Number(newRow.id_contrato) : null,
+            id_tarifario: newRow.id_tarifario ? Number(newRow.id_tarifario) : null,
             categoria: !isRepsolContext(activeContext) && newRow.categoria ? String(newRow.categoria).trim() : null,
             id_tipo_documento: isRepsolContext(activeContext) && newRow.id_tipo_documento ? Number(newRow.id_tipo_documento) : null,
             id_tipo_trabajo: isRepsolContext(activeContext) && newRow.id_tipo_trabajo ? Number(newRow.id_tipo_trabajo) : null,
         };
     }
 
-    async function saveNewRow() {
+    async function saveNewRow({ openPedidoAfterSave = false } = {}) {
         if (!newRow || isCreating) return;
 
-        const errors = validateNewRow();
-        if (Object.keys(errors).length > 0) {
+        const errors = validateNewRow({ requireTarifario: openPedidoAfterSave });
+        if (Object.keys(errors ?? {}).length > 0) {
             setNewRowErrors(errors);
-            setNewRowMessage('Completa los campos obligatorios antes de guardar.');
+            setNewRowMessage(
+                openPedidoAfterSave
+                    ? 'Completa los campos obligatorios y selecciona tarifario antes de crear el pedido.'
+                    : 'Completa los campos obligatorios antes de guardar.'
+            );
             return;
         }
 
@@ -1484,7 +2234,14 @@ export default function TrabajosExcelView({
             }
 
             setNewRow(null);
+            if (openPedidoAfterSave && createdTrabajo?.id_trabajo) {
+                setNewRowMessage('Trabajo creado correctamente. Abriendo pedido...');
+                router.visit(pedidoCreateFromTrabajoUrl(createdTrabajo));
+                return createdTrabajo;
+            }
+
             setNewRowMessage('Trabajo creado correctamente.');
+            return createdTrabajo;
         } catch (error) {
             const data = error.response?.data ?? {};
             setNewRowErrors(data.errors ?? {});
@@ -1493,6 +2250,7 @@ export default function TrabajosExcelView({
                     ?? Object.values(data.errors ?? {})?.flat()?.[0]
                     ?? 'No se pudo crear el trabajo.'
             );
+            return null;
         } finally {
             setIsCreating(false);
         }
@@ -1501,7 +2259,7 @@ export default function TrabajosExcelView({
     function cancelNewRow() {
         if (!newRow) return;
 
-        const hasDraft = Object.entries(newRow).some(([key, value]) => (
+        const hasDraft = Object.entries(newRow ?? {}).some(([key, value]) => (
             !key.startsWith('__')
             && !['estado', 'fecha_encargo', 'id_contexto'].includes(key)
             && value !== ''
@@ -1518,132 +2276,361 @@ export default function TrabajosExcelView({
         setNewRowMessage('');
     }
 
-    const hasFilters = Boolean(search || estado || fechaDesde || fechaHasta || municipio || provincia || codigoEstacion || responsableId);
+    const hasFilters = Boolean(
+        search
+        || estado
+        || fechaDesde
+        || fechaHasta
+        || municipio
+        || provincia
+        || codigoEstacion
+        || responsableId
+        || pedidoNumero
+        || tarifarioId
+        || contratoId
+        || estacionId
+        || categoria
+        || hasPedidos
+        || multiPedido
+        || pedidoImporte
+        || facturado
+        || solicitado
+    );
+    const selectClassName = 'h-9 min-w-[11rem] rounded-md border border-border bg-surface px-3 pr-9 text-sm text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)';
+    const compactInputClassName = 'h-9 rounded-md border border-border bg-surface px-3 text-sm text-text-main outline-none transition placeholder:text-text-hint focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)';
+    const activeFilterChips = [
+        search ? { key: 'search', label: `Buscar: ${search}` } : null,
+        estado ? { key: 'estado', label: `Estado: ${ESTADO_LABEL[estado] ?? estado}` } : null,
+        responsableId ? {
+            key: 'id_responsable_ciete',
+            label: `Responsable: ${responsableName(responsables, responsableId) ?? responsableId}`,
+        } : null,
+        fechaDesde ? { key: 'fecha_desde', label: `Desde: ${fechaDesde}` } : null,
+        fechaHasta ? { key: 'fecha_hasta', label: `Hasta: ${fechaHasta}` } : null,
+        codigoEstacion ? { key: 'codigo_estacion', label: `Nº estación: ${codigoEstacion}` } : null,
+        municipio ? { key: 'municipio', label: `Municipio: ${municipio}` } : null,
+        provincia ? { key: 'provincia', label: `Provincia: ${provincia}` } : null,
+        pedidoNumero ? { key: 'pedido_numero', label: `Pedido: ${pedidoNumero}` } : null,
+        contratoId ? {
+            key: 'id_contrato',
+            label: `Contrato: ${contractOptionLabel(contratos.find((item) => String(item.id) === String(contratoId))) ?? contratoId}`,
+        } : null,
+        tarifarioId ? {
+            key: 'id_tarifario',
+            label: `Tarifario: ${tarifarioOptionLabel(tarifarios.find((item) => String(item.id) === String(tarifarioId))) ?? tarifarioId}`,
+        } : null,
+        estacionId ? {
+            key: 'id_estacion_servicio',
+            label: `Estación: ${stationLabel(estaciones.find((item) => String(item.id) === String(estacionId))) ?? estacionId}`,
+        } : null,
+        categoria ? { key: 'categoria', label: `Categoría de trabajo: ${categoria}` } : null,
+        hasPedidos === '1' ? { key: 'has_pedidos', label: 'Con pedidos' } : null,
+        hasPedidos === '0' ? { key: 'has_pedidos', label: 'Sin pedidos' } : null,
+        multiPedido === '1' ? { key: 'multi_pedido', label: 'Con varios pedidos' } : null,
+        multiPedido === '0' ? { key: 'multi_pedido', label: 'Sin varios pedidos' } : null,
+        pedidoImporte === '1' ? { key: 'pedido_importe', label: 'Con importe pedido' } : null,
+        pedidoImporte === '0' ? { key: 'pedido_importe', label: 'Sin importe pedido' } : null,
+        facturado === '1' ? { key: 'facturado', label: 'Facturado' } : null,
+        facturado === '0' ? { key: 'facturado', label: 'No facturado' } : null,
+        solicitado === '1' ? { key: 'solicitado', label: 'Solicitado' } : null,
+        solicitado === '0' ? { key: 'solicitado', label: 'No solicitado' } : null,
+    ].filter(Boolean);
 
     return (
         <div className="space-y-3">
-            <div className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm">
-                <div className="mr-2 flex min-h-8 items-center rounded-lg border border-border bg-surface-2 px-3">
-                    <WorkspaceContextIndicator compact />
-                    {activeContext?.is_all && (
-                        <span className="ml-2 text-[11px] font-medium text-text-hint">vista global operativa</span>
+            <div className="space-y-3 rounded-xl border border-border bg-surface p-3 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    <div className="mr-2 flex min-h-9 items-center rounded-lg border border-border bg-surface-2 px-3">
+                        <WorkspaceContextIndicator compact />
+                        {activeContext?.is_all && (
+                            <span className="ml-2 text-[11px] font-medium text-text-hint">vista global operativa</span>
+                        )}
+                    </div>
+
+                    <div className="min-w-[18rem] flex-1">
+                        <input
+                            type="search"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            onKeyDown={(event) => event.key === 'Enter' && doFilter({ search })}
+                            placeholder="Buscar nº trabajo, estación, pedido, contrato, tarifario, responsable o importe"
+                            className={`${compactInputClassName} w-full`}
+                        />
+                    </div>
+
+                    <select
+                        value={estado}
+                        onChange={(event) => {
+                            setEstado(event.target.value);
+                            doFilter({ estado: event.target.value });
+                        }}
+                        className={selectClassName}
+                    >
+                        <option value="">Todos los estados</option>
+                        {ESTADO_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+
+                    {responsables.length > 0 && (
+                        <select
+                            value={responsableId}
+                            onChange={(event) => {
+                                setResponsableId(event.target.value);
+                                doFilter({ id_responsable_ciete: event.target.value });
+                            }}
+                            className={`${selectClassName} max-w-64`}
+                        >
+                            <option value="">Todos los responsables</option>
+                            {responsables.map((responsable) => (
+                                <option key={responsable.id} value={responsable.id}>{responsable.nombre}</option>
+                            ))}
+                        </select>
                     )}
                 </div>
 
-                <input
-                    type="search"
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && doFilter({ search })}
-                    placeholder="Buscar trabajo, aviso o descripción"
-                    className="h-8 w-64 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none transition placeholder:text-text-hint focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                />
-
-                <select
-                    value={estado}
-                    onChange={(event) => {
-                        setEstado(event.target.value);
-                        doFilter({ estado: event.target.value });
-                    }}
-                    className="h-9 min-w-[11rem] rounded-md border border-border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                >
-                    <option value="">Todos los estados</option>
-                    {ESTADO_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-
-                {responsables.length > 0 && (
-                    <select
-                        value={responsableId}
+                <div className="flex flex-wrap items-center gap-2">
+                    <input
+                        type="date"
+                        value={fechaDesde}
                         onChange={(event) => {
-                            setResponsableId(event.target.value);
-                            doFilter({ id_responsable_ciete: event.target.value });
+                            setFechaDesde(event.target.value);
+                            doFilter({ fecha_desde: event.target.value });
                         }}
-                        className="h-9 min-w-[12rem] max-w-56 rounded-md border border-border bg-surface px-3 pr-9 text-sm text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
+                        title="Fecha desde"
+                        className={compactInputClassName}
+                    />
+                    <input
+                        type="date"
+                        value={fechaHasta}
+                        onChange={(event) => {
+                            setFechaHasta(event.target.value);
+                            doFilter({ fecha_hasta: event.target.value });
+                        }}
+                        title="Fecha hasta"
+                        className={compactInputClassName}
+                    />
+                    <input
+                        type="search"
+                        value={codigoEstacion}
+                        onChange={(event) => setCodigoEstacion(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Enter' && doFilter({ codigo_estacion: codigoEstacion })}
+                        placeholder="Nº estación"
+                        className={`${compactInputClassName} w-36`}
+                    />
+                    <input
+                        type="search"
+                        value={municipio}
+                        onChange={(event) => setMunicipio(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Enter' && doFilter({ municipio })}
+                        placeholder="Municipio"
+                        className={`${compactInputClassName} w-36`}
+                    />
+                    <input
+                        type="search"
+                        value={provincia}
+                        onChange={(event) => setProvincia(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Enter' && doFilter({ provincia })}
+                        placeholder="Provincia"
+                        className={`${compactInputClassName} w-36`}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={() => setShowAdvancedFilters((current) => !current)}
+                        className="h-9 rounded-md border border-border px-3 text-xs font-semibold text-text-muted transition hover:bg-surface-2 hover:text-text-main"
                     >
-                        <option value="">Todos los responsables</option>
-                        {responsables.map((responsable) => (
-                            <option key={responsable.id} value={responsable.id}>{responsable.nombre}</option>
+                        {showAdvancedFilters ? 'Ocultar filtros avanzados' : 'Filtros avanzados'}
+                    </button>
+
+                    {hasFilters && (
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="h-9 rounded-md border border-border px-3 text-xs font-medium text-text-muted transition hover:bg-surface-2 hover:text-text-main"
+                        >
+                            Limpiar filtros
+                        </button>
+                    )}
+
+                    {pagination?.total !== undefined && (
+                        <span className="ml-auto text-xs text-text-hint">{pagination.total} trabajos</span>
+                    )}
+
+                    {canCreate && (
+                        <button
+                            type="button"
+                            onClick={handleCreate}
+                            disabled={Boolean(newRow)}
+                            className={`h-9 rounded-md px-3 text-xs font-semibold transition ${
+                                newRow
+                                    ? 'border border-border bg-surface-2 text-text-hint'
+                                    : canCreateInContext
+                                    ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
+                                    : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                            } disabled:cursor-not-allowed`}
+                        >
+                            {newRow ? 'Trabajo nuevo en edición' : 'Nuevo trabajo'}
+                        </button>
+                    )}
+                </div>
+
+                {showAdvancedFilters && (
+                    <div className="grid gap-2 border-t border-border pt-3 sm:grid-cols-2 xl:grid-cols-4">
+                        {contratos.length > 0 && (
+                            <select
+                                value={contratoId}
+                                onChange={(event) => {
+                                    setContratoId(event.target.value);
+                                    doFilter({ id_contrato: event.target.value });
+                                }}
+                                className={selectClassName}
+                            >
+                                <option value="">Contrato</option>
+                                {contratos.map((contrato) => (
+                                    <option key={contrato.id} value={contrato.id}>
+                                        {contractOptionLabel(contrato)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
+                        {tarifarios.length > 0 && (
+                            <select
+                                value={tarifarioId}
+                                onChange={(event) => {
+                                    setTarifarioId(event.target.value);
+                                    doFilter({ id_tarifario: event.target.value });
+                                }}
+                                className={selectClassName}
+                            >
+                                <option value="">Tarifario</option>
+                                {tarifarios.map((tarifario) => (
+                                    <option key={tarifario.id} value={tarifario.id}>
+                                        {tarifarioOptionLabel(tarifario)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
+                        <input
+                            type="search"
+                            value={pedidoNumero}
+                            onChange={(event) => setPedidoNumero(event.target.value)}
+                            onKeyDown={(event) => event.key === 'Enter' && doFilter({ pedido_numero: pedidoNumero })}
+                            placeholder="Número de pedido"
+                            className={compactInputClassName}
+                        />
+
+                        <select
+                            value={hasPedidos}
+                            onChange={(event) => {
+                                setHasPedidos(event.target.value);
+                                doFilter({ has_pedidos: event.target.value });
+                            }}
+                            className={selectClassName}
+                        >
+                            <option value="">Pedidos: todos</option>
+                            <option value="1">Con pedidos</option>
+                            <option value="0">Sin pedidos</option>
+                        </select>
+
+                        <select
+                            value={multiPedido}
+                            onChange={(event) => {
+                                setMultiPedido(event.target.value);
+                                doFilter({ multi_pedido: event.target.value });
+                            }}
+                            className={selectClassName}
+                        >
+                            <option value="">Multipedido: todos</option>
+                            <option value="1">Con varios pedidos</option>
+                            <option value="0">Sin varios pedidos</option>
+                        </select>
+
+                        <select
+                            value={pedidoImporte}
+                            onChange={(event) => {
+                                setPedidoImporte(event.target.value);
+                                doFilter({ pedido_importe: event.target.value });
+                            }}
+                            className={selectClassName}
+                        >
+                            <option value="">Importe pedido: todos</option>
+                            <option value="1">Con importe pedido</option>
+                            <option value="0">Sin importe pedido</option>
+                        </select>
+
+                        <select
+                            value={facturado}
+                            onChange={(event) => {
+                                setFacturado(event.target.value);
+                                doFilter({ facturado: event.target.value });
+                            }}
+                            className={selectClassName}
+                        >
+                            <option value="">Facturación: todos</option>
+                            <option value="1">Facturado</option>
+                            <option value="0">No facturado</option>
+                        </select>
+
+                        <select
+                            value={solicitado}
+                            onChange={(event) => {
+                                setSolicitado(event.target.value);
+                                doFilter({ solicitado: event.target.value });
+                            }}
+                            className={selectClassName}
+                        >
+                            <option value="">Solicitud: todos</option>
+                            <option value="1">Solicitado</option>
+                            <option value="0">No solicitado</option>
+                        </select>
+
+                        {estaciones.length > 0 && (
+                            <select
+                                value={estacionId}
+                                onChange={(event) => {
+                                    setEstacionId(event.target.value);
+                                    doFilter({ id_estacion_servicio: event.target.value });
+                                }}
+                                className={selectClassName}
+                            >
+                                <option value="">Estación</option>
+                                {estaciones.map((estacion) => (
+                                    <option key={estacion.id} value={estacion.id}>
+                                        {stationLabel(estacion)}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+
+                        <input
+                            type="search"
+                            value={categoria}
+                            onChange={(event) => setCategoria(event.target.value)}
+                            onKeyDown={(event) => event.key === 'Enter' && doFilter({ categoria })}
+                            placeholder="Categoría de trabajo"
+                            className={compactInputClassName}
+                        />
+                    </div>
+                )}
+
+                {activeFilterChips.length > 0 && (
+                    <div className="flex flex-wrap gap-2 border-t border-border pt-3">
+                        {activeFilterChips.map((chip) => (
+                            <button
+                                key={chip.key}
+                                type="button"
+                                onClick={() => clearSingleFilter(chip.key)}
+                                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1 text-[11px] font-medium text-text-main transition hover:border-(--ciete-red) hover:text-(--ciete-red)"
+                                title="Quitar filtro"
+                            >
+                                <span>{chip.label}</span>
+                                <span className="text-text-hint">×</span>
+                            </button>
                         ))}
-                    </select>
-                )}
-
-                <input
-                    type="date"
-                    value={fechaDesde}
-                    onChange={(event) => {
-                        setFechaDesde(event.target.value);
-                        doFilter({ fecha_desde: event.target.value });
-                    }}
-                    title="Fecha desde"
-                    className="h-8 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                />
-                <input
-                    type="date"
-                    value={fechaHasta}
-                    onChange={(event) => {
-                        setFechaHasta(event.target.value);
-                        doFilter({ fecha_hasta: event.target.value });
-                    }}
-                    title="Fecha hasta"
-                    className="h-8 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                />
-
-                <input
-                    type="search"
-                    value={codigoEstacion}
-                    onChange={(event) => setCodigoEstacion(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && doFilter({ codigo_estacion: codigoEstacion })}
-                    placeholder="Código estación"
-                    className="h-8 w-32 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none placeholder:text-text-hint focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                />
-                <input
-                    type="search"
-                    value={municipio}
-                    onChange={(event) => setMunicipio(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && doFilter({ municipio })}
-                    placeholder="Municipio"
-                    className="h-8 w-32 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none placeholder:text-text-hint focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                />
-                <input
-                    type="search"
-                    value={provincia}
-                    onChange={(event) => setProvincia(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && doFilter({ provincia })}
-                    placeholder="Provincia"
-                    className="h-8 w-32 rounded-md border border-border bg-surface px-2 text-xs text-text-main outline-none placeholder:text-text-hint focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red)"
-                />
-
-                {hasFilters && (
-                    <button
-                        type="button"
-                        onClick={clearFilters}
-                        className="h-8 rounded-md border border-border px-3 text-xs font-medium text-text-muted transition hover:bg-surface-2 hover:text-text-main"
-                    >
-                        Limpiar
-                    </button>
-                )}
-
-                {pagination?.total !== undefined && (
-                    <span className="ml-auto text-xs text-text-hint">{pagination.total} trabajos</span>
-                )}
-
-                {canCreate && (
-                    <button
-                        type="button"
-                        onClick={handleCreate}
-                        disabled={Boolean(newRow)}
-                        className={`h-8 rounded-md px-3 text-xs font-semibold transition ${
-                            newRow
-                                ? 'border border-border bg-surface-2 text-text-hint'
-                                : canCreateInContext
-                                ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
-                                : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                        } disabled:cursor-not-allowed`}
-                    >
-                        {newRow ? 'Trabajo nuevo en edición' : 'Nuevo trabajo'}
-                    </button>
+                    </div>
                 )}
             </div>
 
@@ -1687,15 +2674,31 @@ export default function TrabajosExcelView({
             )}
 
             <div className="overflow-x-auto rounded-xl border border-border shadow-sm">
-                <table className="ciete-excel-table w-full min-w-[2500px] divide-y divide-border text-xs">
+                <table className="ciete-excel-table w-full min-w-[2400px] divide-y divide-border text-xs">
                     <thead className="bg-surface-2">
                         <tr>
                             {TABLE_COLUMNS.map((column) => (
                                 <th
-                                    key={column.label}
-                                    className={`${column.width} whitespace-nowrap border-b border-border/70 px-3 py-3 text-left font-semibold uppercase tracking-wide text-text-hint`}
+                                    key={column.id}
+                                    className={`${column.width} whitespace-nowrap border-b border-border/70 px-2 py-2 text-left font-semibold uppercase tracking-wide text-text-hint`}
                                 >
-                                    {column.label}
+                                    {column.sortKey ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleSort(column.sortKey)}
+                                            className="inline-flex w-full cursor-pointer items-center gap-1 whitespace-nowrap text-left transition hover:text-text-main"
+                                        >
+                                            <span>{column.label}</span>
+                                            {sortField === column.sortKey && sortDirection === 'asc' && (
+                                                <span aria-hidden="true" className="text-[10px] leading-none text-text-main">↑</span>
+                                            )}
+                                            {sortField === column.sortKey && sortDirection === 'desc' && (
+                                                <span aria-hidden="true" className="text-[10px] leading-none text-text-main">↓</span>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        column.label
+                                    )}
                                 </th>
                             ))}
                         </tr>
@@ -1710,7 +2713,8 @@ export default function TrabajosExcelView({
                                 errors={newRowErrors}
                                 isSaving={isCreating}
                                 onChange={updateNewRow}
-                                onSave={saveNewRow}
+                                onSave={() => saveNewRow()}
+                                onSaveAndCreatePedido={() => saveNewRow({ openPedidoAfterSave: true })}
                                 onCancel={cancelNewRow}
                             />
                         )}
@@ -1726,6 +2730,7 @@ export default function TrabajosExcelView({
                         {orderedRows.map((trabajo) => {
                             const canEditRow = Boolean(trabajo.can?.update);
                             const isCancelled = trabajo.estado === 'cancelado';
+                            const internalWorkLabel = internalWorkReference(trabajo);
 
                             return (
                                 <tr
@@ -1733,14 +2738,24 @@ export default function TrabajosExcelView({
                                     className={`transition hover:bg-surface-2/65 ${isCancelled ? 'bg-surface-2/35 opacity-70' : ''}`}
                                 >
                                     <td className="whitespace-nowrap px-3 py-2.5 align-top font-mono font-semibold text-(--ciete-red)">
-                                        <EditableTextCell
-                                            trabajo={trabajo}
-                                            fieldName="numero_trabajo_operativo"
-                                            onPatched={onPatched}
-                                            canEdit={canEditRow}
-                                            fallbackValue={formatWorkNumber(trabajo.numero_trabajo)}
-                                            maxWidthClass="max-w-[170px]"
-                                        />
+                                        <div className="grid gap-1">
+                                            <EditableTextCell
+                                                trabajo={trabajo}
+                                                fieldName="numero_trabajo_operativo"
+                                                onPatched={onPatched}
+                                                canEdit={canEditRow}
+                                                fallbackValue={formatWorkNumber(trabajo.numero_trabajo)}
+                                                maxWidthClass="max-w-[170px]"
+                                            />
+                                            {internalWorkLabel && (
+                                                <span
+                                                    className="block max-w-[170px] truncate text-[10px] font-medium text-text-hint"
+                                                    title={internalWorkLabel}
+                                                >
+                                                    {internalWorkLabel}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="whitespace-nowrap px-3 py-2.5 align-top font-mono font-semibold text-(--ciete-red)">
                                         <EditableStationCell
@@ -1778,19 +2793,14 @@ export default function TrabajosExcelView({
                                             textClassName="text-text-main"
                                         />
                                     </td>
-                                    <td className="whitespace-nowrap px-3 py-2.5 align-top">
-                                        <EditablePedidoCell
+                                    <TrabajoPedidoFlowCells
                                             trabajo={trabajo}
-                                            pedidos={pedidos}
+                                            tarifarios={tarifarios}
                                             onPatched={onPatched}
                                             canEdit={canEditRow}
+                                            canCreatePedidos={canCreatePedidos}
+                                            canEditPedidos={canEditPedidos}
                                         />
-                                    </td>
-                                    <td className="max-w-[260px] px-3 py-2.5 align-top text-text-muted" title={contractTariff(trabajo)}>
-                                        <span className="block max-w-[260px] truncate leading-5 text-text-main/90">
-                                            {fmt(contractTariff(trabajo))}
-                                        </span>
-                                    </td>
                                     <td className="whitespace-nowrap px-3 py-2.5 text-right align-top text-text-muted">{fmtMoney(trabajo.importe_pedido_total)}</td>
                                     <td className="whitespace-nowrap px-3 py-2.5 text-right align-top text-text-muted">{fmtMoney(trabajo.importe_solicitado_total)}</td>
                                     <td className="whitespace-nowrap px-3 py-2.5 text-right align-top text-text-muted">{fmtMoney(trabajo.importe_facturado_total)}</td>
@@ -1818,7 +2828,7 @@ export default function TrabajosExcelView({
                                             <button
                                                 type="button"
                                                 onClick={() => router.visit(route('trabajos.edit', trabajo.id_trabajo))}
-                                                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-text-muted transition hover:bg-surface-2 hover:text-(--ciete-red)"
+                                                className="whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-semibold text-text-muted transition hover:bg-surface-2 hover:text-(--ciete-red)"
                                             >
                                                 Abrir ficha
                                             </button>

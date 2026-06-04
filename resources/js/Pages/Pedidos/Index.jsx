@@ -311,7 +311,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                             <button
                                                 type="button"
                                                 onClick={() => aplicarFiltros()}
-                                                className="mt-3 text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
+                                                className="ciete-dark-table-accent mt-3 text-sm font-medium transition hover:underline"
                                             >
                                                 {t('common.actions.retry')}
                                             </button>
@@ -335,7 +335,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                         {/* Nº pedido */}
                                         <td className="w-[13rem] max-w-[13rem] px-5 py-4 align-top">
                                             <span
-                                                className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--ciete-red)"
+                                                className="ciete-dark-table-accent block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold"
                                                 title={pedido.numero_pedido || undefined}
                                             >
                                                 {pedido.numero_pedido || '—'}
@@ -378,7 +378,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                                     <button
                                                         type="button"
                                                         onClick={() => irAEditar(pedido.id_pedido)}
-                                                        className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
+                                                        className="text-sm font-medium text-text-main transition hover:underline"
                                                     >
                                                         {t('common.actions.edit')}
                                                     </button>
@@ -388,7 +388,7 @@ export default function PedidosIndex({ pedidos, filters = {}, contextoIds = [], 
                                                     <button
                                                         type="button"
                                                         onClick={() => setDeleteTarget(pedido)}
-                                                        className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
+                                                        className="ciete-dark-table-accent text-sm font-medium transition hover:underline"
                                                     >
                                                         {t('pedidos.cancelAction')}
                                                     </button>

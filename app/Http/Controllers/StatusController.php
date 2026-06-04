@@ -12,7 +12,9 @@ class StatusController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $canViewTechnicalDetails = $user?->canAccessAdminPanel() ?? false;
+        abort_unless($user?->canViewSystemStatus() ?? false, 403);
+
+        $canViewTechnicalDetails = $user?->canViewSystemStatus() ?? false;
         $maintenanceFile = storage_path('framework/maintenance_mode');
         $maintenanceActive = file_exists($maintenanceFile) || app()->isDownForMaintenance();
         $checks = [];
@@ -75,7 +77,7 @@ class StatusController extends Controller
         // App
         $checks['app'] = [
             'status'      => 'ok',
-            'version'     => 'v2.1.0',
+            'version'     => 'v2.2.0',
             'environment' => app()->environment(),
             'php'         => PHP_VERSION,
             'laravel'     => app()->version(),

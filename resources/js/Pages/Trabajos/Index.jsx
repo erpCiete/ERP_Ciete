@@ -34,6 +34,7 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
     const { irACrear, irAEditar, eliminarTrabajo } = useTrabajos();
     const { visualStyle } = useTheme();
     const { auth } = usePage().props;
+    const safeFilters = filters && typeof filters === 'object' ? filters : {};
 
     const activeContext = auth?.user?.active_context;
     const isCieteExcel = visualStyle === 'ciete_excel';
@@ -45,10 +46,10 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
     const isRepsol = contextoIds.includes(2);
 
     // Estado local de filtros — se sincronizan con los props que vienen del servidor
-    const [search,     setSearch]     = useState(filters.search      ?? '');
-    const [estado,     setEstado]     = useState(filters.estado       ?? '');
-    const [fechaDesde, setFechaDesde] = useState(filters.fecha_desde  ?? '');
-    const [fechaHasta, setFechaHasta] = useState(filters.fecha_hasta  ?? '');
+    const [search,     setSearch]     = useState(safeFilters.search      ?? '');
+    const [estado,     setEstado]     = useState(safeFilters.estado       ?? '');
+    const [fechaDesde, setFechaDesde] = useState(safeFilters.fecha_desde  ?? '');
+    const [fechaHasta, setFechaHasta] = useState(safeFilters.fecha_hasta  ?? '');
     const [status,     setStatus]     = useState('ready');
     const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -68,16 +69,27 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
             estado:      overrides.estado      !== undefined ? overrides.estado      : estado,
             fecha_desde: overrides.fecha_desde !== undefined ? overrides.fecha_desde : fechaDesde,
             fecha_hasta: overrides.fecha_hasta !== undefined ? overrides.fecha_hasta : fechaHasta,
-            municipio:   overrides.municipio,
-            provincia:   overrides.provincia,
-            codigo_estacion: overrides.codigo_estacion,
-            id_responsable_ciete: overrides.id_responsable_ciete,
-            id_estacion_servicio: overrides.id_estacion_servicio,
+            municipio:   overrides.municipio !== undefined ? overrides.municipio : (safeFilters.municipio ?? ''),
+            provincia:   overrides.provincia !== undefined ? overrides.provincia : (safeFilters.provincia ?? ''),
+            codigo_estacion: overrides.codigo_estacion !== undefined ? overrides.codigo_estacion : (safeFilters.codigo_estacion ?? ''),
+            id_responsable_ciete: overrides.id_responsable_ciete !== undefined ? overrides.id_responsable_ciete : (safeFilters.id_responsable_ciete ?? ''),
+            id_estacion_servicio: overrides.id_estacion_servicio !== undefined ? overrides.id_estacion_servicio : (safeFilters.id_estacion_servicio ?? ''),
+            id_tarifario: overrides.id_tarifario !== undefined ? overrides.id_tarifario : (safeFilters.id_tarifario ?? ''),
+            id_contrato: overrides.id_contrato !== undefined ? overrides.id_contrato : (safeFilters.id_contrato ?? ''),
+            pedido_numero: overrides.pedido_numero !== undefined ? overrides.pedido_numero : (safeFilters.pedido_numero ?? ''),
+            has_pedidos: overrides.has_pedidos !== undefined ? overrides.has_pedidos : (safeFilters.has_pedidos ?? ''),
+            multi_pedido: overrides.multi_pedido !== undefined ? overrides.multi_pedido : (safeFilters.multi_pedido ?? ''),
+            pedido_importe: overrides.pedido_importe !== undefined ? overrides.pedido_importe : (safeFilters.pedido_importe ?? ''),
+            facturado: overrides.facturado !== undefined ? overrides.facturado : (safeFilters.facturado ?? ''),
+            solicitado: overrides.solicitado !== undefined ? overrides.solicitado : (safeFilters.solicitado ?? ''),
+            categoria: overrides.categoria !== undefined ? overrides.categoria : (safeFilters.categoria ?? ''),
+            sort: overrides.sort !== undefined ? overrides.sort : (safeFilters.sort ?? ''),
+            direction: overrides.direction !== undefined ? overrides.direction : (safeFilters.direction ?? ''),
             page:        overrides.page        !== undefined ? overrides.page        : undefined,
         };
 
         // Limpiar valores vacíos para no ensuciar la URL
-        Object.keys(params).forEach((k) => { if (!params[k]) delete params[k]; });
+        Object.keys(params ?? {}).forEach((k) => { if (!params[k]) delete params[k]; });
 
         router.get(route('trabajos.index'), params, {
             preserveState:  true,
@@ -87,12 +99,12 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
             onFinish: () => setStatus('ready'),
             onError:  () => setStatus('error'),
         });
-    }, [search, estado, fechaDesde, fechaHasta]);
+    }, [search, estado, fechaDesde, fechaHasta, safeFilters]);
 
     // Debounce del input de búsqueda — espera 400ms antes de disparar el request
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (search !== (filters.search ?? '')) {
+            if (search !== (safeFilters.search ?? '')) {
                 aplicarFiltros({ search });
             }
         }, 400);
@@ -130,6 +142,9 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
 
     return (
         <AuthenticatedLayout
+            contentWidthClass="max-w-none"
+            desktopSidebarInitiallyHidden
+            showDesktopSidebarToggle
             header={
                 <h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">
                     {t('trabajos.list')}
@@ -148,33 +163,39 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                 confirmLabel={t('trabajos.cancelAction')}
             />
 
-            <div className={`ciete-page ${isCieteExcel ? 'ciete-page-full' : 'ciete-page-wide'}`}>
-                <ContextualPageHeader
-                    eyebrow={t('nav.groups.operations')}
-                    title={t('trabajos.title')}
-                    description={t('trabajos.list')}
-                    actions={!isCieteExcel && canCreateByPermission ? (
-                        <button
-                            type="button"
-                            onClick={handleCreate}
-                            className={`inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition sm:w-auto ${
-                                canCreateInContext
-                                    ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
-                                    : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-                            }`}
-                        >
-                            + {t('trabajos.create')}
-                        </button>
-                    ) : null}
-                />
+            <div className="ciete-page ciete-page-operations">
+                <div className="mx-auto w-full max-w-7xl space-y-6">
+                    <ContextualPageHeader
+                        eyebrow={t('nav.groups.operations')}
+                        title={t('trabajos.title')}
+                        description="Pantalla principal para gestionar trabajos, seleccionar contrato/tarifa y seguir los pedidos asociados."
+                        actions={!isCieteExcel && canCreateByPermission ? (
+                            <button
+                                type="button"
+                                onClick={handleCreate}
+                                className={`inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-semibold transition sm:w-auto ${
+                                    canCreateInContext
+                                        ? 'bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)'
+                                        : 'border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                }`}
+                            >
+                                + {t('trabajos.create')}
+                            </button>
+                        ) : null}
+                    />
 
-                <OperationalReadOnlyNotice />
+                    <OperationalReadOnlyNotice />
 
-                {!isCieteExcel && canCreateByPermission && activeContext?.is_all && (
-                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                        Selecciona un contexto concreto para crear trabajos.
+                    <div className="rounded-lg border border-border bg-surface-2 px-4 py-3 text-sm text-text-muted">
+                        Desde esta vista se revisan trabajos con y sin pedidos, junto con su resumen económico. El contrato/tarifa se selecciona antes de crear el primer pedido y después queda fijado en la fila.
                     </div>
-                )}
+
+                    {!isCieteExcel && canCreateByPermission && activeContext?.is_all && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                            Selecciona un contexto concreto para crear trabajos.
+                        </div>
+                    )}
+                </div>
 
                 {/* ── Filtros ───────────────────────────────────────────────── */}
                 {isCieteExcel ? (
@@ -188,16 +209,16 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                         creationCatalogs={creationCatalogs}
                     />
                 ) : (
-                <>
-                <section className="ciete-filter-bar">
-                    <div className="ciete-filter-row">
+                    <div className="space-y-6">
+                        <section className="ciete-filter-bar">
+                            <div className="ciete-filter-row">
 
                         {/* Búsqueda libre */}
                         <input
                             type="search"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder={t('trabajos.filters.searchPlaceholder')}
+                            placeholder="Buscar trabajo, estacion, pedido, contrato, tarifa, responsable o importe"
                             className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm
                                        text-text-main placeholder:text-text-hint/70
                                        focus:border-(--ciete-red) focus:ring-(--ciete-red) lg:flex-1"
@@ -270,28 +291,28 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                         <span className="text-sm text-text-hint xl:ml-auto">
                             {total === 1 ? t('trabajos.countOne', { count: total }) : t('trabajos.countOther', { count: total })}
                         </span>
-                    </div>
-                </section>
+                            </div>
+                        </section>
 
-                {/* ── Tabla ─────────────────────────────────────────────────── */}
-                <section className="ciete-table-card">
-                    <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
-                    <div className="ciete-table-scroll">
-                        <table className="min-w-[1220px] w-full table-fixed divide-y divide-border text-sm">
-                            <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
-                                <tr>
-                                    <th className="w-[9rem] max-w-[9rem] px-3 py-3 whitespace-nowrap">{t('trabajos.columns.number')}</th>
-                                    <th className="min-w-0 px-4 py-3">{t('trabajos.columns.description')}</th>
-                                    <th className="w-28 px-3 py-3">{t('trabajos.columns.status')}</th>
-                                    <th className="w-32 px-3 py-3">{t('trabajos.columns.company')}</th>
-                                    <th className="px-3 py-3">{t('trabajos.columns.station')}</th>
-                                    <th className="w-28 px-3 py-3 whitespace-nowrap">{t('trabajos.columns.assignedAt')}</th>
-                                    <th className="px-3 py-3">{t('trabajos.columns.clientDetail')}</th>
-                                    <th className="w-32 px-3 py-3 text-right">{t('trabajos.columns.actions')}</th>
-                                </tr>
-                            </thead>
+                        {/* ── Tabla ─────────────────────────────────────────────────── */}
+                        <section className="ciete-table-card">
+                            <p className="ciete-table-hint">{t('help.sections.mobile.tablesNote')}</p>
+                            <div className="ciete-table-scroll">
+                                <table className="min-w-[1220px] w-full table-fixed divide-y divide-border text-sm">
+                                    <thead className="bg-surface-2 text-left text-xs font-semibold uppercase tracking-wide text-text-hint">
+                                        <tr>
+                                            <th className="w-[9rem] max-w-[9rem] px-3 py-3 whitespace-nowrap">{t('trabajos.columns.number')}</th>
+                                            <th className="min-w-0 px-4 py-3">{t('trabajos.columns.description')}</th>
+                                            <th className="w-28 px-3 py-3">{t('trabajos.columns.status')}</th>
+                                            <th className="w-32 px-3 py-3">{t('trabajos.columns.company')}</th>
+                                            <th className="px-3 py-3">{t('trabajos.columns.station')}</th>
+                                            <th className="w-28 px-3 py-3 whitespace-nowrap">{t('trabajos.columns.assignedAt')}</th>
+                                            <th className="px-3 py-3">{t('trabajos.columns.clientDetail')}</th>
+                                            <th className="w-32 px-3 py-3 text-right">{t('trabajos.columns.actions')}</th>
+                                        </tr>
+                                    </thead>
 
-                            <tbody className="divide-y divide-border text-text-main">
+                                    <tbody className="divide-y divide-border text-text-main">
 
                                 {/* Skeleton cargando */}
                                 {status === 'loading' && (
@@ -424,17 +445,17 @@ export default function TrabajosIndex({ trabajos, filters = {}, contextoIds = []
                                     </tr>
                                     );
                                 })}
-                            </tbody>
-                        </table>
-                    </div>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                    {/* ── Paginación ─────────────────────────────────────────── */}
-                    <PaginationControls
-                        pagination={trabajos?.meta}
-                        onPageChange={(p) => aplicarFiltros({ page: p })}
-                    />
-                </section>
-                </>
+                            {/* ── Paginación ─────────────────────────────────────────── */}
+                            <PaginationControls
+                                pagination={trabajos?.meta}
+                                onPageChange={(p) => aplicarFiltros({ page: p })}
+                            />
+                        </section>
+                    </div>
                 )}
             </div>
         </AuthenticatedLayout>

@@ -84,12 +84,11 @@ export function buildSidebarSections(t, user) {
     const canViewMasters = hasPermission(user, 'maestros.ver');
     const canAccessAdminPanel = Boolean(user.can_access_admin_panel);
     const canManageUsers = Boolean(user.can_manage_users);
-    const canManageSupport = Boolean(user.can_manage_support);
+    const canViewSystemStatus = Boolean(user.can_view_system_status);
     const canManageMaintenance = Boolean(user.can_manage_maintenance);
     const canManageNotices = Boolean(user.can_manage_notices);
     const canManageImports = Boolean(user.can_manage_imports);
     const canViewAudit = Boolean(user.can_view_audit);
-    const canAccessClosure = Boolean(user.can_access_closure);
     const isTechnicalAdmin = canAccessAdminPanel;
     const isExcelMode = user.interface_mode === 'ciete_excel';
     const worksLabel = user.is_execution_moeve
@@ -132,27 +131,20 @@ export function buildSidebarSections(t, user) {
                     routeName: 'admin.dashboard',
                     activePatterns: ['admin.dashboard', 'admin.users.*', 'admin.support.*', 'admin.audit'],
                 }),
-                makeItem({
-                    id: 'system-status',
-                    key: 'nav.systemStatus',
-                    label: t('nav.systemStatus'),
-                    routeName: 'status',
-                    activePatterns: ['status'],
-                }),
+                canViewSystemStatus
+                    ? makeItem({
+                        id: 'system-status',
+                        key: 'nav.systemStatus',
+                        label: t('nav.systemStatus'),
+                        routeName: 'status',
+                        activePatterns: ['status'],
+                    })
+                    : null,
             ])
         );
     } else if (user.can_access_direction_panel) {
         sections.push(
             section('direction', t('nav.groups.direction'), [
-                canAccessClosure
-                    ? makeItem({
-                        id: 'direction-dashboard',
-                        key: 'nav.directionPanel',
-                        label: t('nav.directionPanel'),
-                        routeName: 'cierre.dashboard',
-                        activePatterns: ['cierre.dashboard'],
-                    })
-                    : null,
                 canManageUsers
                     ? makeItem({
                         id: 'admin-users',

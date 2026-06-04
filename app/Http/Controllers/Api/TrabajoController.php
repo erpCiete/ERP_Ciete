@@ -10,18 +10,23 @@ use App\Models\AuditLog;
 use App\Models\Contrato;
 use App\Models\EstacionServicio;
 use App\Models\Pedido;
+use App\Models\Tarifario;
 use App\Models\TipoDocumento;
 use App\Models\TipoTrabajo;
 use App\Models\Trabajo;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\TrabajoStateService;
 use App\Support\ContextGuard;
 use App\Support\TrabajoPermission;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use App\Http\Controllers\Controller;
@@ -36,6 +41,7 @@ class TrabajoController extends Controller
         'id_tipo_trabajo',
         'id_tipo_documento',
         'id_contrato',
+        'id_tarifario',
         'numero_trabajo',
         'numero_trabajo_operativo',
         'numero_aviso',
@@ -49,32 +55,50 @@ class TrabajoController extends Controller
         'estado',
     ];
 
-    public function __construct(private readonly AuditLogger $auditLogger)
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly TrabajoStateService $trabajoStateService,
+    )
     {
     }
 
-    /**
-     * Muestra el listado principal de Obras (Trabajos).
-     */
     public function index(Request $request): Response
     {
-        // El trait HasContext filtra automáticamente según el usuario activo.
+        $search = trim((string) $request->input('search', ''));
+
+        // HasContext filtra automáticamente por el contexto activo del usuario (MOEVE/REPSOL/OTROS).
         $query = Trabajo::query()
-            ->with(['empresa', 'estacion', 'contrato', 'tarifario', 'tipoDocumento', 'tipoTrabajo', 'responsableCiete', 'primerPedido'])
+            ->with([
+                'empresa',
+                'estacion',
+                'contrato',
+                'tarifario',
+                'tipoDocumento',
+                'tipoTrabajo',
+                'responsableCiete',
+                'primerPedido',
+                'pedidos' => fn ($pedidos) => $pedidos
+                    ->select([
+                        'id_pedido',
+                        'id_trabajo',
+                        'id_contexto',
+                        'numero_pedido',
+                        'fecha_solicitud',
+                        'estado',
+                        'importe_pedido',
+                        'importe_facturado',
+                        'pedido_completo',
+                        'facturado_completo',
+                    ])
+                    ->orderBy('id_pedido'),
+            ])
             ->withSum('pedidos as importe_pedido_total', 'importe_pedido')
             ->withSum('pedidos as importe_solicitado_total', 'importe_solicitado')
             ->withSum('pedidos as importe_facturado_total', 'importe_facturado')
             ->withCount('pedidos');
 
-        // Implementación de búsqueda genérica básica (si se envía parámetro)
-        if ($request->filled('search')) {
-            $searchTerm = '%' . $request->input('search') . '%';
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('numero_trabajo', 'like', $searchTerm)
-                ->orWhere('numero_trabajo_operativo', 'like', $searchTerm)
-                ->orWhere('numero_aviso', 'like', $searchTerm)
-                ->orWhere('descripcion_trabajo', 'like', $searchTerm);
-            });
+        if ($search !== '') {
+            $this->applyOperationalSearch($query, $search);
         }
 
         if ($request->filled('estado')) {
@@ -85,6 +109,23 @@ class TrabajoController extends Controller
         $query->when($request->filled('fecha_hasta'), fn ($q) => $q->where('fecha_encargo', '<=', $request->input('fecha_hasta')));
         $query->when($request->filled('id_responsable_ciete'), fn ($q) => $q->where('id_responsable_ciete', $request->input('id_responsable_ciete')));
         $query->when($request->filled('id_estacion_servicio'), fn ($q) => $q->where('id_estacion_servicio', $request->input('id_estacion_servicio')));
+        $query->when($request->filled('id_tarifario'), fn ($q) => $q->where('id_tarifario', $request->input('id_tarifario')));
+        $query->when($request->filled('id_contrato'), fn ($q) => $q->where('id_contrato', $request->input('id_contrato')));
+        $query->when($request->filled('pedido_numero'), function (Builder $q) use ($request): void {
+            $q->whereHas('pedidos', fn (Builder $pedidos) => $pedidos->where('numero_pedido', 'like', '%' . $request->input('pedido_numero') . '%'));
+        });
+        $query->when($request->filled('categoria'), function (Builder $q) use ($request): void {
+            $term = '%' . $request->input('categoria') . '%';
+            $q->where(function (Builder $nested) use ($term): void {
+                $nested->where('categoria', 'like', $term)
+                    ->orWhereHas('tipoTrabajo', fn (Builder $tipos) => $tipos
+                        ->where('nombre', 'like', $term)
+                        ->orWhere('codigo', 'like', $term))
+                    ->orWhereHas('tipoDocumento', fn (Builder $tipos) => $tipos
+                        ->where('nombre', 'like', $term)
+                        ->orWhere('codigo', 'like', $term));
+            });
+        });
 
         // Filtros por municipio/provincia de la estación (texto parcial)
         $query->when($request->filled('municipio'), function ($q) use ($request) {
@@ -97,9 +138,30 @@ class TrabajoController extends Controller
         $query->when($request->filled('codigo_estacion'), function ($q) use ($request) {
             $q->whereHas('estacion', fn ($es) => $es->where('codigo_estacion', 'like', '%' . $request->input('codigo_estacion') . '%'));
         });
+        $query->when($request->filled('has_pedidos'), function (Builder $q) use ($request): void {
+            $request->input('has_pedidos') === '1'
+                ? $q->has('pedidos')
+                : $q->doesntHave('pedidos');
+        });
+        $query->when($request->filled('multi_pedido'), function (Builder $q) use ($request): void {
+            $request->input('multi_pedido') === '1'
+                ? $q->has('pedidos', '>=', 2)
+                : $q->has('pedidos', '<', 2);
+        });
+        $query->when($request->filled('pedido_importe'), function (Builder $q) use ($request): void {
+            $this->applyPedidoAmountFilter($q, 'importe_pedido', $request->input('pedido_importe'));
+        });
+        $query->when($request->filled('facturado'), function (Builder $q) use ($request): void {
+            $this->applyPedidoAmountFilter($q, 'importe_facturado', $request->input('facturado'));
+        });
+        $query->when($request->filled('solicitado'), function (Builder $q) use ($request): void {
+            $this->applyPedidoAmountFilter($q, 'importe_solicitado', $request->input('solicitado'));
+        });
 
-        $query->orderByRaw("CASE estado WHEN 'en_curso' THEN 1 WHEN 'terminado' THEN 2 WHEN 'pendiente_facturar' THEN 3 WHEN 'facturado' THEN 4 WHEN 'finalizado' THEN 5 WHEN 'cancelado' THEN 99 ELSE 90 END")
-              ->orderBy('fecha_encargo', 'desc');
+        $sort = $this->normalizeTrabajoSort((string) $request->input('sort', ''));
+        $direction = $this->normalizeSortDirection((string) $request->input('direction', ''));
+
+        $this->applyTrabajoIndexOrdering($query, $sort, $direction);
 
         $trabajos = $query->paginate(10)->withQueryString();
 
@@ -120,11 +182,34 @@ class TrabajoController extends Controller
         $canUseExcelCatalogs = $canCreateInContext
             || ($request->user()?->hasPermission('trabajos.editar') ?? false);
 
+        $filters = $request->only([
+            'search',
+            'estado',
+            'fecha_desde',
+            'fecha_hasta',
+            'id_responsable_ciete',
+            'id_estacion_servicio',
+            'municipio',
+            'provincia',
+            'codigo_estacion',
+            'id_tarifario',
+            'id_contrato',
+            'pedido_numero',
+            'has_pedidos',
+            'multi_pedido',
+            'pedido_importe',
+            'facturado',
+            'solicitado',
+            'categoria',
+        ]);
+        $filters['sort'] = $sort;
+        $filters['direction'] = $sort ? $direction : null;
+
         return Inertia::render('Trabajos/Index', [
-            // Pasamos por el Resource para que actúe el firewall de contexto (Tarea B03-03)
+            // TrabajoResource aplica el firewall de contexto antes de serializar.
             'trabajos'     => TrabajoResource::collection($trabajos),
             'contextoIds'  => $request->user()->getActiveContextIds(),
-            'filters'      => $request->only(['search', 'estado', 'fecha_desde', 'fecha_hasta', 'id_responsable_ciete', 'id_estacion_servicio', 'municipio', 'provincia', 'codigo_estacion']),
+            'filters'      => $filters,
             'canCreate'    => $canCreate,
             'responsables' => $responsables,
             'creationCatalogs' => $canUseExcelCatalogs
@@ -139,9 +224,256 @@ class TrabajoController extends Controller
         ]);
     }
 
-    /**
-     * Muestra el formulario para crear una nueva Obra.
-     */
+    private function normalizeTrabajoSort(string $sort): ?string
+    {
+        $allowed = [
+            'numero_trabajo',
+            'codigo_estacion',
+            'nombre_estacion',
+            'municipio',
+            'provincia',
+            'categoria',
+            'descripcion_trabajo',
+            'tarifario',
+            'importe_pedido_total',
+            'importe_solicitado_total',
+            'importe_facturado_total',
+            'estado',
+            'responsable',
+            'fecha_encargo',
+            'fecha_solicitud_pedido',
+            'fecha_terminacion',
+        ];
+
+        return in_array($sort, $allowed, true) ? $sort : null;
+    }
+
+    private function normalizeSortDirection(string $direction): string
+    {
+        return strtolower($direction) === 'desc' ? 'desc' : 'asc';
+    }
+
+    private function applyTrabajoIndexOrdering(Builder $query, ?string $sort, string $direction): void
+    {
+        switch ($sort) {
+            case 'numero_trabajo':
+                $query->orderByRaw("CASE WHEN trabajos.numero_trabajo_operativo IS NULL OR trabajos.numero_trabajo_operativo = '' THEN 1 ELSE 0 END ASC")
+                    ->orderBy('trabajos.numero_trabajo_operativo', $direction)
+                    ->orderBy('trabajos.numero_trabajo', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'codigo_estacion':
+                $query->orderBy(
+                    EstacionServicio::query()
+                        ->select('codigo_estacion')
+                        ->whereColumn('estaciones_servicio.id_estacion_servicio', 'trabajos.id_estacion_servicio')
+                        ->limit(1),
+                    $direction
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'nombre_estacion':
+                $query->orderBy(
+                    EstacionServicio::query()
+                        ->select('nombre')
+                        ->whereColumn('estaciones_servicio.id_estacion_servicio', 'trabajos.id_estacion_servicio')
+                        ->limit(1),
+                    $direction
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'municipio':
+                $query->orderBy(
+                    EstacionServicio::query()
+                        ->select('poblacion')
+                        ->whereColumn('estaciones_servicio.id_estacion_servicio', 'trabajos.id_estacion_servicio')
+                        ->limit(1),
+                    $direction
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'provincia':
+                $query->orderBy(
+                    EstacionServicio::query()
+                        ->select('provincia')
+                        ->whereColumn('estaciones_servicio.id_estacion_servicio', 'trabajos.id_estacion_servicio')
+                        ->limit(1),
+                    $direction
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'categoria':
+                $query->orderByRaw(
+                    "COALESCE(
+                        (SELECT nombre FROM tipos_trabajo WHERE tipos_trabajo.id_tipo_trabajo = trabajos.id_tipo_trabajo LIMIT 1),
+                        trabajos.categoria,
+                        (SELECT nombre FROM tipos_documento WHERE tipos_documento.id_tipo_documento = trabajos.id_tipo_documento LIMIT 1)
+                    ) {$direction}"
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'descripcion_trabajo':
+                $query->orderBy('trabajos.descripcion_trabajo', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'tarifario':
+                $query->orderByRaw(
+                    "COALESCE(
+                        (SELECT nombre FROM tarifarios WHERE tarifarios.id_tarifario = trabajos.id_tarifario LIMIT 1),
+                        (SELECT nombre FROM contratos WHERE contratos.id_contrato = trabajos.id_contrato LIMIT 1)
+                    ) {$direction}"
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'importe_pedido_total':
+                $query->orderBy('importe_pedido_total', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'importe_solicitado_total':
+                $query->orderBy('importe_solicitado_total', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'importe_facturado_total':
+                $query->orderBy('importe_facturado_total', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'estado':
+                $query->orderByRaw($this->trabajoEstadoOrderCase() . " {$direction}")
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'responsable':
+                $query->orderBy(
+                    User::query()
+                        ->select('nombre')
+                        ->whereColumn('usuarios.id_usuario', 'trabajos.id_responsable_ciete')
+                        ->limit(1),
+                    $direction
+                )->orderBy(
+                    User::query()
+                        ->select('apellidos')
+                        ->whereColumn('usuarios.id_usuario', 'trabajos.id_responsable_ciete')
+                        ->limit(1),
+                    $direction
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'fecha_encargo':
+                $query->orderBy('trabajos.fecha_encargo', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'fecha_solicitud_pedido':
+                $query->orderBy(
+                    Pedido::query()
+                        ->selectRaw('MIN(fecha_solicitud)')
+                        ->whereColumn('pedidos.id_trabajo', 'trabajos.id_trabajo'),
+                    $direction
+                )->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            case 'fecha_terminacion':
+                $query->orderBy('trabajos.fecha_terminacion', $direction)
+                    ->orderBy('trabajos.id_trabajo', $direction);
+                return;
+
+            default:
+                $this->applyDefaultTrabajoOrder($query);
+                return;
+        }
+    }
+
+    private function applyDefaultTrabajoOrder(Builder $query): void
+    {
+        $query->orderByRaw($this->trabajoEstadoOrderCase() . ' ASC')
+            ->orderBy('trabajos.fecha_encargo', 'desc')
+            ->orderBy('trabajos.id_trabajo', 'desc');
+    }
+
+    private function trabajoEstadoOrderCase(): string
+    {
+        return "CASE trabajos.estado WHEN 'en_curso' THEN 1 WHEN 'terminado' THEN 2 WHEN 'pendiente_facturar' THEN 3 WHEN 'facturado' THEN 4 WHEN 'finalizado' THEN 5 WHEN 'cancelado' THEN 99 ELSE 90 END";
+    }
+
+    private function applyOperationalSearch(Builder $query, string $search): void
+    {
+        $like = '%' . $search . '%';
+
+        $query->where(function (Builder $q) use ($like): void {
+            $q->where('numero_trabajo', 'like', $like)
+                ->orWhere('numero_trabajo_operativo', 'like', $like)
+                ->orWhere('numero_aviso', 'like', $like)
+                ->orWhere('descripcion_trabajo', 'like', $like)
+                ->orWhere('observaciones', 'like', $like)
+                ->orWhere('categoria', 'like', $like)
+                ->orWhere('responsable_cliente', 'like', $like)
+                ->orWhere('fecha_encargo', 'like', $like)
+                ->orWhere('fecha_terminacion', 'like', $like)
+                ->orWhereHas('empresa', fn (Builder $empresa) => $empresa
+                    ->where('nombre', 'like', $like)
+                    ->orWhere('nombre_comercial', 'like', $like)
+                    ->orWhere('razon_social', 'like', $like)
+                    ->orWhere('cif', 'like', $like))
+                ->orWhereHas('estacion', fn (Builder $estacion) => $estacion
+                    ->where('codigo_estacion', 'like', $like)
+                    ->orWhere('nombre', 'like', $like)
+                    ->orWhere('poblacion', 'like', $like)
+                    ->orWhere('provincia', 'like', $like))
+                ->orWhereHas('responsableCiete', fn (Builder $responsables) => $responsables
+                    ->where('nombre', 'like', $like)
+                    ->orWhere('apellidos', 'like', $like)
+                    ->orWhere('email', 'like', $like))
+                ->orWhereHas('tipoTrabajo', fn (Builder $tipos) => $tipos
+                    ->where('nombre', 'like', $like)
+                    ->orWhere('codigo', 'like', $like))
+                ->orWhereHas('tipoDocumento', fn (Builder $tipos) => $tipos
+                    ->where('nombre', 'like', $like)
+                    ->orWhere('codigo', 'like', $like))
+                ->orWhereHas('contrato', fn (Builder $contratos) => $contratos
+                    ->where('codigo_contrato', 'like', $like)
+                    ->orWhere('nombre', 'like', $like)
+                    ->orWhereHas('empresa', fn (Builder $empresa) => $empresa
+                        ->where('nombre', 'like', $like)
+                        ->orWhere('nombre_comercial', 'like', $like)
+                        ->orWhere('cif', 'like', $like)))
+                ->orWhereHas('tarifario', fn (Builder $tarifarios) => $tarifarios
+                    ->where('id_tarifario', 'like', $like)
+                    ->orWhere('nombre', 'like', $like)
+                    ->orWhere('version', 'like', $like)
+                    ->orWhereHas('contrato', fn (Builder $contratos) => $contratos
+                        ->where('codigo_contrato', 'like', $like)
+                        ->orWhere('nombre', 'like', $like)))
+                ->orWhereHas('pedidos', fn (Builder $pedidos) => $pedidos
+                    ->where('numero_pedido', 'like', $like)
+                    ->orWhere('estado', 'like', $like)
+                    ->orWhere('fecha_solicitud', 'like', $like)
+                    ->orWhere('importe_pedido', 'like', $like)
+                    ->orWhere('importe_solicitado', 'like', $like)
+                    ->orWhere('importe_facturado', 'like', $like));
+        });
+    }
+
+    private function applyPedidoAmountFilter(Builder $query, string $column, string $value): void
+    {
+        $amountQuery = fn (Builder $pedidos) => $pedidos
+            ->whereNotNull($column)
+            ->where($column, '>', 0);
+
+        if ($value === '1') {
+            $query->whereHas('pedidos', $amountQuery);
+            return;
+        }
+
+        if ($value === '0') {
+            $query->whereDoesntHave('pedidos', $amountQuery);
+        }
+    }
+
     public function create(Request $request): Response|RedirectResponse
     {
         if (! TrabajoPermission::canCreate($request->user())) {
@@ -169,9 +501,6 @@ class TrabajoController extends Controller
         ]);
     }
 
-    /**
-     * Procesa y persiste una nueva Obra.
-     */
     public function store(StoreTrabajoRequest $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validated();
@@ -180,16 +509,39 @@ class TrabajoController extends Controller
             $validated['id_contexto'] = ContextGuard::activeContextIdForCreate($request->user());
         }
 
-        if (! isset($validated['id_empresa_cliente']) && isset($validated['id_estacion_servicio'])) {
-            $estacion = EstacionServicio::withoutGlobalScopes()
-                ->findOrFail($validated['id_estacion_servicio']);
+        $trabajo = DB::transaction(function () use ($validated) {
+            if (! isset($validated['id_empresa_cliente']) && isset($validated['id_estacion_servicio'])) {
+                $estacion = EstacionServicio::withoutGlobalScopes()
+                    ->findOrFail($validated['id_estacion_servicio']);
 
-            $validated['id_empresa_cliente'] = $estacion->id_empresa_cliente;
-        }
+                $validated['id_empresa_cliente'] = $estacion->id_empresa_cliente;
+            }
 
-        $validated = $this->prepareTrabajoStateData($validated);
+            if (! empty($validated['id_tarifario'])) {
+                $tarifario = Tarifario::withoutGlobalScopes()
+                    ->with('contrato:id_contrato,id_contexto,id_empresa_cliente,activo')
+                    ->where('id_tarifario', $validated['id_tarifario'])
+                    ->where('id_contexto', $validated['id_contexto'])
+                    ->where('activo', true)
+                    ->first();
 
-        $trabajo = Trabajo::create($validated);
+                if (! $tarifario || ! $tarifario->contrato || ! $tarifario->contrato->activo) {
+                    throw ValidationException::withMessages([
+                        'id_tarifario' => 'El contrato/tarifa seleccionado no está disponible para este trabajo.',
+                    ]);
+                }
+
+                $validated['id_contrato'] = $tarifario->id_contrato;
+            }
+
+            $validated = $this->prepareTrabajoStateData($validated);
+            $validated = $this->prepareTrabajoNumberData($validated);
+
+            $trabajo = Trabajo::create($validated);
+            $this->trabajoStateService->syncTrabajo($trabajo);
+
+            return $trabajo->fresh();
+        });
 
         $snapshot = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
         $this->auditLogger->log([
@@ -245,7 +597,6 @@ class TrabajoController extends Controller
      */
     public function edit(Request $request, Trabajo $trabajo): Response
     {
-        // Eager loading para el recurso individual
         $trabajo->load(['empresa', 'estacion', 'contrato', 'tipoDocumento', 'tipoTrabajo']);
         $accessibleContextIds = $request->user()->getActiveContextIds();
         $clientContexts = ContextoCliente::query()
@@ -262,9 +613,6 @@ class TrabajoController extends Controller
         ]);
     }
 
-    /**
-     * Actualiza la Obra en base de datos.
-     */
     public function update(UpdateTrabajoRequest $request, Trabajo $trabajo): RedirectResponse
     {
         // Protección crítica de negocio: Bloqueo de Trabajos Cerrados
@@ -272,9 +620,60 @@ class TrabajoController extends Controller
             abort(403, 'Acción denegada. Esta obra está finalizada y bloqueada para modificaciones.');
         }
 
+        $validated = $request->validated();
+
+        // Detección de conflicto para el formulario completo (Modo Moderno).
+        // Si el cliente envía un updated_at y difiere del servidor, comprobamos
+        // si otro usuario modificó el trabajo en los últimos 60 minutos.
+        $clientTs = isset($validated['updated_at'])
+            ? ($this->normalizePatchTimestamp($validated['updated_at']) ?? $validated['updated_at'])
+            : null;
+        $serverTs = $trabajo->updated_at?->format('Y-m-d H:i:s') ?? '';
+
+        if ($clientTs !== null && $clientTs !== $serverTs) {
+            $lastAudit = AuditLog::where('tabla', 'trabajos')
+                ->where('registro_id', $trabajo->id_trabajo)
+                ->orderByDesc('created_at')
+                ->with('usuario')
+                ->first();
+
+            $fueModificadoPorOtro = $lastAudit?->id_usuario
+                && (int) $lastAudit->id_usuario !== (int) $request->user()->id_usuario;
+
+            $fueReciente = $fueModificadoPorOtro
+                && $lastAudit?->created_at instanceof Carbon
+                && $lastAudit->created_at->greaterThanOrEqualTo(now()->subHour());
+
+            if ($fueReciente) {
+                $nombreModificador = null;
+                if ($lastAudit->usuario) {
+                    $nombreModificador = trim(
+                        ($lastAudit->usuario->nombre ?? '') . ' ' . ($lastAudit->usuario->apellidos ?? '')
+                    ) ?: null;
+                }
+
+                return redirect()->back()
+                    ->withInput()
+                    ->with('conflict_warning', sprintf(
+                        'Conflicto: este trabajo fue modificado recientemente por %s (%s). Recarga la página para ver los datos actualizados antes de guardar.',
+                        $nombreModificador ?? 'otro usuario',
+                        $serverTs
+                    ));
+            }
+        }
+
+        $requestedEstado = $validated['estado'] ?? null;
+        if (is_string($requestedEstado) && $requestedEstado !== $trabajo->estado) {
+            $stateError = $this->assertTrabajoStateMutationAllowed($request->user(), $requestedEstado);
+            if ($stateError) {
+                abort(403, 'No tienes permiso para cambiar manualmente el estado de este trabajo.');
+            }
+        }
+
         $before = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
 
-        $trabajo->update($this->prepareTrabajoStateData($request->validated(), $trabajo));
+        $trabajo->update($this->prepareTrabajoStateData($validated, $trabajo));
+        $this->trabajoStateService->syncTrabajo($trabajo);
         $trabajo->refresh();
 
         $after = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
@@ -358,8 +757,8 @@ class TrabajoController extends Controller
     }
 
     /**
-     * Actualiza un campo individual de forma optimista (control de concurrencia).
-     * Valida permisos, valor por campo y updated_at para detectar conflictos.
+     * Guardado optimista de un campo único. Rechaza con 409 si otro usuario modificó
+     * ese campo en los últimos 60 minutos, mostrando qué cambió y quién lo hizo.
      */
     public function patchField(Request $request, Trabajo $trabajo): JsonResponse
     {
@@ -397,6 +796,7 @@ class TrabajoController extends Controller
             'id_tipo_documento' => 'id_tipo_documento',
             'id_tipo_trabajo' => 'id_tipo_trabajo',
             'id_estacion_servicio' => 'id_estacion_servicio',
+            'id_tarifario' => 'id_tarifario',
             'codigo_estacion' => 'codigo_estacion',
             'nombre_estacion' => 'nombre_estacion',
             'municipio' => 'municipio',
@@ -414,6 +814,25 @@ class TrabajoController extends Controller
         $isStationField = array_key_exists($campo, $stationFieldMap);
         $isPedidoPrincipalField = $campo === 'id_pedido_principal';
 
+        if ($campo === 'estado') {
+            $stateError = $this->assertTrabajoStateMutationAllowed($user, (string) $request->input('valor'), true);
+            if ($stateError) {
+                return $stateError;
+            }
+        }
+
+        if ($isStationField && ! $user->hasPermission('estaciones.editar')) {
+            return response()->json([
+                'message' => 'No tienes permiso para editar datos maestros de estación desde esta vista.',
+            ], 403);
+        }
+
+        if ($isPedidoPrincipalField && ! $user->hasPermission('pedidos.editar')) {
+            return response()->json([
+                'message' => 'No tienes permiso para reasignar pedidos desde esta vista.',
+            ], 403);
+        }
+
         if (
             in_array($campo, ['observaciones', 'fecha_terminacion', 'id_responsable_ciete', 'descripcion_trabajo', 'numero_trabajo_operativo', 'categoria', 'municipio', 'provincia'], true)
             && $request->input('valor') === ''
@@ -423,7 +842,7 @@ class TrabajoController extends Controller
 
         // Reglas de validación por campo
         $valorRules = match ($campo) {
-            'estado'               => ['required', 'string', Rule::in(Trabajo::ESTADOS_FUNCIONALES)],
+            'estado'               => ['required', 'string', Rule::in(Trabajo::ESTADOS_MANUALES)],
             'observaciones'        => ['nullable', 'string', 'max:5000'],
             'fecha_terminacion'    => ['nullable', 'date'],
             'id_responsable_ciete' => [
@@ -450,6 +869,11 @@ class TrabajoController extends Controller
                 'integer',
                 Rule::exists('estaciones_servicio', 'id_estacion_servicio')->where(fn ($query) => $query->whereIn('id_contexto', $activeContextIds)),
             ],
+            'id_tarifario'         => [
+                'required',
+                'integer',
+                Rule::exists('tarifarios', 'id_tarifario')->where(fn ($query) => $query->whereIn('id_contexto', $activeContextIds)->where('activo', true)),
+            ],
             'codigo_estacion'       => ['required', 'string', 'max:80'],
             'nombre_estacion'       => ['required', 'string', 'max:180'],
             'municipio'             => ['nullable', 'string', 'max:120'],
@@ -468,7 +892,7 @@ class TrabajoController extends Controller
             'updated_at' => ['required', 'string'],
         ]);
 
-        // Detección de conflicto — comparar en formato Y-m-d H:i:s (idéntico al que emite TrabajoResource)
+        // El timestamp viaja en formato Y-m-d H:i:s para coincidir con lo que emite TrabajoResource.
         if ($isStationField && ! $trabajo->relationLoaded('estacion')) {
             $trabajo->load('estacion');
         }
@@ -484,7 +908,6 @@ class TrabajoController extends Controller
         $clientTs = $this->normalizePatchTimestamp($validated['updated_at']) ?? $validated['updated_at'];
 
         if ($serverTs !== $clientTs) {
-            // Obtener el último usuario que modificó el registro desde el log de auditoría
             $lastAudit = AuditLog::where('tabla', 'trabajos')
                 ->where('registro_id', $trabajo->id_trabajo)
                 ->where(function ($query) use ($campo): void {
@@ -505,26 +928,26 @@ class TrabajoController extends Controller
             $fueModificadoPorOtroUsuario = $lastAudit?->id_usuario
                 && (int) $lastAudit->id_usuario !== (int) $request->user()->id_usuario;
 
+            // Bloqueo solo si otra persona modificó ese campo en los últimos 60 minutos.
+            // Ediciones propias o antiguas pasan directamente sin aviso.
             $fueModificadoRecientemente = $fueModificadoPorOtroUsuario
                 && $lastAudit?->created_at instanceof Carbon
                 && $lastAudit->created_at->greaterThanOrEqualTo(now()->subHour());
 
-            $conflictMessage = $fueModificadoRecientemente
-                ? 'Este campo fue modificado recientemente por otro usuario.'
-                : 'Este campo fue modificado por otro usuario.';
-
-            return response()->json([
-                'conflict'             => true,
-                'message'              => $conflictMessage,
-                'campo'                => $campo,
-                'valor_actual'         => $this->formatPatchValue($currentPatchValue),
-                'valor_intentado'      => $this->formatPatchValue($request->input('valor')),
-                'updated_at_actual'    => $serverTs,
-                'usuario_modificacion' => $usuarioMod,
-                'modificado_recientemente' => $fueModificadoRecientemente,
-                'current_value'        => $this->formatPatchValue($currentPatchValue),
-                'current_updated_at'   => $serverTs,
-            ], 409);
+            if ($fueModificadoRecientemente) {
+                return response()->json([
+                    'conflict'             => true,
+                    'message'              => 'Este campo fue modificado recientemente por otro usuario.',
+                    'campo'                => $campo,
+                    'valor_actual'         => $this->formatPatchValue($currentPatchValue),
+                    'valor_intentado'      => $this->formatPatchValue($request->input('valor')),
+                    'updated_at_actual'    => $serverTs,
+                    'usuario_modificacion' => $usuarioMod,
+                    'modificado_recientemente' => true,
+                    'current_value'        => $this->formatPatchValue($currentPatchValue),
+                    'current_updated_at'   => $serverTs,
+                ], 409);
+            }
         }
 
         $valorAnterior = $this->formatPatchValue($currentPatchValue);
@@ -683,6 +1106,80 @@ class TrabajoController extends Controller
             ]);
         }
 
+        if ($campo === 'id_tarifario') {
+            if (Pedido::query()->where('id_trabajo', $trabajo->id_trabajo)->exists()) {
+                return response()->json([
+                    'message' => 'No se puede cambiar el contrato/tarifa porque este trabajo ya tiene pedidos.',
+                ], 422);
+            }
+
+            $tarifario = Tarifario::query()
+                ->with('contrato:id_contrato,id_contexto,id_empresa_cliente,activo')
+                ->where('id_tarifario', $valorNuevo)
+                ->where('id_contexto', $trabajo->id_contexto)
+                ->where('activo', true)
+                ->first();
+
+            if (! $tarifario || ! $tarifario->contrato || ! $tarifario->contrato->activo) {
+                return response()->json([
+                    'message' => 'El contrato/tarifa seleccionado no está disponible para este trabajo.',
+                ], 422);
+            }
+
+            if (
+                $trabajo->id_empresa_cliente
+                && (int) $tarifario->contrato->id_empresa_cliente !== (int) $trabajo->id_empresa_cliente
+            ) {
+                return response()->json([
+                    'message' => 'El contrato/tarifa seleccionado no pertenece a la empresa del trabajo.',
+                ], 422);
+            }
+
+            $trabajo->id_tarifario = $tarifario->id_tarifario;
+            $trabajo->id_contrato = $tarifario->id_contrato;
+
+            if (! $trabajo->isDirty('id_tarifario') && ! $trabajo->isDirty('id_contrato')) {
+                $this->loadTrabajoForResponse($trabajo);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'El contrato/tarifa seleccionado ya estaba asociado a este trabajo.',
+                    'campo' => $campo,
+                    'valor' => $tarifario->id_tarifario,
+                    'updated_at' => $serverTs,
+                    'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+                ]);
+            }
+
+            $trabajo->save();
+            $trabajo->refresh();
+            $this->loadTrabajoForResponse($trabajo);
+
+            $this->auditLogger->log([
+                'user'           => $user,
+                'accion'         => 'actualizar',
+                'modulo'         => 'trabajos',
+                'tabla'          => 'trabajos',
+                'entity_type'    => Trabajo::class,
+                'entity_id'      => $trabajo->id_trabajo,
+                'registro_id'    => $trabajo->id_trabajo,
+                'campo'          => $campo,
+                'valor_anterior' => $valorAnterior,
+                'valor_nuevo'    => $tarifario->id_tarifario,
+                'id_contexto'    => $trabajo->id_contexto,
+                'descripcion'    => sprintf('El usuario modifico el contrato/tarifa del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            ], $request);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Contrato/tarifa actualizado correctamente.',
+                'campo' => $campo,
+                'valor' => $tarifario->id_tarifario,
+                'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+                'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
+            ]);
+        }
+
         if ($campo === 'id_pedido_principal') {
             $pedidoActual = $trabajo->primerPedido;
             $valorAnterior = $pedidoActual?->id_pedido;
@@ -716,6 +1213,9 @@ class TrabajoController extends Controller
                 $pedidoSeleccionado->save();
                 $trabajo->touch();
             });
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds([$pedidoSeleccionado->id_pedido]);
+            $this->trabajoStateService->syncTrabajosByIds([$trabajoOrigen, $trabajo->id_trabajo]);
 
             $trabajo->refresh();
             $this->loadTrabajoForResponse($trabajo);
@@ -816,6 +1316,10 @@ class TrabajoController extends Controller
             $trabajo->fecha_terminacion = Carbon::today();
         }
 
+        if ($campo === 'estado' && $valorNuevo === 'en_curso') {
+            $trabajo->fecha_terminacion = null;
+        }
+
         if (! $trabajo->isDirty($campo) && ! $trabajo->isDirty('fecha_terminacion')) {
             $this->loadTrabajoForResponse($trabajo);
 
@@ -830,6 +1334,7 @@ class TrabajoController extends Controller
         }
 
         $trabajo->save();
+        $this->trabajoStateService->syncTrabajo($trabajo);
         $trabajo->refresh();
 
         $auditDescriptions = [
@@ -841,6 +1346,7 @@ class TrabajoController extends Controller
             'numero_trabajo' => sprintf('El usuario modifico el numero del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
             'numero_trabajo_operativo' => sprintf('El usuario modifico el numero operativo CIETE del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
             'categoria' => sprintf('El usuario modifico la categoria del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
+            'id_tarifario' => sprintf('El usuario modifico el contrato/tarifa del trabajo %s.', $trabajo->numero_trabajo ?? $trabajo->id_trabajo),
         ];
 
         $this->auditLogger->log([
@@ -872,7 +1378,30 @@ class TrabajoController extends Controller
 
     private function loadTrabajoForResponse(Trabajo $trabajo): void
     {
-        $trabajo->load(['empresa', 'estacion', 'contrato', 'tarifario', 'tipoDocumento', 'tipoTrabajo', 'responsableCiete', 'primerPedido']);
+        $trabajo->load([
+            'empresa',
+            'estacion',
+            'contrato',
+            'tarifario',
+            'tipoDocumento',
+            'tipoTrabajo',
+            'responsableCiete',
+            'primerPedido',
+            'pedidos' => fn ($pedidos) => $pedidos
+                ->select([
+                    'id_pedido',
+                    'id_trabajo',
+                    'id_contexto',
+                    'numero_pedido',
+                    'fecha_solicitud',
+                    'estado',
+                    'importe_pedido',
+                    'importe_facturado',
+                    'pedido_completo',
+                    'facturado_completo',
+                ])
+                ->orderBy('id_pedido'),
+        ]);
 
         // Compute aggregate sums so TrabajoResource can render importe totals without loading all pedidos.
         if (! isset($trabajo->importe_pedido_total)) {
@@ -910,6 +1439,97 @@ class TrabajoController extends Controller
         return $data;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function prepareTrabajoNumberData(array $data): array
+    {
+        $contextId = (int) ($data['id_contexto'] ?? 0);
+
+        if ($contextId <= 0) {
+            return $data;
+        }
+
+        $manualBaseNumber = $data['numero_trabajo'] ?? null;
+        $manualOperationalNumber = trim((string) ($data['numero_trabajo_operativo'] ?? ''));
+
+        ContextoCliente::query()
+            ->whereKey($contextId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($manualBaseNumber === null || $manualBaseNumber === '') {
+            [$generatedBaseNumber, $generatedOperationalNumber] = $this->nextGeneratedTrabajoNumbers($contextId);
+
+            $data['numero_trabajo'] = $generatedBaseNumber;
+            $data['numero_trabajo_operativo'] = $generatedOperationalNumber;
+
+            return $data;
+        }
+
+        if ($manualOperationalNumber !== '') {
+            $data['numero_trabajo_operativo'] = $manualOperationalNumber;
+
+            return $data;
+        }
+
+        $candidateOperationalNumber = $this->formatOperationalTrabajoNumber($contextId, (int) $manualBaseNumber);
+        $data['numero_trabajo_operativo'] = $this->operationalTrabajoNumberExists($candidateOperationalNumber)
+            ? null
+            : $candidateOperationalNumber;
+
+        return $data;
+    }
+
+    /**
+     * @return array{0:int,1:string}
+     */
+    private function nextGeneratedTrabajoNumbers(int $contextId): array
+    {
+        $nextBaseNumber = (int) Trabajo::query()
+            ->where('id_contexto', $contextId)
+            ->max('numero_trabajo');
+
+        $nextBaseNumber = max(0, $nextBaseNumber) + 1;
+
+        while (true) {
+            $candidateOperationalNumber = $this->formatOperationalTrabajoNumber($contextId, $nextBaseNumber);
+
+            $numberExistsInContext = Trabajo::query()
+                ->where('id_contexto', $contextId)
+                ->where('numero_trabajo', $nextBaseNumber)
+                ->exists();
+
+            if (! $numberExistsInContext && ! $this->operationalTrabajoNumberExists($candidateOperationalNumber)) {
+                return [$nextBaseNumber, $candidateOperationalNumber];
+            }
+
+            $nextBaseNumber++;
+        }
+    }
+
+    private function operationalTrabajoNumberExists(string $value): bool
+    {
+        return Trabajo::query()
+            ->where('numero_trabajo_operativo', $value)
+            ->exists();
+    }
+
+    private function formatOperationalTrabajoNumber(int $contextId, int $baseNumber): string
+    {
+        return sprintf('%s-%06d', $this->trabajoOperationalPrefix($contextId), $baseNumber);
+    }
+
+    private function trabajoOperationalPrefix(int $contextId): string
+    {
+        return match (ContextGuard::workspaceKeyForContextId($contextId)) {
+            'moeve' => 'MOE',
+            'repsol' => 'REP',
+            default => 'OTR',
+        };
+    }
+
     private function normalizePatchTimestamp(?string $timestamp): ?string
     {
         if (! $timestamp) {
@@ -930,6 +1550,29 @@ class TrabajoController extends Controller
         }
 
         return $value;
+    }
+
+    private function assertTrabajoStateMutationAllowed(?User $user, string $nextState, bool $asJson = false): ?JsonResponse
+    {
+        $allowed = match ($nextState) {
+            'terminado' => TrabajoPermission::canMarkFinished($user) || TrabajoPermission::canChangeState($user),
+            'en_curso', 'cancelado' => TrabajoPermission::canChangeState($user),
+            default => false,
+        };
+
+        if ($allowed) {
+            return null;
+        }
+
+        if ($asJson) {
+            return response()->json([
+                'message' => 'No tienes permiso para cambiar manualmente el estado de este trabajo.',
+            ], 403);
+        }
+
+        return response()->json([
+            'message' => 'No tienes permiso para cambiar manualmente el estado de este trabajo.',
+        ], 403);
     }
 
     /**
@@ -989,6 +1632,35 @@ class TrabajoController extends Controller
     private function buildExcelCreationCatalogs(array $contextIds): array
     {
         $normalizedContextIds = array_map('intval', $contextIds);
+        $hasTarifarioPredeterminadoColumn = Schema::hasColumn('tarifarios', 'es_predeterminado');
+
+        $tarifariosQuery = Tarifario::query()
+            ->join('contratos', 'tarifarios.id_contrato', '=', 'contratos.id_contrato')
+            ->whereIn('tarifarios.id_contexto', $normalizedContextIds)
+            ->where('tarifarios.activo', true)
+            ->where('contratos.activo', true)
+            ->orderBy('contratos.id_empresa_cliente')
+            ->orderBy('contratos.nombre');
+
+        if ($hasTarifarioPredeterminadoColumn) {
+            $tarifariosQuery->orderByDesc('tarifarios.es_predeterminado');
+        }
+
+        $tarifariosQuery->orderBy('tarifarios.nombre');
+
+        $tarifarioColumns = [
+            'tarifarios.id_tarifario',
+            'tarifarios.id_contexto',
+            'tarifarios.id_contrato',
+            'tarifarios.nombre as nombre_tarifario',
+            'contratos.id_empresa_cliente',
+            'contratos.nombre as nombre_contrato',
+            'contratos.codigo_contrato',
+        ];
+
+        if ($hasTarifarioPredeterminadoColumn) {
+            $tarifarioColumns[] = 'tarifarios.es_predeterminado';
+        }
 
         return [
             'estaciones' => EstacionServicio::query()
@@ -996,10 +1668,11 @@ class TrabajoController extends Controller
                 ->orderBy('codigo_estacion')
                 ->orderBy('nombre')
                 ->limit(500)
-                ->get(['id_estacion_servicio', 'id_contexto', 'codigo_estacion', 'nombre', 'poblacion', 'provincia'])
+                ->get(['id_estacion_servicio', 'id_contexto', 'id_empresa_cliente', 'codigo_estacion', 'nombre', 'poblacion', 'provincia'])
                 ->map(fn (EstacionServicio $estacion): array => [
                     'id' => $estacion->id_estacion_servicio,
                     'id_contexto' => $estacion->id_contexto,
+                    'id_empresa_cliente' => $estacion->id_empresa_cliente,
                     'codigo' => $estacion->codigo_estacion,
                     'nombre' => $estacion->nombre,
                     'municipio' => $estacion->poblacion,
@@ -1020,6 +1693,22 @@ class TrabajoController extends Controller
                     'numero' => $pedido->numero_pedido,
                     'fecha_solicitud' => $pedido->fecha_solicitud?->format('Y-m-d'),
                     'importe_pedido' => $pedido->importe_pedido,
+                ])
+                ->values()
+                ->all(),
+            'tarifarios' => $tarifariosQuery
+                ->get($tarifarioColumns)
+                ->map(fn ($tarifario): array => [
+                    'id' => (int) $tarifario->id_tarifario,
+                    'id_contexto' => (int) $tarifario->id_contexto,
+                    'id_contrato' => (int) $tarifario->id_contrato,
+                    'id_empresa_cliente' => (int) $tarifario->id_empresa_cliente,
+                    'nombre_tarifa' => $tarifario->nombre_tarifario,
+                    'nombre_contrato' => $tarifario->nombre_contrato,
+                    'codigo_contrato' => $tarifario->codigo_contrato,
+                    'is_default' => $hasTarifarioPredeterminadoColumn
+                        ? (bool) $tarifario->es_predeterminado
+                        : false,
                 ])
                 ->values()
                 ->all(),

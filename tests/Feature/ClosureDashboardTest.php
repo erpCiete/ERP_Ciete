@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\Empresa;
 use App\Models\EstacionServicio;
 use App\Models\Factura;
@@ -12,6 +13,7 @@ use App\Models\PedidoItem;
 use App\Models\Trabajo;
 use App\Models\User;
 use App\Services\ClosureDashboardService;
+use App\Services\TrabajoStateService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Vite;
@@ -63,7 +65,7 @@ class ClosureDashboardTest extends TestCase
             'estado' => 'terminado',
             'fecha_terminacion' => '2026-02-10',
             'bloqueado_cierre' => false,
-        ]);
+        ], true, [], true);
         $trabajo = $scenario['trabajo'];
 
         $this->actingAs($cesar);
@@ -85,6 +87,45 @@ class ClosureDashboardTest extends TestCase
             'estado' => 'finalizado',
             'bloqueado_cierre' => false,
         ]);
+        $this->assertDatabaseHas('audit_log', [
+            'tabla' => 'trabajos',
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'estado',
+            'accion' => 'cambiar_estado',
+        ]);
+    }
+
+    public function test_closure_review_logs_blocking_flag_changes(): void
+    {
+        $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
+        $scenario = $this->createTrabajoForClosure($cesar, [
+            'estado' => 'terminado',
+            'fecha_terminacion' => null,
+            'bloqueado_cierre' => false,
+        ]);
+        $trabajo = $scenario['trabajo'];
+
+        $this->actingAs($cesar);
+        $cesar->setActiveContextSelection(User::ACTIVE_CONTEXT_ALL);
+
+        $this->post(route('cierre.review'), ['ids' => [$trabajo->id_trabajo]])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'bloqueado_cierre' => true,
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'tabla' => 'trabajos',
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'bloqueado_cierre',
+            'accion' => 'actualizar',
+        ]);
+        $this->assertSame(1, AuditLog::query()
+            ->where('tabla', 'trabajos')
+            ->where('registro_id', $trabajo->id_trabajo)
+            ->where('campo', 'bloqueado_cierre')
+            ->count());
     }
 
     public function test_pending_legalizations_do_not_block_finalization_when_checklist_is_ok(): void
@@ -94,7 +135,7 @@ class ClosureDashboardTest extends TestCase
             'estado' => 'terminado',
             'fecha_terminacion' => '2026-02-10',
             'bloqueado_cierre' => false,
-        ]);
+        ], true, [], true);
         $trabajo = $scenario['trabajo'];
 
         Legalizacion::create([
@@ -230,6 +271,30 @@ class ClosureDashboardTest extends TestCase
         ]);
     }
 
+    public function test_director_cannot_close_finished_work_until_billing_is_complete(): void
+    {
+        $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
+        $scenario = $this->createTrabajoForClosure($cesar, [
+            'estado' => 'terminado',
+            'fecha_terminacion' => '2026-02-10',
+            'bloqueado_cierre' => false,
+        ]);
+        $trabajo = $scenario['trabajo'];
+
+        app(TrabajoStateService::class)->syncTrabajo($trabajo);
+
+        $this->actingAs($cesar);
+        $cesar->setActiveContextSelection(User::ACTIVE_CONTEXT_ALL);
+
+        $this->post(route('cierre.close', $trabajo))
+            ->assertSessionHasErrors(['message']);
+
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'estado' => 'pendiente_facturar',
+        ]);
+    }
+
     public function test_closed_work_cannot_be_reopened(): void
     {
         $cesar = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
@@ -258,6 +323,7 @@ class ClosureDashboardTest extends TestCase
         array $trabajoOverrides = [],
         bool $createPedido = true,
         array $pedidoOverrides = [],
+        bool $withFullBilling = false,
     ): array {
         $contextId = (int) ($trabajoOverrides['id_contexto'] ?? $user->id_contexto ?? 1);
 
@@ -332,6 +398,44 @@ class ClosureDashboardTest extends TestCase
                 'tiene_mas_de_1_item' => false,
                 'facturado_completo' => false,
             ], $pedidoOverrides));
+
+            if ($withFullBilling) {
+                $importePedido = round((float) ($pedido->importe_pedido ?? 0), 2);
+
+                $pedidoItem = PedidoItem::create([
+                    'id_contexto' => $contextId,
+                    'id_pedido' => $pedido->id_pedido,
+                    'codigo_servicio' => 'SERV-CIERRE-' . $trabajo->id_trabajo,
+                    'descripcion_servicio' => 'Linea de cierre facturable',
+                    'precio_unitario' => $importePedido,
+                    'cantidad' => 1,
+                    'total_linea' => $importePedido,
+                ]);
+
+                $factura = Factura::factory()->create([
+                    'id_contexto' => $contextId,
+                    'id_trabajo' => $trabajo->id_trabajo,
+                    'id_empresa_cliente' => $trabajo->id_empresa_cliente,
+                    'id_contrato' => $contratoId,
+                    'numero_factura' => 'FAC-CIERRE-' . $trabajo->id_trabajo,
+                    'numero_factura_ccp' => 'CCP-CIERRE-' . $trabajo->id_trabajo,
+                    'orden_factura' => 1,
+                    'base_imponible' => $importePedido,
+                    'importe' => $importePedido,
+                    'total' => $importePedido,
+                ]);
+
+                FacturaItem::create([
+                    'id_factura' => $factura->id_factura,
+                    'id_pedido_item' => $pedidoItem->id_pedido_item,
+                    'unidades_facturadas' => 1,
+                    'importe_facturado' => $importePedido,
+                ]);
+
+                app(TrabajoStateService::class)->syncPedidosAndTrabajosByPedidoIds([$pedido->id_pedido]);
+                $pedido->refresh();
+                $trabajo->refresh();
+            }
         }
 
         return [

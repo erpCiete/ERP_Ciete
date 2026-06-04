@@ -129,6 +129,7 @@ class ContratoController extends Controller
     public function destroy(Request $request, Contrato $contrato): RedirectResponse
     {
         $this->ensureContextAccess($request, (int) $contrato->id_contexto);
+        $hasOperationalHistory = $contrato->trabajos()->exists() || $contrato->facturas()->exists();
 
         DB::transaction(function () use ($request, $contrato): void {
             $before = $this->auditLogger->snapshotModel($contrato, self::AUDIT_FIELDS);
@@ -141,7 +142,9 @@ class ContratoController extends Controller
 
         return redirect()
             ->route('maestros.contratos.index')
-            ->with('success', 'Contrato desactivado correctamente.');
+            ->with('success', $hasOperationalHistory
+                ? 'Contrato desactivado correctamente. Conserva trabajos o facturas históricas asociadas.'
+                : 'Contrato desactivado correctamente.');
     }
 
     /**
@@ -170,6 +173,11 @@ class ContratoController extends Controller
             'estado' => ['required', Rule::in(['vigente', 'expirado', 'cancelado'])],
             'activo' => ['sometimes', 'boolean'],
             'observaciones' => ['nullable', 'string'],
+            'ariba_cta_mayor' => ['nullable', 'string', 'max:120'],
+            'ariba_propuesta_opex' => ['nullable', 'string', 'max:120'],
+            'ariba_accion_gasto' => ['nullable', 'string', 'max:120'],
+            'ariba_nombre_proveedor' => ['nullable', 'string', 'max:200'],
+            'ariba_sociedad' => ['nullable', 'string', 'max:120'],
         ]);
 
         $validated['id_contexto'] = $contextId;
@@ -231,6 +239,11 @@ class ContratoController extends Controller
             'estado' => $contrato->estado,
             'activo' => (bool) $contrato->activo,
             'observaciones' => $contrato->observaciones,
+            'ariba_cta_mayor' => $contrato->ariba_cta_mayor,
+            'ariba_propuesta_opex' => $contrato->ariba_propuesta_opex,
+            'ariba_accion_gasto' => $contrato->ariba_accion_gasto,
+            'ariba_nombre_proveedor' => $contrato->ariba_nombre_proveedor,
+            'ariba_sociedad' => $contrato->ariba_sociedad,
             'empresa' => $contrato->empresa ? [
                 'id_empresa' => (int) $contrato->empresa->id_empresa,
                 'nombre' => $contrato->empresa->nombre,

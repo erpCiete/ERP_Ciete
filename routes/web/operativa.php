@@ -12,17 +12,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Sprint 03 - el TrabajoController web renderiza Inertia (namespace raiz)
-// Vive en app/Http/Controllers/Api/TrabajoController.php
-// con namespace App\Http\Controllers\Api
-
-// Nota: PedidoController y FacturaController existen en App\Http\Controllers\Api
-// y devuelven JsonResponse; son controladores de API REST, no de Inertia.
-// Las rutas web de pedidos y facturas usan closures con Inertia::render
-// hasta que se creen controladores web dedicados (igual que TrabajoController).
+// TrabajoController vive en App\Http\Controllers\Api pero actúa como controlador
+// web/Inertia. PedidoController y FacturaController devuelven JsonResponse puro;
+// sus vistas Inertia se generan mediante closures en este mismo archivo.
 
 Route::middleware(['auth', 'maintenance'])->group(function () {
-    // ── Sprint 03 · Trabajos ──────────────────────────────────────────────────
+    // ── Trabajos ──────────────────────────────────────────────────────────────
     Route::middleware(['permission:trabajos.ver', 'forbid_role:contable'])->group(function () {
         Route::get('/trabajos',              [TrabajoController::class, 'index'])->name('trabajos.index');
         Route::get('/trabajos/crear',        [TrabajoController::class, 'create'])
@@ -39,10 +34,9 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             ->name('trabajos.destroy')->middleware('permission:trabajos.eliminar');
     });
 
-    // ── Sprint 04 · Pedidos ───────────────────────────────────────────────────
-    // Las mutaciones (store/update/destroy) van via API REST (/api/v1/pedidos)
-    // directamente desde el Form.jsx con axios — no necesitan ruta web.
-    // Solo necesitamos rutas web para las vistas Inertia.
+    // ── Pedidos ───────────────────────────────────────────────────────────────
+    // Las mutaciones van por /api/v1/pedidos (axios desde Form.jsx).
+    // Solo se definen rutas web para las vistas Inertia.
     Route::middleware('permission:pedidos.ver')->group(function () {
 
         Route::get('/pedidos', function (\Illuminate\Http\Request $request) {
@@ -93,6 +87,23 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
             }
 
             $accessibleContextIds = $request->user()->getActiveContextIds() ?? [];
+            $sourceTrabajoId = $request->integer('trabajo_id') ?: $request->integer('id_trabajo');
+            $sourceTrabajo = null;
+
+            if ($sourceTrabajoId > 0) {
+                $sourceTrabajo = \App\Models\Trabajo::query()
+                    ->with('estacion')
+                    ->select('id_trabajo', 'id_contexto', 'id_contrato', 'id_tarifario', 'id_estacion_servicio', 'numero_trabajo', 'numero_trabajo_operativo', 'descripcion_trabajo')
+                    ->whereIn('id_contexto', $accessibleContextIds)
+                    ->find($sourceTrabajoId);
+
+                if (! $sourceTrabajo) {
+                    return redirect()
+                        ->route('pedidos.index')
+                        ->with('error', 'No se puede crear un pedido desde un trabajo fuera del contexto activo.');
+                }
+            }
+
             $clientContexts = ContextoCliente::query()
                 ->whereIn('id_contexto', $accessibleContextIds)
                 ->where('activo', true)
@@ -108,6 +119,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                     ->get(),
                 'tarifarioLineas' => \App\Models\TarifarioLinea::query()
                     ->join('tarifarios', 'tarifario_lineas.id_tarifario', '=', 'tarifarios.id_tarifario')
+                    ->leftJoin('unidades', 'tarifario_lineas.id_unidad', '=', 'unidades.id_unidad')
                     ->whereIn('tarifario_lineas.id_contexto', $accessibleContextIds)
                     ->where('tarifario_lineas.activo', true)
                     ->where('tarifarios.activo', true)
@@ -122,9 +134,22 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                         'tarifario_lineas.descripcion',
                         'tarifario_lineas.tarifa_base',
                         'tarifario_lineas.tarifa_aplicada',
+                        'unidades.nombre as unidad_nombre',
+                        'unidades.abreviatura as unidad_abreviatura',
                     ]),
                 'contextoIds'    => $accessibleContextIds,
                 'clientContexts' => $clientContexts,
+                'sourceTrabajo'  => $sourceTrabajo ? [
+                    'id_trabajo' => $sourceTrabajo->id_trabajo,
+                    'id_contexto' => $sourceTrabajo->id_contexto,
+                    'id_contrato' => $sourceTrabajo->id_contrato,
+                    'id_tarifario' => $sourceTrabajo->id_tarifario,
+                    'numero_trabajo' => $sourceTrabajo->numero_trabajo,
+                    'numero_trabajo_operativo' => $sourceTrabajo->numero_trabajo_operativo,
+                    'descripcion_trabajo' => $sourceTrabajo->descripcion_trabajo,
+                    'codigo_estacion' => $sourceTrabajo->estacion?->codigo_estacion,
+                    'nombre_estacion' => $sourceTrabajo->estacion?->nombre,
+                ] : null,
             ]);
         })->name('pedidos.create')->middleware('permission:pedidos.crear');
 
@@ -137,6 +162,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                 ->get(['id_contexto', 'nombre', 'codigo']);
             $pedido = \App\Models\Pedido::with([
                 'items' => fn($query) => $query->withCount('facturaItems')->orderBy('id_pedido_item'),
+                'trabajo.estacion',
             ])->findOrFail($id);
 
             return Inertia::render('Pedidos/Form', [
@@ -148,6 +174,7 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                     ->get(),
                 'tarifarioLineas' => \App\Models\TarifarioLinea::query()
                     ->join('tarifarios', 'tarifario_lineas.id_tarifario', '=', 'tarifarios.id_tarifario')
+                    ->leftJoin('unidades', 'tarifario_lineas.id_unidad', '=', 'unidades.id_unidad')
                     ->whereIn('tarifario_lineas.id_contexto', $accessibleContextIds)
                     ->where('tarifario_lineas.activo', true)
                     ->where('tarifarios.activo', true)
@@ -162,21 +189,29 @@ Route::middleware(['auth', 'maintenance'])->group(function () {
                         'tarifario_lineas.descripcion',
                         'tarifario_lineas.tarifa_base',
                         'tarifario_lineas.tarifa_aplicada',
+                        'unidades.nombre as unidad_nombre',
+                        'unidades.abreviatura as unidad_abreviatura',
                     ]),
                 'contextoIds'    => $accessibleContextIds,
                 'clientContexts' => $clientContexts,
             ]);
         })->name('pedidos.edit')->middleware('permission:pedidos.editar');
 
-        // Las rutas de mutación no son necesarias en web.php porque el Form usa axios
-        // directamente contra /api/v1/pedidos. Se definen aquí solo para que
-        // router.delete() de Inertia funcione en el modal de confirmación del Index.
+        Route::get('/pedidos/{pedido}/export/moeve/pdf', [PedidoController::class, 'exportMoevePdf'])
+            ->name('pedidos.export.moeve.pdf');
+        Route::get('/pedidos/{pedido}/export/moeve/csv', [PedidoController::class, 'exportMoeveCsv'])
+            ->name('pedidos.export.moeve.csv');
+        Route::get('/pedidos/{pedido}/export/moeve/ariba', [PedidoController::class, 'exportMoeveAriba'])
+            ->name('pedidos.export.moeve.ariba');
+
+        // DELETE se define aquí para que router.delete() de Inertia resuelva la ruta nombrada
+        // en el modal de confirmación; la lógica real la ejecuta PedidoController vía API.
         Route::delete('/pedidos/{pedido}', [PedidoController::class, 'destroy'])
             ->name('pedidos.destroy')
             ->middleware('permission:pedidos.eliminar');
     });
 
-    // ── Sprint 04 · Facturas ──────────────────────────────────────────────────
+    // ── Facturas ──────────────────────────────────────────────────────────────
     Route::middleware('permission:facturas.ver')->group(function () {
         $facturaRelations = [
             'empresa',

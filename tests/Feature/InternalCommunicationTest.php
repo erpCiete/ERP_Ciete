@@ -84,7 +84,7 @@ class InternalCommunicationTest extends TestCase
         $this->assertTrue($message->fresh()->archivado);
     }
 
-    public function test_support_request_is_persisted_and_notifies_admin_support(): void
+    public function test_support_request_is_persisted_and_notifies_other_admin_support_users(): void
     {
         $user = User::factory()->create();
         $admin = User::factory()->create();
@@ -143,6 +143,10 @@ class InternalCommunicationTest extends TestCase
         $this->assignRole($admin, 'admin');
 
         $ticket = $this->createSupportTicket($owner);
+
+        $this->actingAs($owner)
+            ->get(route('support.show', ['solicitudSoporte' => $ticket->id_solicitud_soporte]))
+            ->assertOk();
 
         $this->actingAs($other)
             ->get(route('support.show', ['solicitudSoporte' => $ticket->id_solicitud_soporte]))

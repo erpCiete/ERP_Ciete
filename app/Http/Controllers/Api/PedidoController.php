@@ -9,16 +9,15 @@ use App\Http\Resources\Api\PedidoResource;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use App\Services\AuditLogger;
+use App\Services\Exports\MoevePedidoExportService;
+use App\Services\TrabajoStateService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
-/**
- * Controlador para la gestión de Pedidos.
- * Refactorizado para el esquema del Sprint 04.
- */
 class PedidoController extends Controller
 {
     use ApiResponse;
@@ -43,11 +42,12 @@ class PedidoController extends Controller
         'observaciones',
     ];
 
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly TrabajoStateService $trabajoStateService,
+        private readonly MoevePedidoExportService $moevePedidoExportService,
+    ) {}
 
-    /**
-     * Listado paginado de pedidos con filtros por trabajo, estado y contexto.
-     */
     public function index(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->integer('per_page', 10), 1), 100);
@@ -85,9 +85,6 @@ class PedidoController extends Controller
         return $this->successResponse(new PedidoResource($this->loadPedidoRelations($pedido)));
     }
 
-    /**
-     * Almacena un nuevo pedido con sus líneas anidadas.
-     */
     public function store(StorePedidoRequest $request): JsonResponse
     {
         return DB::transaction(function () use ($request) {
@@ -96,11 +93,18 @@ class PedidoController extends Controller
             $pedido->id_contexto = $trabajo->id_contexto;
 
             $this->mapRequestToModel($request, $pedido);
+            if ($trabajo->id_tarifario) {
+                $pedido->id_tarifario = $trabajo->id_tarifario;
+            }
             $pedido->save();
 
             if ($request->has('items')) {
                 $this->syncItems($pedido, $request->input('items'));
+                $this->recalculatePedidoTotals($pedido);
             }
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds([$pedido->id_pedido]);
+            $pedido->refresh();
 
             $after = $this->auditLogger->snapshotModel($pedido->fresh(), self::AUDIT_FIELDS);
             $this->auditLogger->log([
@@ -128,20 +132,34 @@ class PedidoController extends Controller
 
         return DB::transaction(function () use ($request, $pedido) {
             $before = $this->auditLogger->snapshotModel($pedido, self::AUDIT_FIELDS);
+            $previousTrabajoId = $pedido->id_trabajo;
+            $trabajo = null;
 
             if ($request->filled('id_trabajo')) {
                 $trabajo = \App\Models\Trabajo::findOrFail($request->input('id_trabajo'));
+            } elseif ($pedido->id_trabajo) {
+                $trabajo = \App\Models\Trabajo::findOrFail($pedido->id_trabajo);
+            }
+
+            if ($trabajo) {
                 $pedido->id_contexto = $trabajo->id_contexto;
             }
 
             $this->mapRequestToModel($request, $pedido);
+            if ($trabajo?->id_tarifario) {
+                $pedido->id_tarifario = $trabajo->id_tarifario;
+            }
             $pedido->save();
 
             $itemSyncSummary = null;
 
             if ($request->has('items')) {
                 $itemSyncSummary = $this->syncItems($pedido, $request->input('items', []));
+                $this->recalculatePedidoTotals($pedido);
             }
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds([$pedido->id_pedido]);
+            $this->trabajoStateService->syncTrabajosByIds([$previousTrabajoId, $pedido->id_trabajo]);
 
             $pedido->refresh();
             $after = $this->auditLogger->snapshotModel($pedido, self::AUDIT_FIELDS);
@@ -223,6 +241,8 @@ class PedidoController extends Controller
                 'descripcion' => 'Pedido cancelado desde accion de eliminacion restringida.',
                 'id_contexto' => $pedido->id_contexto,
             ], $request);
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds([$pedido->id_pedido]);
         });
 
         return $this->successResponse(
@@ -231,9 +251,54 @@ class PedidoController extends Controller
         );
     }
 
-    /**
-     * Mapeo de los campos del Request a las columnas REALES de la tabla pedidos.
-     */
+    public function exportMoeveCsv(Request $request, Pedido $pedido): StreamedResponse
+    {
+        $export = $this->buildMoeveExportPayload($request, $pedido);
+        $this->logPedidoExport($request, $export['pedido'], 'CSV Moeve');
+
+        return response()->streamDownload(function () use ($export): void {
+            $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                return;
+            }
+
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, $this->moeveCsvHeaders(), ';');
+
+            foreach ($export['rows'] as $row) {
+                fputcsv($handle, $this->moeveCsvRow($export['summary'], $row), ';');
+            }
+
+            fclose($handle);
+        }, $this->moeveExportFilename($export['pedido'], 'csv'), [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportMoevePdf(Request $request, Pedido $pedido)
+    {
+        $export = $this->buildMoeveExportPayload($request, $pedido);
+        $this->logPedidoExport($request, $export['pedido'], 'HTML imprimible Moeve');
+
+        return response()->view('pedidos.export.moeve_pdf', [
+            'pedido' => $export['pedido'],
+            'summary' => $export['summary'],
+            'rows' => $export['rows'],
+        ]);
+    }
+
+    public function exportMoeveAriba(Request $request, Pedido $pedido)
+    {
+        $export = $this->buildMoeveExportPayload($request, $pedido);
+        $this->logPedidoExport($request, $export['pedido'], 'Cuadro ARIBA');
+
+        return response()->view('pedidos.export.moeve_ariba', [
+            'pedido' => $export['pedido'],
+            'summary' => $export['summary'],
+            'rows' => $export['rows'],
+        ]);
+    }
+
     private function mapRequestToModel(Request $request, Pedido $pedido): void
     {
         $fields = [
@@ -261,9 +326,6 @@ class PedidoController extends Controller
         }
     }
 
-    /**
-     * Sincroniza las líneas del pedido (pedido_items). (ACTUALIZADO)
-     */
     private function syncItems(Pedido $pedido, array $items): array
     {
         $existingItems = $pedido->items()
@@ -368,5 +430,153 @@ class PedidoController extends Controller
         if (! in_array((int) $pedido->id_contexto, $accessibleContextIds, true)) {
             abort(403, 'No autorizado. Violación de aislamiento de contexto.');
         }
+    }
+
+    private function recalculatePedidoTotals(Pedido $pedido): void
+    {
+        $items = $pedido->items()->get(['cantidad', 'total_linea']);
+        $itemCount = $items->count();
+        $importePedido = round((float) $items->sum(fn (PedidoItem $item) => (float) $item->total_linea), 2);
+        $unidadesPedido = round((float) $items->sum(fn (PedidoItem $item) => (float) $item->cantidad), 3);
+        $importeFacturado = (float) ($pedido->importe_facturado ?? 0);
+
+        $pedido->setAttribute('importe_pedido', number_format($importePedido, 2, '.', ''));
+        $pedido->setAttribute('unidades_pedido', number_format($unidadesPedido, 3, '.', ''));
+
+        if ((float) ($pedido->importe_solicitado ?? 0) <= 0) {
+            $pedido->setAttribute('importe_solicitado', number_format($importePedido, 2, '.', ''));
+        }
+
+        if ((float) ($pedido->unidades_solicitadas ?? 0) <= 0) {
+            $pedido->setAttribute('unidades_solicitadas', number_format($unidadesPedido, 3, '.', ''));
+        }
+
+        $pedido->pedido_completo = $itemCount > 0 && $importePedido > 0;
+        $pedido->tiene_mas_de_1_item = $itemCount > 1;
+        $pedido->facturado_completo = $importePedido > 0 && abs($importePedido - $importeFacturado) < 0.01;
+        $pedido->save();
+    }
+
+    /**
+     * @return array{pedido: Pedido, summary: array<string, mixed>, rows: array<int, array<string, mixed>>}
+     */
+    private function buildMoeveExportPayload(Request $request, Pedido $pedido): array
+    {
+        $this->ensurePedidoAccess($request, $pedido);
+
+        // El formato MOEVE (PDF, CSV, ARIBA) es exclusivo del contexto MOEVE.
+        if (! \App\Support\ContextGuard::isMoeveContextId((int) $pedido->id_contexto)) {
+            abort(422, 'Este pedido no pertenece al contexto MOEVE y no puede exportarse en formato Moeve.');
+        }
+
+        return $this->moevePedidoExportService->build($pedido);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function moeveCsvHeaders(): array
+    {
+        return [
+            'Producto',
+            'Posición de la cesta',
+            'Cantidad',
+            'Fecha de entrega',
+            'Mercado',
+            'Características',
+            'Nota interna',
+            'Tipo de Multi-imputación',
+            '% Cantidad, Valor de Multi-imputación',
+            'Tipo de imputación',
+            'Elemento de imputación',
+            'Cuenta de mayor',
+            'Indicador de IVA',
+            'Documento presupuestario',
+            'Contrato',
+            'Tangible/intangible',
+            'Aprobadores',
+            'Almacen',
+            'Texto Proveedor',
+            'CLIENTE',
+            'Descripción',
+            'Centro /Concesión',
+            'Precio Unidad',
+            'Total Línea',
+            'Total Pedido',
+            'Sociedad',
+            'Proveedor/ Contrato',
+            'Confirmar',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $summary
+     * @param  array<string, mixed>  $row
+     * @return array<int, string>
+     */
+    private function moeveCsvRow(array $summary, array $row): array
+    {
+        return [
+            (string) $row['producto'],
+            (string) $row['item'],
+            $this->formatCsvNumber((float) $row['cantidad'], 3),
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            (string) $summary['cta_mayor'],
+            '',
+            '',
+            (string) $summary['contrato_codigo'],
+            '',
+            (string) $summary['aprobado_por'],
+            '',
+            (string) $row['texto_proveedor'],
+            (string) $summary['client_code'],
+            (string) $summary['descripcion'],
+            (string) $summary['nombre_estacion'],
+            $this->formatCsvNumber((float) $row['precio_unitario'], 2),
+            $this->formatCsvNumber((float) $row['total_linea'], 2),
+            $this->formatCsvNumber((float) $summary['importe_pedido'], 2),
+            (string) $summary['sociedad_ariba'],
+            (string) $summary['proveedor_contrato'],
+            (string) $summary['confirmar'],
+        ];
+    }
+
+    private function moeveExportFilename(Pedido $pedido, string $extension): string
+    {
+        $safeNumber = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($pedido->numero_pedido ?: 'pedido_' . $pedido->id_pedido));
+
+        return sprintf('moeve_pedido_%s.%s', $safeNumber, $extension);
+    }
+
+    private function formatCsvNumber(float $value, int $decimals): string
+    {
+        return number_format($value, $decimals, ',', '');
+    }
+
+    private function logPedidoExport(Request $request, Pedido $pedido, string $format): void
+    {
+        $this->auditLogger->log([
+            'user' => $request->user(),
+            'accion' => 'exportar',
+            'modulo' => 'pedidos',
+            'tabla' => 'pedidos',
+            'entity_type' => Pedido::class,
+            'entity_id' => $pedido->id_pedido,
+            'registro_id' => $pedido->id_pedido,
+            'descripcion' => sprintf('Exportacion %s del pedido %s.', $format, $pedido->numero_pedido),
+            'datos_nuevos' => [
+                'id_pedido' => $pedido->id_pedido,
+                'numero_pedido' => $pedido->numero_pedido,
+                'formato' => $format,
+            ],
+            'id_contexto' => $pedido->id_contexto,
+        ], $request);
     }
 }

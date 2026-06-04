@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\EstacionServicio;
+use App\Models\Tarifario;
 use App\Models\Trabajo;
 use App\Support\ContextGuard;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -40,6 +41,14 @@ class StoreTrabajoRequest extends FormRequest
             ]);
         }
 
+        if ($this->input('numero_trabajo') === '') {
+            $this->merge(['numero_trabajo' => null]);
+        }
+
+        if (trim((string) $this->input('numero_trabajo_operativo', '')) === '') {
+            $this->merge(['numero_trabajo_operativo' => null]);
+        }
+
         if (! $this->filled('estado')) {
             $this->merge(['estado' => 'en_curso']);
         }
@@ -49,23 +58,24 @@ class StoreTrabajoRequest extends FormRequest
     {
         return [
             'id_contexto'           => ['nullable', 'integer'],
-            'numero_trabajo'       => ['required', 'integer'],
+            'numero_trabajo'       => ['nullable', 'integer'],
             'numero_trabajo_operativo' => ['nullable', 'string', 'max:100'],
-            'descripcion_trabajo'  => ['required', 'string', 'max:150'], // Sincronizado con React
+            'descripcion_trabajo'  => ['required', 'string', 'max:150'],
             'id_estacion_servicio' => ['required', 'exists:estaciones_servicio,id_estacion_servicio'],
             'fecha_encargo'        => ['required', 'date'],
             'fecha_terminacion'    => ['nullable', 'date'],
-            'estado'               => ['required', Rule::in(Trabajo::ESTADOS_FUNCIONALES)],
+            'estado'               => ['required', Rule::in(Trabajo::ESTADOS_MANUALES)],
             'observaciones'        => ['nullable', 'string'],
             'id_responsable_ciete' => [
                 'nullable',
                 'integer',
                 Rule::exists('usuarios', 'id_usuario')->where(fn ($query) => $query->where('activo', true)),
             ],
+            'id_tarifario' => ['nullable', 'integer'],
 
-            // Validacion contextual: OTROS CLIENTES no hereda obligatorios especificos de MOEVE/REPSOL.
+            // MOEVE exige contrato salvo que ya venga el tarifario; REPSOL y OTROS no.
             'id_contrato' => [
-                Rule::requiredIf(fn () => $this->esContexto('moeve')),
+                Rule::requiredIf(fn () => $this->esContexto('moeve') && ! $this->filled('id_tarifario')),
                 'nullable', 'integer'
             ],
             'id_tipo_documento' => [
@@ -106,6 +116,35 @@ class StoreTrabajoRequest extends FormRequest
 
             if ($selectedContextId > 0 && (int) $estacion->id_contexto !== $selectedContextId) {
                 $validator->errors()->add('id_estacion_servicio', 'La estación no pertenece al cliente seleccionado.');
+            }
+
+            if (! $this->filled('id_tarifario')) {
+                return;
+            }
+
+            $tarifario = Tarifario::withoutGlobalScopes()
+                ->with('contrato:id_contrato,id_contexto,id_empresa_cliente,activo')
+                ->find($this->input('id_tarifario'));
+
+            if (! $tarifario || ! $tarifario->activo || ! $tarifario->contrato || ! $tarifario->contrato->activo) {
+                $validator->errors()->add('id_tarifario', 'El contrato/tarifa seleccionado no está disponible.');
+                return;
+            }
+
+            if (! in_array((int) $tarifario->id_contexto, $accessibleContextIds, true)) {
+                $validator->errors()->add('id_tarifario', 'El contrato/tarifa seleccionado no está disponible para tu usuario.');
+            }
+
+            if ($selectedContextId > 0 && (int) $tarifario->id_contexto !== $selectedContextId) {
+                $validator->errors()->add('id_tarifario', 'El contrato/tarifa no pertenece al cliente seleccionado.');
+            }
+
+            if ((int) $tarifario->contrato->id_empresa_cliente !== (int) $estacion->id_empresa_cliente) {
+                $validator->errors()->add('id_tarifario', 'El contrato/tarifa no pertenece a la empresa de la estación seleccionada.');
+            }
+
+            if ($this->filled('id_contrato') && (int) $this->input('id_contrato') !== (int) $tarifario->id_contrato) {
+                $validator->errors()->add('id_contrato', 'El contrato no coincide con el contrato/tarifa seleccionado.');
             }
         });
     }

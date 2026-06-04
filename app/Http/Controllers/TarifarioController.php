@@ -10,6 +10,7 @@ use App\Support\ContextGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,6 +27,7 @@ class TarifarioController extends Controller
         'fecha_fin_vigencia',
         'factor_multiplicador',
         'moneda',
+        'es_predeterminado',
         'activo',
         'observaciones',
     ];
@@ -38,6 +40,7 @@ class TarifarioController extends Controller
     {
         $search = trim((string) $request->input('search', ''));
         $activo = trim((string) $request->input('activo', ''));
+        $supportsPredeterminado = Schema::hasColumn('tarifarios', 'es_predeterminado');
 
         $tarifarios = Tarifario::query()
             ->with('contrato:id_contrato,id_contexto,codigo_contrato,nombre')
@@ -63,6 +66,7 @@ class TarifarioController extends Controller
                 'search' => $search,
                 'activo' => $activo,
             ],
+            'supportsPredeterminado' => $supportsPredeterminado,
             'canCreate' => ($request->user()?->hasPermission('tarifarios.crear')
                 || $request->user()?->hasAnyRole(['director', 'direccion']))
                 && ContextGuard::canCreateInActiveContext($request->user()),
@@ -90,6 +94,7 @@ class TarifarioController extends Controller
 
         $tarifario = DB::transaction(function () use ($request, $validated): Tarifario {
             $tarifario = Tarifario::create($validated);
+            $this->syncPredeterminadoPorContrato($tarifario);
             $this->auditCreate($request, $tarifario);
 
             return $tarifario;
@@ -120,6 +125,7 @@ class TarifarioController extends Controller
             $before = $this->auditLogger->snapshotModel($tarifario, self::AUDIT_FIELDS);
             $tarifario->fill($validated);
             $tarifario->save();
+            $this->syncPredeterminadoPorContrato($tarifario);
             $this->auditUpdate($request, $tarifario, $before, 'Actualizacion de tarifario maestro.');
         });
 
@@ -128,19 +134,47 @@ class TarifarioController extends Controller
             ->with('success', 'Tarifario actualizado correctamente.');
     }
 
-    public function destroy(Request $request, Tarifario $tarifario): RedirectResponse
+    public function markAsDefault(Request $request, Tarifario $tarifario): RedirectResponse
     {
         $this->ensureContextAccess($request, (int) $tarifario->id_contexto);
 
+        if (! Schema::hasColumn('tarifarios', 'es_predeterminado')) {
+            return back()->with('error', 'No se puede marcar predeterminado en este entorno sin la columna es_predeterminado.');
+        }
+
+        if (! $tarifario->activo) {
+            return back()->with('error', 'Solo se puede marcar como predeterminado un tarifario activo.');
+        }
+
         DB::transaction(function () use ($request, $tarifario): void {
             $before = $this->auditLogger->snapshotModel($tarifario, self::AUDIT_FIELDS);
-            $tarifario->forceFill(['activo' => false])->save();
+            $tarifario->forceFill(['es_predeterminado' => true])->save();
+            $this->syncPredeterminadoPorContrato($tarifario);
+            $this->auditUpdate($request, $tarifario, $before, 'Tarifario marcado como predeterminado para el contrato.');
+        });
+
+        return back()->with('success', 'Tarifario marcado como predeterminado.');
+    }
+
+    public function destroy(Request $request, Tarifario $tarifario): RedirectResponse
+    {
+        $this->ensureContextAccess($request, (int) $tarifario->id_contexto);
+        $hasOperationalHistory = $tarifario->trabajos()->exists() || $tarifario->pedidos()->exists();
+
+        DB::transaction(function () use ($request, $tarifario): void {
+            $before = $this->auditLogger->snapshotModel($tarifario, self::AUDIT_FIELDS);
+            $tarifario->forceFill([
+                'activo' => false,
+                'es_predeterminado' => false,
+            ])->save();
             $this->auditUpdate($request, $tarifario, $before, 'Tarifario maestro desactivado. No se elimina historico relacionado.', 'desactivar');
         });
 
         return redirect()
             ->route('maestros.tarifarios.index')
-            ->with('success', 'Tarifario desactivado correctamente.');
+            ->with('success', $hasOperationalHistory
+                ? 'Tarifario desactivado correctamente. Conserva trabajos o pedidos históricos asociados.'
+                : 'Tarifario desactivado correctamente.');
     }
 
     /**
@@ -169,6 +203,7 @@ class TarifarioController extends Controller
             'fecha_fin_vigencia' => ['nullable', 'date', 'after_or_equal:fecha_inicio_vigencia'],
             'factor_multiplicador' => ['required', 'numeric', 'min:0'],
             'moneda' => ['nullable', 'string', 'size:3'],
+            'es_predeterminado' => ['sometimes', 'boolean'],
             'activo' => ['sometimes', 'boolean'],
             'observaciones' => ['nullable', 'string'],
         ]);
@@ -176,6 +211,9 @@ class TarifarioController extends Controller
         $validated['id_contexto'] = $contextId;
         $validated['moneda'] = strtoupper((string) ($validated['moneda'] ?? 'EUR'));
         $validated['activo'] = $request->boolean('activo', true);
+        $validated['es_predeterminado'] = $validated['activo']
+            ? $request->boolean('es_predeterminado', false)
+            : false;
 
         return $validated;
     }
@@ -252,6 +290,7 @@ class TarifarioController extends Controller
             'fecha_fin_vigencia' => $tarifario->fecha_fin_vigencia?->format('Y-m-d'),
             'factor_multiplicador' => $tarifario->factor_multiplicador,
             'moneda' => $tarifario->moneda ?: 'EUR',
+            'es_predeterminado' => (bool) $tarifario->es_predeterminado,
             'activo' => (bool) $tarifario->activo,
             'observaciones' => $tarifario->observaciones,
             'contrato' => $tarifario->contrato ? [
@@ -300,5 +339,25 @@ class TarifarioController extends Controller
             'descripcion' => $this->auditLogger->buildChangedFieldsDescription($before, $after, $description),
             'id_contexto' => $tarifario->id_contexto,
         ], $request);
+    }
+
+    private function syncPredeterminadoPorContrato(Tarifario $tarifario): void
+    {
+        if (! $tarifario->id_contrato || ! $tarifario->activo || ! $tarifario->es_predeterminado) {
+            if ($tarifario->es_predeterminado && ! $tarifario->activo) {
+                $tarifario->forceFill(['es_predeterminado' => false])->save();
+            }
+
+            return;
+        }
+
+        Tarifario::query()
+            ->where('id_contrato', $tarifario->id_contrato)
+            ->where('id_tarifario', '!=', $tarifario->id_tarifario)
+            ->where('es_predeterminado', true)
+            ->update([
+                'es_predeterminado' => false,
+                'updated_at' => now(),
+            ]);
     }
 }

@@ -4,7 +4,7 @@ use App\Http\Controllers\ImportacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'maintenance'])->group(function () {
-    // ── Sprint 03 · Importaciones ─────────────────────────────────────────────
+    // ── Importaciones ─────────────────────────────────────────────────────────
     Route::middleware('permission:importaciones.ver')->group(function () {
         Route::get('/importaciones',              [ImportacionController::class, 'index'])->name('importaciones.index');
         Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');

@@ -1,4 +1,3 @@
-// resources/js/Pages/Facturas/Index.jsx
 import BadgeCliente from '@/Components/ui/BadgeCliente';
 import BadgeFactura from '@/Components/ui/BadgeFactura';
 import FacturasExcelView from '@/Components/ui/FacturasExcelView';
@@ -13,7 +12,6 @@ import { Head, router, usePage } from '@inertiajs/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useFacturas } from '@/Hooks/useFacturas';
 
-// ─── Opciones de estado para el filtro ───────────────────────────────────────
 const ESTADO_OPTIONS = ['pendiente', 'solicitada', 'emitida', 'enviada', 'anulada'];
 const hasPermission = (user, permission, aliases = []) =>
     Boolean(user?.permission_slugs?.some((slug) => slug === permission || aliases.includes(slug)));
@@ -40,12 +38,6 @@ function formatWorkNumber(trabajo) {
     return /^\d+$/.test(text) ? text.padStart(4, '0') : text;
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-// Props desde FacturaController@index via Inertia:
-//   facturas    → { data: [...], meta: { pagination: { total, current_page, last_page } } }
-//   filters     → { search, estado } (filtros activos en el servidor)
-//   contextoIds → [1] MOEVE · [2] REPSOL · [1,2] ambos
-//   canCreate   → boolean — permiso facturas.crear del usuario
 export default function FacturasIndex({
     facturas,
     filters = {},
@@ -84,10 +76,9 @@ export default function FacturasIndex({
     const visibleIds = rows.map((factura) => factura.id_factura).filter(Boolean);
     const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
 
-    // Columnas fijas (9) + MOEVE (2) + REPSOL (2) + acciones (1)
+    // Las columnas extra de MOEVE (CCP, Sociedad) y REPSOL se muestran por contexto.
     const totalCols = 9 + (isMoeve ? 2 : 0) + (isRepsol ? 2 : 0) + 1 + (canExportFacturas ? 1 : 0);
 
-    // ── Aplicar filtros en el servidor via Inertia ────────────────────────────
     const aplicarFiltros = useCallback((overrides = {}) => {
         const params = {
             search: overrides.search !== undefined ? overrides.search : search,
@@ -473,7 +464,7 @@ export default function FacturasIndex({
                                         {/* Nº factura — mono rojo */}
                                         <td className="w-[16rem] max-w-[16rem] px-5 py-4 align-top">
                                             <span
-                                                className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold text-(--ciete-red)"
+                                                className="ciete-dark-table-accent block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs font-semibold"
                                                 title={factura.numero_factura ?? undefined}
                                             >
                                                 {factura.numero_factura ?? '—'}
@@ -483,7 +474,7 @@ export default function FacturasIndex({
                                         {/* Trabajo relacionado */}
                                         <td className="px-5 py-4 align-top">
                                             {trabajo ? (
-                                                <span className="font-mono text-xs font-semibold text-(--ciete-red)">
+                                                <span className="ciete-dark-table-accent font-mono text-xs font-semibold">
                                                     {formatWorkNumber(trabajo)}
                                                     {factura.trabajos?.length > 1 ? ` +${factura.trabajos.length - 1}` : ''}
                                                 </span>
@@ -587,7 +578,7 @@ export default function FacturasIndex({
                                                     <button
                                                         type="button"
                                                         onClick={() => exportDetail(factura.id_factura)}
-                                                        className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
+                                                        className="text-sm font-medium text-text-main transition hover:underline"
                                                     >
                                                         {t('facturas.exportInvoice')}
                                                     </button>
@@ -596,7 +587,7 @@ export default function FacturasIndex({
                                                     <button
                                                         type="button"
                                                         onClick={() => router.visit(route('facturas.edit', factura.id_factura))}
-                                                        className="text-sm font-medium text-text-main transition hover:text-(--ciete-red)"
+                                                        className="text-sm font-medium text-text-main transition hover:underline"
                                                     >
                                                         {t('common.actions.edit')}
                                                     </button>
@@ -605,7 +596,7 @@ export default function FacturasIndex({
                                                     <button
                                                         type="button"
                                                         onClick={() => setDeleteTarget(factura)}
-                                                        className="text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
+                                                        className="ciete-dark-table-accent text-sm font-medium transition hover:underline"
                                                     >
                                                         {t('facturas.voidAction')}
                                                     </button>

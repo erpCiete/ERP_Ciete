@@ -46,13 +46,13 @@ class AdminAccessTest extends TestCase
         $this->actingAs($admin)->get('/admin/soporte')->assertOk();
     }
 
-    public function test_admin_cannot_access_direction_or_closure_by_default(): void
+    public function test_admin_can_access_direction_dashboard_but_not_closure_by_default(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $admin = User::query()->where('email', 'admin@ciete.es')->firstOrFail();
 
-        $this->actingAs($admin)->get('/dashboard')->assertForbidden();
+        $this->actingAs($admin)->get('/dashboard')->assertOk();
         $this->actingAs($admin)->get('/cierre')->assertForbidden();
     }
 

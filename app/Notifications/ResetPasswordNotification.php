@@ -14,7 +14,7 @@ class ResetPasswordNotification extends ResetPassword
     {
         $url = $this->resetUrl($notifiable);
 
-        return (new MailMessage())
+        $message = (new MailMessage())
             ->subject('Restablecer contraseña — ERP Ciete')
             ->greeting('Hola ' . ($notifiable->nombre ?? ''))
             ->line('Recibes este correo porque se ha solicitado restablecer la contraseña de tu cuenta en el ERP de Ciete.')
@@ -22,5 +22,11 @@ class ResetPasswordNotification extends ResetPassword
             ->line('Este enlace caducará en ' . config('auth.passwords.' . config('auth.defaults.passwords') . '.expire') . ' minutos.')
             ->line('Si no solicitaste el cambio de contraseña, no es necesario realizar ninguna acción.')
             ->salutation('— Equipo ERP Ciete');
+
+        if (! app()->environment('production')) {
+            $message->mailer('log');
+        }
+
+        return $message;
     }
 }

@@ -1,5 +1,6 @@
 import InputError from '@/Components/InputError';
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import { useMastersBackLink } from '@/Hooks/useMastersBackLink';
 import { useClientes } from '@/Hooks/useClientes';
 import { useEstaciones } from '@/Hooks/useEstaciones';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -122,9 +123,12 @@ export default function EstacionesForm({ estacionId = null }) {
     const { t } = useI18n();
     const { getClientes, clearFieldError: clearClienteFieldError } = useClientes();
     const { getEstacion, saveEstacion, loading, errors, clearErrors, clearFieldError } = useEstaciones();
+    const mastersBack = useMastersBackLink();
 
     const [clientes, setClientes] = useState([]);
     const [form, setForm] = useState(EMPTY_FORM);
+    const [originalSensitive, setOriginalSensitive] = useState({ codigo_estacion: '', nombre: '' });
+    const [sensitiveConfirmed, setSensitiveConfirmed] = useState(false);
     const [status, setStatus] = useState(estacionId ? 'loading' : 'idle');
     const [submitError, setSubmitError] = useState('');
     const [touched, setTouched] = useState({});
@@ -166,7 +170,12 @@ export default function EstacionesForm({ estacionId = null }) {
                     return;
                 }
 
-                setForm(normalizeEstacion(response?.data));
+                const normalized = normalizeEstacion(response?.data);
+                setForm(normalized);
+                setOriginalSensitive({
+                    codigo_estacion: normalized.codigo_estacion,
+                    nombre: normalized.nombre,
+                });
                 setStatus('ready');
             })
             .catch(() => {
@@ -211,6 +220,11 @@ export default function EstacionesForm({ estacionId = null }) {
         setForm((current) => ({ ...current, [field]: value }));
     };
 
+    const sensitiveChanged = isEditing && (
+        form.codigo_estacion !== originalSensitive.codigo_estacion ||
+        form.nombre !== originalSensitive.nombre
+    );
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         setSubmitAttempted(true);
@@ -219,6 +233,11 @@ export default function EstacionesForm({ estacionId = null }) {
 
         if (Object.keys(localErrors).length > 0) {
             setSubmitError(t('common.validation.reviewForm'));
+            return;
+        }
+
+        if (sensitiveChanged && !sensitiveConfirmed) {
+            setSubmitError('Debes confirmar que has leído el aviso sobre el impacto de cambiar código o nombre de estación.');
             return;
         }
 
@@ -267,10 +286,10 @@ export default function EstacionesForm({ estacionId = null }) {
                     <p>{t('estaciones.loadError')}</p>
                     <button
                         type="button"
-                        onClick={() => router.visit(route('maestros.index'))}
+                        onClick={() => mastersBack.href && router.visit(mastersBack.href)}
                         className="mt-4 text-sm font-medium text-(--ciete-red) transition hover:text-(--ciete-red-dark)"
                     >
-                        {t('common.actions.back')}
+                        {mastersBack.label}
                     </button>
                 </div>
             </AuthenticatedLayout>
@@ -292,6 +311,16 @@ export default function EstacionesForm({ estacionId = null }) {
                 />
 
                 <form onSubmit={handleSubmit} noValidate className="space-y-6 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                    {isEditing && (
+                        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+                            <p className="text-sm font-semibold text-amber-800">⚠ Campos con impacto en el histórico</p>
+                            <p className="mt-1 text-sm text-amber-700">
+                                El <strong>código de estación</strong> y el <strong>nombre</strong> se usan en trabajos, pedidos y facturas históricas.
+                                Cambiarlos afectará a cómo se muestran registros anteriores.
+                                Solo modifícalos si es estrictamente necesario y tras confirmar el impacto.
+                            </p>
+                        </div>
+                    )}
                     <section className="space-y-5">
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wide text-text-hint">
@@ -506,12 +535,34 @@ export default function EstacionesForm({ estacionId = null }) {
                         </label>
                     </section>
 
+                    {sensitiveChanged && (
+                        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3">
+                            <p className="text-sm font-semibold text-red-800">⚠ Has modificado campos con impacto en el histórico</p>
+                            <p className="mt-1 text-sm text-red-700">
+                                Has cambiado el <strong>código</strong> o el <strong>nombre</strong> de esta estación.
+                                Todos los trabajos, pedidos y facturas que ya usan estos datos mostrarán los nuevos valores.
+                                Asegúrate de que el cambio es correcto y deliberado.
+                            </p>
+                            <label className="mt-3 flex items-start gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={sensitiveConfirmed}
+                                    onChange={(e) => setSensitiveConfirmed(e.target.checked)}
+                                    className="mt-0.5 rounded-sm border-red-400 text-red-600"
+                                />
+                                <span className="text-sm font-medium text-red-800">
+                                    Confirmo que entiendo el impacto en el histórico y quiero guardar este cambio.
+                                </span>
+                            </label>
+                        </div>
+                    )}
+
                     {submitError && <p className="text-sm text-primary">{submitError}</p>}
 
                     <div className="ciete-form-actions border-0 border-t bg-transparent px-0 py-4 shadow-none sm:justify-end">
                         <button
                             type="button"
-                            onClick={() => router.visit(route('maestros.index'))}
+                            onClick={() => mastersBack.href && router.visit(mastersBack.href)}
                             className="inline-flex w-full items-center justify-center text-sm font-medium text-text-muted transition hover:text-text-main sm:w-auto"
                         >
                             {t('common.actions.cancel')}

@@ -1,19 +1,28 @@
-# Fuentes cliente ERP CIETE
+# Fuentes originales del cliente — ERP CIETE
 
-Esta carpeta centraliza las fuentes y evidencias recibidas del cliente.
+Materiales originales de Ciete Ingenieros. No reescribir ni resumir.
 
-Subcarpetas:
+## Estructura
 
-- `reuniones/`
-- `transcripciones/`
-- `excels/`
-- `material_original/`
+`
+00_FUENTES_CLIENTE/
+├── transcripciones/
+│   └── reunionCieteCompletaFormato.txt       <- Transcripcion reunion 19/05/2026
+├── reuniones/
+│   └── listado_exhaustivo_reunión_césar_amaya_ciete_2026-05-19.md
+├── material_original/
+│   ├── Contrato 772 MOEVE - Tarifario.xlsx   <- Tarifario real MOEVE
+│   └── Casos_Demo_Cierre_ERP_CIETE.pdf
+├── moeve_solicitud_pedidos_2026-05-20/
+└── excels/
+`
 
-Estado actual A.10:
+## Documentos clave
 
-- La transcripcion canonica sigue en `docs/02_CLIENTE/reunionCieteCompletaFormato.txt` para no romper referencias vigentes.
-- El Excel funcional `Contrato 772 MOEVE - Tarifario.xlsx` se mantiene en `docs/02_CLIENTE/materiales/` porque esta citado en validaciones y usado por flujo tecnico documentado.
+- **transcripciones/reunionCieteCompletaFormato.txt**: fuente primaria de decisiones funcionales.
+- **reuniones/listado_exhaustivo...**: analisis de la transcripcion por bloques.
+- **material_original/Contrato 772 MOEVE - Tarifario.xlsx**: tarifario real para validar precios.
 
-Regla:
+## Regla
 
-No borrar ni sobrescribir material fuente del cliente sin trazabilidad documental.
+No borrar ni sobrescribir material fuente del cliente sin dejar trazabilidad.

@@ -29,8 +29,6 @@ class ExecutionAccessTest extends TestCase
             $this->actingAs($user)->get('/clientes')->assertOk();
             $this->actingAs($user)->get('/estaciones')->assertOk();
             $this->actingAs($user)->get('/mensajes')->assertOk();
-            $this->actingAs($user)->get('/soporte')->assertOk();
-            $this->actingAs($user)->get('/estado')->assertOk();
             $this->actingAs($user)->get('/ayuda')->assertOk();
         }
     }
@@ -53,6 +51,8 @@ class ExecutionAccessTest extends TestCase
             $this->actingAs($user)->get('/facturas')->assertForbidden();
             $this->actingAs($user)->get('/importaciones')->assertForbidden();
             $this->actingAs($user)->get('/dashboard')->assertForbidden();
+            $this->actingAs($user)->get('/estado')->assertForbidden();
+            $this->actingAs($user)->get('/soporte')->assertOk();
         }
     }
 }

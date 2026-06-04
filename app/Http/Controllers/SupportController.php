@@ -26,11 +26,39 @@ class SupportController extends Controller
             return redirect()->route('admin.support.index');
         }
 
-        return Inertia::render('Support');
+        $supportReady = $this->supportModuleReady();
+
+        return Inertia::render('Support', [
+            'supportReady' => $supportReady,
+            'supportSchemaWarning' => $supportReady ? null : 'El módulo de soporte aún no está listo en este entorno.',
+            'tickets' => $supportReady
+                ? SolicitudSoporte::query()
+                    ->visibleFor($request->user())
+                    ->with(['asignado:id_usuario,nombre,apellidos'])
+                    ->latest('ultimo_mensaje_at')
+                    ->latest('created_at')
+                    ->limit(10)
+                    ->get()
+                    ->map(fn (SolicitudSoporte $ticket) => [
+                        'id_solicitud_soporte' => $ticket->id_solicitud_soporte,
+                        'tema' => $ticket->tema,
+                        'asunto' => $ticket->asunto,
+                        'estado' => $ticket->estado,
+                        'prioridad' => $ticket->prioridad,
+                        'created_at' => $ticket->created_at?->toIso8601String(),
+                        'ultimo_mensaje_at' => $ticket->ultimo_mensaje_at?->toIso8601String(),
+                        'asignado' => $this->serializeUser($ticket->asignado),
+                    ])
+                    ->values()
+                    ->all()
+                : [],
+        ]);
     }
 
     public function send(StoreSupportTicketRequest $request): RedirectResponse
     {
+        abort_unless($this->supportModuleReady(), 409, 'El módulo de soporte aún no está disponible.');
+
         $ticket = $this->supportTicketService->createTicket($request->user(), $request->validated());
 
         return redirect()

@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class RoleModuleAccessTest extends TestCase
@@ -61,17 +64,47 @@ class RoleModuleAccessTest extends TestCase
         $this->actingAs($admin)->get('/importaciones')->assertOk();
     }
 
-    public function test_director_can_access_direction_operations_and_masters_but_not_imports(): void
+    public function test_support_manager_without_admin_panel_can_access_status_but_not_admin_panel(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $supportUser = User::factory()->create();
+        $supportRole = Role::query()->firstOrCreate(
+            ['slug' => 'soporte'],
+            [
+                'nombre' => 'Soporte',
+                'descripcion' => 'Gestor de soporte sin panel admin completo',
+                'activo' => true,
+            ]
+        );
+        $supportPermission = Permission::query()->where('slug', 'soporte.gestionar')->firstOrFail();
+
+        DB::table('rol_permisos')->updateOrInsert(
+            ['id_rol' => $supportRole->id_rol, 'id_permiso' => $supportPermission->id_permiso],
+            ['created_at' => now()]
+        );
+
+        DB::table('usuario_roles')->updateOrInsert(
+            ['id_usuario' => $supportUser->id_usuario, 'id_rol' => $supportRole->id_rol],
+            ['created_at' => now()]
+        );
+
+        $this->actingAs($supportUser)->get('/estado')->assertOk();
+        $this->actingAs($supportUser)->get('/admin')->assertForbidden();
+        $this->actingAs($supportUser)->get('/soporte')->assertRedirect(route('admin.support.index'));
+    }
+
+    public function test_director_can_access_consultation_and_management_modules_but_not_direction_dashboard_or_imports(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $director = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
 
         $this->actingAs($director)->get('/')->assertOk();
-        $this->actingAs($director)->get('/dashboard')->assertOk();
+        $this->actingAs($director)->get('/dashboard')->assertForbidden();
         $this->actingAs($director)->get('/profile')->assertOk();
         $this->actingAs($director)->get('/mensajes')->assertOk();
-        $this->actingAs($director)->get('/estado')->assertOk();
+        $this->actingAs($director)->get('/estado')->assertForbidden();
         $this->actingAs($director)->get('/soporte')->assertOk();
         $this->actingAs($director)->get('/cierre')->assertOk();
         $this->actingAs($director)->get('/trabajos')->assertOk();
@@ -98,7 +131,7 @@ class RoleModuleAccessTest extends TestCase
         $this->actingAs($ejecucion)->get('/')->assertOk();
         $this->actingAs($ejecucion)->get('/profile')->assertOk();
         $this->actingAs($ejecucion)->get('/mensajes')->assertOk();
-        $this->actingAs($ejecucion)->get('/estado')->assertOk();
+        $this->actingAs($ejecucion)->get('/estado')->assertForbidden();
         $this->actingAs($ejecucion)->get('/soporte')->assertOk();
         $this->actingAs($ejecucion)->get('/dashboard')->assertForbidden();
         $this->actingAs($ejecucion)->get('/trabajos')->assertOk();
@@ -123,7 +156,7 @@ class RoleModuleAccessTest extends TestCase
             $this->actingAs($user)->get('/')->assertOk();
             $this->actingAs($user)->get('/profile')->assertOk();
             $this->actingAs($user)->get('/mensajes')->assertOk();
-            $this->actingAs($user)->get('/estado')->assertOk();
+            $this->actingAs($user)->get('/estado')->assertForbidden();
             $this->actingAs($user)->get('/soporte')->assertOk();
             $this->actingAs($user)->get('/dashboard')->assertForbidden();
             $this->actingAs($user)->get('/trabajos')->assertOk();
@@ -147,7 +180,7 @@ class RoleModuleAccessTest extends TestCase
         $this->actingAs($contable)->get('/')->assertOk();
         $this->actingAs($contable)->get('/profile')->assertOk();
         $this->actingAs($contable)->get('/mensajes')->assertOk();
-        $this->actingAs($contable)->get('/estado')->assertOk();
+        $this->actingAs($contable)->get('/estado')->assertForbidden();
         $this->actingAs($contable)->get('/soporte')->assertOk();
         $this->actingAs($contable)->get('/dashboard')->assertForbidden();
         $this->actingAs($contable)->get('/pedidos')->assertOk();

@@ -14,6 +14,7 @@ use App\Models\PedidoItem;
 use App\Models\Trabajo;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\TrabajoStateService;
 use App\Traits\ApiResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -64,13 +65,13 @@ class FacturaController extends Controller
         'observaciones',
     ];
 
-    public function __construct(private readonly AuditLogger $auditLogger) {}
+    public function __construct(
+        private readonly AuditLogger $auditLogger,
+        private readonly TrabajoStateService $trabajoStateService,
+    ) {}
 
-    /**
-     * Listado de facturas.
-     * La relacion funcional principal se carga por factura_items.
-     * id_trabajo queda como cabecera auxiliar derivada, nunca como origen del detalle.
-     */
+    // id_trabajo en facturas es una cabecera auxiliar derivada del primer ítem,
+    // nunca el origen del detalle. El detalle real vive en factura_items.
     public function index(Request $request): JsonResponse
     {
         $perPage = min(max((int) $request->integer('per_page', 10), 1), 100);
@@ -128,6 +129,8 @@ class FacturaController extends Controller
             if ($request->has('items')) {
                 $itemSyncSummary = $this->syncFacturaItems($request, $factura, $itemsData);
             }
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds($this->pedidoIdsForFactura($factura));
 
             $after = $this->auditLogger->snapshotModel($factura->fresh(), self::AUDIT_FIELDS);
             $description = 'Alta de factura.';
@@ -284,6 +287,7 @@ class FacturaController extends Controller
         return DB::transaction(function () use ($request, $factura) {
             $before = $this->auditLogger->snapshotModel($factura, self::AUDIT_FIELDS);
             $assignedBefore = $this->assignedAmount($factura);
+            $pedidoIdsBefore = $this->pedidoIdsForFactura($factura);
             $data = $request->validated();
             $itemsData = $request->input('items', []);
             $pedidoItems = $this->loadPedidoItemsForPayload($itemsData, $request);
@@ -309,6 +313,10 @@ class FacturaController extends Controller
             if ($request->has('items')) {
                 $itemSyncSummary = $this->syncFacturaItems($request, $factura, $itemsData);
             }
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds(
+                $pedidoIdsBefore->merge($this->pedidoIdsForFactura($factura))->all()
+            );
 
             $factura->refresh();
             $after = $this->auditLogger->snapshotModel($factura, self::AUDIT_FIELDS);
@@ -358,6 +366,7 @@ class FacturaController extends Controller
 
         DB::transaction(function () use ($request, $factura): void {
             $before = $this->auditLogger->snapshotModel($factura, self::AUDIT_FIELDS);
+            $pedidoIds = $this->pedidoIdsForFactura($factura);
 
             $factura->estado = 'anulada';
             $factura->save();
@@ -380,6 +389,8 @@ class FacturaController extends Controller
                 'descripcion' => 'Factura anulada desde accion de eliminacion restringida.',
                 'id_contexto' => $factura->id_contexto,
             ], $request);
+
+            $this->trabajoStateService->syncPedidosAndTrabajosByPedidoIds($pedidoIds);
         });
 
         return $this->successResponse(
@@ -800,13 +811,17 @@ class FacturaController extends Controller
             $requestedAmount = (float) ($itemData['importe_facturado'] ?? 0);
             $requestedUnits = $this->nullableFloat($itemData['unidades_facturadas'] ?? null);
             $alreadyBilledAmount = (float) FacturaItem::query()
-                ->where('id_pedido_item', $pedidoItemId)
-                ->when($facturaItemId !== null, fn($query) => $query->where('id_factura_item', '!=', $facturaItemId))
-                ->sum('importe_facturado');
+                ->join('facturas', 'facturas.id_factura', '=', 'factura_items.id_factura')
+                ->where('factura_items.id_pedido_item', $pedidoItemId)
+                ->where('facturas.estado', '!=', 'anulada')
+                ->when($facturaItemId !== null, fn($query) => $query->where('factura_items.id_factura_item', '!=', $facturaItemId))
+                ->sum('factura_items.importe_facturado');
             $alreadyBilledUnits = (float) FacturaItem::query()
-                ->where('id_pedido_item', $pedidoItemId)
-                ->when($facturaItemId !== null, fn($query) => $query->where('id_factura_item', '!=', $facturaItemId))
-                ->sum('unidades_facturadas');
+                ->join('facturas', 'facturas.id_factura', '=', 'factura_items.id_factura')
+                ->where('factura_items.id_pedido_item', $pedidoItemId)
+                ->where('facturas.estado', '!=', 'anulada')
+                ->when($facturaItemId !== null, fn($query) => $query->where('factura_items.id_factura_item', '!=', $facturaItemId))
+                ->sum('factura_items.unidades_facturadas');
             $pendingAmount = max(0.0, (float) $pedidoItem->total_linea - $alreadyBilledAmount);
             $pendingUnits = max(0.0, (float) $pedidoItem->cantidad - $alreadyBilledUnits);
             $fieldPrefix = 'items.' . $index;
@@ -840,6 +855,19 @@ class FacturaController extends Controller
     private function assignedAmount(Factura $factura): float
     {
         return (float) $factura->items()->sum('importe_facturado');
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    private function pedidoIdsForFactura(Factura $factura): Collection
+    {
+        return $this->loadPedidoItemsForExistingFactura($factura)
+            ->pluck('id_pedido')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values();
     }
 
     private function nullableFloat(mixed $value): ?float

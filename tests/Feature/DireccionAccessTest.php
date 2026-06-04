@@ -11,13 +11,14 @@ class DireccionAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_direccion_can_access_direction_modules_and_management_users(): void
+    public function test_direccion_cannot_access_direction_dashboard_but_keeps_management_and_closure_modules(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $director = User::query()->where('email', 'cesar@ciete.es')->firstOrFail();
 
-        $this->actingAs($director)->get('/dashboard')->assertOk();
+        $this->actingAs($director)->get('/dashboard')->assertForbidden();
+        $this->actingAs($director)->get('/soporte')->assertOk();
         $this->actingAs($director)->get('/cierre')->assertOk();
         $this->actingAs($director)->get('/maestros')->assertOk();
         $this->actingAs($director)->get('/admin/usuarios')->assertOk();
@@ -34,6 +35,7 @@ class DireccionAccessTest extends TestCase
 
         foreach ([$ejecucion, $contable] as $user) {
             $this->actingAs($user)->get('/dashboard')->assertForbidden();
+            $this->actingAs($user)->get('/soporte')->assertOk();
             $this->actingAs($user)->get('/cierre')->assertForbidden();
             $this->actingAs($user)->get('/maestros')->assertForbidden();
         }

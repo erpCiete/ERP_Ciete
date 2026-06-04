@@ -29,6 +29,11 @@ class Contrato extends Model
         'estado',
         'observaciones',
         'activo',
+        'ariba_cta_mayor',
+        'ariba_propuesta_opex',
+        'ariba_accion_gasto',
+        'ariba_nombre_proveedor',
+        'ariba_sociedad',
     ];
 
     protected function casts(): array

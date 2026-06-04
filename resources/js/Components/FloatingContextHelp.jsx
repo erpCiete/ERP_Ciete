@@ -1,5 +1,5 @@
 import { Activity, BookOpen, LifeBuoy, MessageSquare, X } from 'lucide-react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/i18n';
 
@@ -26,6 +26,8 @@ function QuickLink({ href, label, icon: Icon, onClick }) {
 
 export default function FloatingContextHelp() {
     const { t } = useI18n();
+    const { auth } = usePage().props;
+    const canViewSystemStatus = Boolean(auth?.user?.can_view_system_status);
     const [open, setOpen] = useState(false);
     const rootRef = useRef(null);
 
@@ -34,9 +36,11 @@ export default function FloatingContextHelp() {
             { id: 'messages', label: t('welcome.home.dock.messages'), icon: MessageSquare, href: route('messages.index') },
             { id: 'manual', label: t('welcome.home.dock.manual'), icon: BookOpen, href: route('help') },
             { id: 'support', label: t('welcome.home.dock.support'), icon: LifeBuoy, href: route('support') },
-            { id: 'status', label: t('welcome.home.dock.status'), icon: Activity, href: route('status') },
-        ],
-        [t],
+            canViewSystemStatus
+                ? { id: 'status', label: t('welcome.home.dock.status'), icon: Activity, href: route('status') }
+                : null,
+        ].filter(Boolean),
+        [canViewSystemStatus, t],
     );
 
     useEffect(() => {

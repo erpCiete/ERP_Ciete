@@ -25,6 +25,12 @@ const EMPTY_FORM = {
     numero_aviso: '',
 };
 
+const MANUAL_STATUS_OPTIONS = [
+    { value: 'en_curso', labelKey: 'trabajos.status.enCurso' },
+    { value: 'terminado', labelKey: 'trabajos.status.terminado' },
+    { value: 'cancelado', labelKey: 'trabajos.status.cancelado' },
+];
+
 const CLIENT_THEME = {
     moeve: {
         key: 'moeve',
@@ -63,6 +69,7 @@ function normalizeTrabajo(trabajo) {
         id_tipo_documento: item.id_tipo_documento ? String(item.id_tipo_documento) : '',
         id_tipo_trabajo: item.id_tipo_trabajo ? String(item.id_tipo_trabajo) : '',
         numero_aviso: item.numero_aviso ?? '',
+        updated_at: item.updated_at ?? null,
     };
 }
 
@@ -78,6 +85,21 @@ function resolveClientKey(context) {
 
 function selectedTheme(clientKey) {
     return CLIENT_THEME[clientKey] ?? null;
+}
+
+function isManualStatus(value) {
+    return MANUAL_STATUS_OPTIONS.some((option) => option.value === value);
+}
+
+function statusLabelKey(value) {
+    return {
+        en_curso: 'trabajos.status.enCurso',
+        terminado: 'trabajos.status.terminado',
+        pendiente_facturar: 'trabajos.status.pendienteFacturar',
+        facturado: 'trabajos.status.facturado',
+        finalizado: 'trabajos.status.finalizado',
+        cancelado: 'trabajos.status.cancelado',
+    }[value] ?? null;
 }
 
 function validateForm(form, estaciones, t, selectedClientKey, allowClientSelection) {
@@ -121,6 +143,7 @@ export default function TrabajosForm({
     const { estaciones } = useEstaciones();
     const { props } = usePage();
     const isAllContext = props.auth?.user?.active_context?.is_all ?? false;
+    const conflictWarning = props.flash?.conflict_warning ?? null;
 
     const isEditing = trabajo !== null;
     const pageTitle = isEditing ? t('trabajos.edit') : t('trabajos.create');
@@ -145,6 +168,7 @@ export default function TrabajosForm({
     const [loading, setLoading] = useState(false);
     const [touched, setTouched] = useState({});
     const [submitAttempted, setSubmitAttempted] = useState(false);
+    const estadoEsDerivado = isEditing && !isManualStatus(form.estado);
 
     useEffect(() => {
         setForm({
@@ -300,7 +324,6 @@ export default function TrabajosForm({
             id_estacion_servicio: Number(form.id_estacion_servicio),
             fecha_encargo: form.fecha_encargo,
             fecha_terminado: form.fecha_terminado || null,
-            estado: form.estado,
             observaciones: form.observaciones || null,
             id_contrato: form.id_contrato ? Number(form.id_contrato) : null,
             id_tipo_documento: form.id_tipo_documento ? Number(form.id_tipo_documento) : null,
@@ -308,6 +331,10 @@ export default function TrabajosForm({
             numero_aviso: form.numero_aviso || null,
             categoria: form.categoria || null,
         };
+
+        if (!isEditing || isManualStatus(form.estado)) {
+            payload.estado = form.estado;
+        }
 
         const inertiaOptions = {
             onError: (errors) => {
@@ -345,6 +372,12 @@ export default function TrabajosForm({
 
                 {hasOperationalClientAccess && (
                     <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                        {conflictWarning && (
+                            <div className="rounded-lg border border-red-300 bg-red-50 p-4">
+                                <p className="text-sm font-semibold text-red-800">⚠ Conflicto de edición detectado</p>
+                                <p className="mt-1 text-sm text-red-700">{conflictWarning}</p>
+                            </div>
+                        )}
                         {!isEditing && isAllContext && (
                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
                                 <p className="text-sm font-medium text-amber-800">
@@ -468,17 +501,26 @@ export default function TrabajosForm({
                                             <label className="mb-1.5 block text-sm font-medium text-text-main">
                                                 {t('trabajos.fields.estado')} <span className="text-state-blocked-dot">*</span>
                                             </label>
+                                            {estadoEsDerivado && (
+                                                <p className="mb-2 text-xs text-text-muted">
+                                                    El estado actual se calcula automáticamente por pedidos, facturación o cierre. Solo puedes cambiarlo a un estado manual.
+                                                </p>
+                                            )}
                                             <select
                                                 value={form.estado}
                                                 onChange={(event) => updateField('estado', event.target.value)}
                                                 className={inputClass('estado')}
                                             >
-                                                <option value="en_curso">{t('trabajos.status.enCurso')}</option>
-                                                <option value="terminado">{t('trabajos.status.terminado')}</option>
-                                                <option value="pendiente_facturar">{t('trabajos.status.pendienteFacturar')}</option>
-                                                <option value="facturado">{t('trabajos.status.facturado')}</option>
-                                                <option value="finalizado">{t('trabajos.status.finalizado')}</option>
-                                                <option value="cancelado">{t('trabajos.status.cancelado')}</option>
+                                                {estadoEsDerivado && (
+                                                    <option value={form.estado}>
+                                                        {t(statusLabelKey(form.estado) ?? 'trabajos.fields.estado')}
+                                                    </option>
+                                                )}
+                                                {MANUAL_STATUS_OPTIONS.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {t(option.labelKey)}
+                                                    </option>
+                                                ))}
                                             </select>
                                             <InputError message={getError('estado')} className="mt-1.5" />
                                         </div>

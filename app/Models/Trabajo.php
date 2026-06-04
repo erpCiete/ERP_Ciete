@@ -23,6 +23,12 @@ class Trabajo extends Model
         'cancelado',
     ];
 
+    public const ESTADOS_MANUALES = [
+        'en_curso',
+        'terminado',
+        'cancelado',
+    ];
+
     protected $table = 'trabajos';
 
     protected $primaryKey = 'id_trabajo';

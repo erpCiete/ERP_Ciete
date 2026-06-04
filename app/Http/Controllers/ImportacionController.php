@@ -261,10 +261,31 @@ class ImportacionController extends Controller
     }
 
     /**
-     * Recibe el archivo, lo parsea y guarda temporalmente en BD (Staging).
+     * Recibe el archivo, lo parsea y lo persiste en staging (importacion_filas)
+     * para que el usuario pueda revisar antes de confirmar.
      */
-    public function store(StoreImportacionRequest $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
+        // La validación usa mimetypes en lugar de mimes para evitar falsos negativos
+        // con CSV en Windows, donde finfo los detecta como text/plain.
+        $request->validate([
+            'archivo' => [
+                'required',
+                'file',
+                'mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,' .
+                    'application/vnd.ms-excel,' .
+                    'text/csv,text/plain,text/comma-separated-values,' .
+                    'application/csv,application/octet-stream',
+                'max:10240',
+            ],
+            'tipo' => ['required', 'string', \Illuminate\Validation\Rule::in(['estaciones', 'trabajos', 'tarifario', 'facturas'])],
+        ], [
+            'archivo.required' => 'Debe adjuntar un archivo para importar.',
+            'archivo.mimetypes' => 'El archivo debe ser un Excel válido (.xlsx, .xls) o un CSV.',
+            'archivo.max' => 'El archivo no puede pesar más de 10 MB.',
+            'tipo.required' => 'Debe especificar el tipo de importación.',
+            'tipo.in' => 'El tipo de importación no es válido.',
+        ]);
         $parser = $this->resolveParser();
 
         if (! $parser) {
@@ -277,24 +298,20 @@ class ImportacionController extends Controller
             DB::beginTransaction();
 
             $file = $request->file('archivo');
-            // 1. Guardar con Storage de forma explícita
             $path = $file->store('importaciones/temp', 'local');
             $fullPath = Storage::disk('local')->path($path);
 
-            // 2. Extraer arrays con ExcelParserService
             $parsedData = $parser->parseFile($fullPath);
 
             if (empty($parsedData)) {
-                // Si el archivo está vacío, borramos el temporal para no ensuciar el disco
                 Storage::disk('local')->delete($path);
                 return back()->withErrors(['archivo' => 'El archivo Excel está vacío o no tiene el formato correcto.']);
             }
 
-            // 3. Crear cabecera de la importación usando el 'tipo' validado en el Request
             $importacion = Importacion::create([
                 'id_contexto'         => ContextGuard::activeContextIdForCreate($request->user()),
                 'id_usuario'          => $request->user()->id_usuario ?? $request->user()->id,
-                'tipo'                => $request->input('tipo', 'trabajos'), // Dinámico y validado
+                'tipo'                => $request->input('tipo', 'trabajos'),
                 'archivo_original'    => $file->getClientOriginalName(),
                 'total_filas'         => count($parsedData),
                 'filas_importadas'    => 0,

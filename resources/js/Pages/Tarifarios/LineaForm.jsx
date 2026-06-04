@@ -1,9 +1,11 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import { useMastersBackLink } from '@/Hooks/useMastersBackLink';
 import InputError from '@/Components/InputError';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function TarifarioLineaForm({ linea = null, tarifarios = [], unidades = [] }) {
+    const mastersBack = useMastersBackLink();
     const isEditing = Boolean(linea);
     const { data, setData, post, put, processing, errors } = useForm({
         id_tarifario: linea?.id_tarifario ?? '',
@@ -172,7 +174,7 @@ export default function TarifarioLineaForm({ linea = null, tarifarios = [], unid
 
                     <div className="mt-6 flex justify-end gap-3">
                         <Link
-                            href={route('maestros.index')}
+                            href={mastersBack.href ?? route('maestros.index')}
                             className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-main hover:bg-surface-2"
                         >
                             Cancelar

@@ -10,6 +10,11 @@
 # Laravel runtime
 /storage/*.key
 /storage/pail
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/
+/storage/logs/*.log
 /database/*.sqlite*
 
 # Environment and secrets
@@ -39,22 +44,33 @@ pnpm-debug.log*
 /.nova
 /.vscode
 /.zed
+/skills-lock.json
+
+# Herramientas IA / validación local
 /.agents
 /.codex
-/skills-lock.json
+/.claude
+/.playwright-mcp
+.mcp.json
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# SQL dumps (root level)
+# SQL dumps y backups locales
 /*.sql
+/database/abaco_ciete.sql
+/database/abaco_ciete_prod_dump.sql
+/database/backups/*.sql
+/database/_archivo_historico/dumps/*.sql
 
-# Local scripts (tooling personal, no production)
-/scripts/
+# Temporales de desarrollo
+temp_index.txt
+test_results.txt
+excel_dump.txt
+environment())
 
-# Documentos originales Abaco (excels, PDFs, reuniones)
-# Son archivos fuente que NO deben subir al repositorio (pesados, binarios).
+# Documentos originales Abaco antiguos o material pesado no entregable
 /docs/Abaco/
 /docs/Abaco/excelsactualizados/**/*.xlsx
 /docs/Abaco/excelsactualizados/**/*.xls
@@ -68,35 +84,3 @@ Thumbs.db
 /storage/app/ciete/generated-seeders/
 /storage/app/ciete/import-cache/
 /storage/app/local-patches/
-
-# Sprint documentation safety
-/docs/05-SPRINTS/Sprint_*/Bitacora/**/*.md
-!/docs/05-SPRINTS/Sprint_*/Bitacora/
-!/docs/05-SPRINTS/Sprint_*/Bitacora/BACK/
-!/docs/05-SPRINTS/Sprint_*/Bitacora/FRONT/
-!/docs/05-SPRINTS/Sprint_*/Bitacora/General/
-
-# Bitacoras personales — solo Pablo sube desde versionDesplegada
-# Cada dev sube la suya desde su propia rama.
-# Backend
-#!**/Bitacora/BACK/alex_puma.md
-#!**/Bitacora/BACK/carlos_puchol.md
-#!**/Bitacora/BACK/chad_arzaga.md
-#!**/Bitacora/BACK/eduardo_jimenez.md
-#!**/Bitacora/BACK/miguel_taborda.md
-
-# Frontend
-#!**/Bitacora/FRONT/carlos_daniel_garrido.md
-#!**/Bitacora/FRONT/daniel_bascope.md
-#!**/Bitacora/FRONT/daniel_lopez.md
-#!**/Bitacora/FRONT/jhon_sebastian_becerra.md
-#!**/Bitacora/FRONT/jimmy_tasmonte.md
-
-# Coordinacion general (Pablo — unica bitacora que sube versionDesplegada)
-!**/Bitacora/General/pablo.md
-
-# Documentacion raiz de sprint
-# En la raiz de cada sprint solo se debe subir la vision general y el plan del sprint.
-/docs/05-SPRINTS/Sprint_*/*.md
-!/docs/05-SPRINTS/Sprint_*/00_Sprint_*_Vision_General.md
-!/docs/05-SPRINTS/Sprint_*/SPRINT_*_PLAN.md

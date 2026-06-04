@@ -1,0 +1,137 @@
+
+  GET|HEAD        / ............................................................................................ index
+  GET|HEAD        _preview/error/{status} .............................................................. preview.error
+  GET|HEAD        admin .................................................. admin.dashboard › Admin\DashboardController
+  GET|HEAD        admin/auditoria ........................................... admin.audit › Admin\UserController@audit
+  POST            admin/maintenance .......................... admin.maintenance.toggle › MaintenanceController@toggle
+  POST            admin/notices ................................. admin.notices.update › Admin\NoticeController@update
+  GET|HEAD        admin/soporte ............................ admin.support.index › Admin\SupportTicketController@index
+  GET|HEAD        admin/soporte/{solicitudSoporte} ........... admin.support.show › Admin\SupportTicketController@show
+  POST            admin/soporte/{solicitudSoporte}/reply ... admin.support.reply › Admin\SupportTicketController@reply
+  PATCH           admin/soporte/{solicitudSoporte}/status admin.support.status › Admin\SupportTicketController@update…
+  GET|HEAD        admin/usuarios ...................................... admin.users.index › Admin\UserController@index
+  POST            admin/usuarios ...................................... admin.users.store › Admin\UserController@store
+  GET|HEAD        admin/usuarios/crear .............................. admin.users.create › Admin\UserController@create
+  PUT             admin/usuarios/{user} ............................. admin.users.update › Admin\UserController@update
+  GET|HEAD        admin/usuarios/{user}/editar .......................... admin.users.edit › Admin\UserController@edit
+  POST            admin/usuarios/{user}/toggle ...................... admin.users.toggle › Admin\UserController@toggle
+  POST            api/v1/auth/login ......................................................... Api\AuthController@login
+  POST            api/v1/auth/logout ....................................................... Api\AuthController@logout
+  GET|HEAD        api/v1/auth/me ............................................................... Api\AuthController@me
+  GET|HEAD        api/v1/clientes ........................................................ Api\ClienteController@index
+  POST            api/v1/clientes ........................................................ Api\ClienteController@store
+  GET|HEAD        api/v1/clientes/{cliente} ............................................... Api\ClienteController@show
+  PUT|PATCH       api/v1/clientes/{cliente} ............................................. Api\ClienteController@update
+  DELETE          api/v1/clientes/{cliente} ............................................ Api\ClienteController@destroy
+  GET|HEAD        api/v1/estaciones ..................................................... Api\EstacionController@index
+  POST            api/v1/estaciones ..................................................... Api\EstacionController@store
+  GET|HEAD        api/v1/estaciones/{estacion} ........................................... Api\EstacionController@show
+  PUT|PATCH       api/v1/estaciones/{estacion} ......................................... Api\EstacionController@update
+  DELETE          api/v1/estaciones/{estacion} ........................................ Api\EstacionController@destroy
+  GET|HEAD        api/v1/facturas ........................................................ Api\FacturaController@index
+  POST            api/v1/facturas ........................................................ Api\FacturaController@store
+  GET|HEAD        api/v1/facturas/export ..................... api.facturas.export › Api\FacturaController@exportIndex
+  GET|HEAD        api/v1/facturas/{factura} ............................................... Api\FacturaController@show
+  PUT|PATCH       api/v1/facturas/{factura} ............................................. Api\FacturaController@update
+  DELETE          api/v1/facturas/{factura} ............................................ Api\FacturaController@destroy
+  GET|HEAD        api/v1/facturas/{factura}/export ... api.facturas.export-detail › Api\FacturaController@exportDetail
+  GET|HEAD        api/v1/pedidos .......................................................... Api\PedidoController@index
+  POST            api/v1/pedidos .......................................................... Api\PedidoController@store
+  GET|HEAD        api/v1/pedidos/{pedido} .................................................. Api\PedidoController@show
+  PUT|PATCH       api/v1/pedidos/{pedido} ................................................ Api\PedidoController@update
+  DELETE          api/v1/pedidos/{pedido} ............................................... Api\PedidoController@destroy
+  GET|HEAD        api/v1/trabajos ................................... api.trabajos.index › Api\TrabajoController@index
+  POST            api/v1/trabajos ................................... api.trabajos.store › Api\TrabajoController@store
+  GET|HEAD        api/v1/trabajos/{trabajo} ........................... api.trabajos.show › Api\TrabajoController@show
+  PUT|PATCH       api/v1/trabajos/{trabajo} ....................... api.trabajos.update › Api\TrabajoController@update
+  DELETE          api/v1/trabajos/{trabajo} ..................... api.trabajos.destroy › Api\TrabajoController@destroy
+  GET|HEAD        ayuda ......................................................................................... help
+  GET|HEAD        cierre ......................................... cierre.dashboard › ClosureDashboardController@index
+  POST            cierre/cerrar ............................. cierre.bulk-close › ClosureDashboardController@bulkClose
+  POST            cierre/revisar ............................. cierre.review › ClosureDashboardController@markReviewed
+  POST            cierre/{trabajo}/cerrar ............................ cierre.close › ClosureDashboardController@close
+  GET|HEAD        clientes ............................................................................ clientes.index
+  GET|HEAD        clientes/crear ..................................................................... clientes.create
+  GET|HEAD        clientes/{cliente}/editar ............................................................ clientes.edit
+  POST            contexto/activo ............................ contexto.activo.update › ActiveContextController@update
+  GET|HEAD        dashboard ................................................................................ dashboard
+  GET|HEAD        estaciones ........................................................................ estaciones.index
+  GET|HEAD        estaciones/crear ................................................................. estaciones.create
+  GET|HEAD        estaciones/{estacion}/editar ....................................................... estaciones.edit
+  GET|HEAD        estado ............................................................. status › StatusController@index
+  GET|HEAD        facturas ............................................................................ facturas.index
+  GET|HEAD        facturas/crear ..................................................................... facturas.create
+  DELETE          facturas/{factura} ................................ facturas.destroy › Api\FacturaController@destroy
+  GET|HEAD        facturas/{id}/editar ................................................................. facturas.edit
+  GET|HEAD        forgot-password ......................... password.request › Auth\PasswordResetLinkController@create
+  POST            forgot-password ............................ password.email › Auth\PasswordResetLinkController@store
+  GET|HEAD        importaciones .................................... importaciones.index › ImportacionController@index
+  POST            importaciones/confirmar/{id} ................. importaciones.confirm › ImportacionController@confirm
+  GET|HEAD        importaciones/preview/{id} ................... importaciones.preview › ImportacionController@preview
+  POST            importaciones/procesar ........................... importaciones.store › ImportacionController@store
+  GET|HEAD        importaciones/subir ............................ importaciones.create › ImportacionController@create
+  POST            locale ..................................................... locale.update › LocaleController@update
+  GET|HEAD        login ........................................... login › Auth\AuthenticatedSessionController@create
+  POST            login .................................................... Auth\AuthenticatedSessionController@store
+  POST            logout ........................................ logout › Auth\AuthenticatedSessionController@destroy
+  GET|HEAD        maestros ........................................................ maestros.index › MaestroController
+  GET|HEAD        maestros/contratos ............................. maestros.contratos.index › ContratoController@index
+  POST            maestros/contratos ............................. maestros.contratos.store › ContratoController@store
+  GET|HEAD        maestros/contratos/crear ..................... maestros.contratos.create › ContratoController@create
+  PUT             maestros/contratos/{contrato} ................ maestros.contratos.update › ContratoController@update
+  DELETE          maestros/contratos/{contrato} .............. maestros.contratos.destroy › ContratoController@destroy
+  GET|HEAD        maestros/contratos/{contrato}/editar ............. maestros.contratos.edit › ContratoController@edit
+  GET|HEAD        maestros/sociedades-facturadoras maestros.sociedades.index › ContratoEmpresaFacturadoraController@i…
+  POST            maestros/sociedades-facturadoras maestros.sociedades.store › ContratoEmpresaFacturadoraController@s…
+  PUT             maestros/sociedades-facturadoras/{sociedad} maestros.sociedades.update › ContratoEmpresaFacturadora…
+  DELETE          maestros/sociedades-facturadoras/{sociedad} maestros.sociedades.destroy › ContratoEmpresaFacturador…
+  GET|HEAD        maestros/tarifario-lineas ......... maestros.tarifario-lineas.index › TarifarioLineaController@index
+  POST            maestros/tarifario-lineas ......... maestros.tarifario-lineas.store › TarifarioLineaController@store
+  GET|HEAD        maestros/tarifario-lineas/crear . maestros.tarifario-lineas.create › TarifarioLineaController@create
+  PUT             maestros/tarifario-lineas/{linea} maestros.tarifario-lineas.update › TarifarioLineaController@update
+  DELETE          maestros/tarifario-lineas/{linea} maestros.tarifario-lineas.destroy › TarifarioLineaController@dest…
+  GET|HEAD        maestros/tarifario-lineas/{linea}/editar maestros.tarifario-lineas.edit › TarifarioLineaController@…
+  GET|HEAD        maestros/tarifarios .......................... maestros.tarifarios.index › TarifarioController@index
+  POST            maestros/tarifarios .......................... maestros.tarifarios.store › TarifarioController@store
+  GET|HEAD        maestros/tarifarios/crear .................. maestros.tarifarios.create › TarifarioController@create
+  PUT             maestros/tarifarios/{tarifario} ............ maestros.tarifarios.update › TarifarioController@update
+  DELETE          maestros/tarifarios/{tarifario} .......... maestros.tarifarios.destroy › TarifarioController@destroy
+  GET|HEAD        maestros/tarifarios/{tarifario}/editar ......... maestros.tarifarios.edit › TarifarioController@edit
+  GET|HEAD        mensajes .................................................. messages.index › MessageController@index
+  POST            mensajes .................................................. messages.store › MessageController@store
+  POST            mensajes/broadcast ................................ messages.broadcast › MessageController@broadcast
+  GET|HEAD        mensajes/{mensaje} .......................................... messages.show › MessageController@show
+  POST            mensajes/{mensaje}/archivar ........................... messages.archive › MessageController@archive
+  POST            mensajes/{mensaje}/leer ................................. messages.read › MessageController@markRead
+  PUT             password .......................................... password.update › Auth\PasswordController@update
+  GET|HEAD        pedidos .............................................................................. pedidos.index
+  GET|HEAD        pedidos/crear ....................................................................... pedidos.create
+  GET|HEAD        pedidos/{id}/editar ................................................................... pedidos.edit
+  DELETE          pedidos/{pedido} .................................... pedidos.destroy › Api\PedidoController@destroy
+  PATCH           perfil/preferencias ...................... profile.preferences › ProfileController@updatePreferences
+  GET|HEAD        profile ...................................................... profile.edit › ProfileController@edit
+  PATCH           profile .................................................. profile.update › ProfileController@update
+  GET|HEAD        registro-actividad ............................. registro.actividad.index › AuditLogController@index
+  GET|HEAD        registro-actividad/exportar .............. registro.actividad.exportar › AuditLogController@exportar
+  DELETE          registro-actividad/limpiar ................. registro.actividad.limpiar › AuditLogController@limpiar
+  POST            reset-password ................................... password.store › Auth\NewPasswordController@store
+  GET|HEAD        reset-password/{token} .......................... password.reset › Auth\NewPasswordController@create
+  GET|HEAD        sanctum/csrf-cookie .............. sanctum.csrf-cookie › Laravel\Sanctum › CsrfCookieController@show
+  GET|HEAD        soporte .......................................................... support › SupportController@index
+  POST            soporte ...................................................... support.send › SupportController@send
+  GET|HEAD        soporte/{solicitudSoporte} ................................... support.show › SupportController@show
+  POST            soporte/{solicitudSoporte}/reply ........................... support.reply › SupportController@reply
+  GET|HEAD        storage/{path} ....................................................................... storage.local
+  PUT             storage/{path} ................................................................ storage.local.upload
+  GET|HEAD        trabajos .............................................. trabajos.index › Api\TrabajoController@index
+  POST            trabajos .............................................. trabajos.store › Api\TrabajoController@store
+  GET|HEAD        trabajos/crear ...................................... trabajos.create › Api\TrabajoController@create
+  PUT             trabajos/{trabajo} .................................. trabajos.update › Api\TrabajoController@update
+  DELETE          trabajos/{trabajo} ................................ trabajos.destroy › Api\TrabajoController@destroy
+  PATCH           trabajos/{trabajo}/campo ................... trabajos.patch-field › Api\TrabajoController@patchField
+  GET|HEAD        trabajos/{trabajo}/editar ............................... trabajos.edit › Api\TrabajoController@edit
+  GET|HEAD        up ................................................................................................. 
+  GET|HEAD        {fallbackPlaceholder} .............................................................................. 
+
+                                                                                                  Showing [133] routes
+

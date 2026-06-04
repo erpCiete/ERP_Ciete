@@ -11,6 +11,23 @@ use Illuminate\Validation\ValidationException;
 
 class ClosureDashboardService
 {
+    private const AUDIT_FIELDS = [
+        'id_trabajo',
+        'id_contexto',
+        'id_contrato',
+        'id_tarifario',
+        'estado',
+        'fecha_terminacion',
+        'bloqueado_cierre',
+    ];
+
+    public function __construct(
+        private readonly TrabajoStateService $trabajoStateService,
+        private readonly AuditLogger $auditLogger,
+    )
+    {
+    }
+
     public function buildDashboardPayload(User $user): array
     {
         $trabajos = Trabajo::query()
@@ -22,6 +39,7 @@ class ClosureDashboardService
                 'pedidos:id_pedido,id_trabajo,numero_pedido,importe_pedido,importe_facturado,facturado_completo,estado,updated_at',
                 'pedidos.items:id_pedido_item,id_pedido,total_linea,cantidad',
                 'pedidos.items.facturaItems:id_factura_item,id_pedido_item,importe_facturado',
+                'pedidos.items.facturaItems.factura:id_factura,estado',
                 'facturas:id_factura,id_trabajo,total,estado,updated_at',
                 'legalizaciones:id_legalizacion,id_trabajo,estado,descripcion_seleccionable,descripcion_libre,observaciones,updated_at',
             ])
@@ -65,9 +83,11 @@ class ClosureDashboardService
                     continue;
                 }
 
+                $before = $this->snapshotTrabajo($trabajo);
                 $trabajo->update([
                     'bloqueado_cierre' => $this->hasBlockingChecks($trabajo),
                 ]);
+                $this->auditChecklistReview($trabajo->fresh(), $user, $before);
 
                 $count++;
             }
@@ -102,6 +122,7 @@ class ClosureDashboardService
             'pedidos:id_pedido,id_trabajo,numero_pedido,importe_pedido,importe_facturado,facturado_completo,estado,updated_at',
             'pedidos.items:id_pedido_item,id_pedido,total_linea,cantidad',
             'pedidos.items.facturaItems:id_factura_item,id_pedido_item,importe_facturado',
+            'pedidos.items.facturaItems.factura:id_factura,estado',
             'facturas:id_factura,id_trabajo,total,estado,updated_at',
             'legalizaciones:id_legalizacion,id_trabajo,estado,descripcion_seleccionable,descripcion_libre,observaciones,updated_at',
         ]);
@@ -134,6 +155,7 @@ class ClosureDashboardService
                 'pedidos:id_pedido,id_trabajo,numero_pedido,importe_pedido,importe_facturado,facturado_completo,estado,updated_at',
                 'pedidos.items:id_pedido_item,id_pedido,total_linea,cantidad',
                 'pedidos.items.facturaItems:id_factura_item,id_pedido_item,importe_facturado',
+                'pedidos.items.facturaItems.factura:id_factura,estado',
                 'facturas:id_factura,id_trabajo,total,estado,updated_at',
                 'legalizaciones:id_legalizacion,id_trabajo,estado,descripcion_seleccionable,descripcion_libre,observaciones,updated_at',
             ])
@@ -149,10 +171,14 @@ class ClosureDashboardService
 
     private function applyClosure(Trabajo $trabajo, User $user): void
     {
+        $before = $this->snapshotTrabajo($trabajo);
+
         $trabajo->update([
             'estado' => 'finalizado',
             'bloqueado_cierre' => false,
         ]);
+
+        $this->auditFinalization($trabajo->fresh(), $user, $before);
     }
 
     private function canBeClosed(Trabajo $trabajo): bool
@@ -190,6 +216,7 @@ class ClosureDashboardService
         $finishedConfirmed = $this->isFinishedForFinalizationFlow($trabajo);
         $flowReady = $trabajo->isProtectedFinalizedState()
             || in_array($trabajo->estado, ['terminado', 'pendiente_facturar', 'facturado'], true);
+        $billingSnapshot = $this->trabajoStateService->billingSnapshotForTrabajo($trabajo);
         $readyToFinalize = $this->passesFinalizationRequirements(
             $trabajo,
             $pedidoData,
@@ -202,6 +229,7 @@ class ClosureDashboardService
             ['id' => 'endDate', 'ok' => filled($trabajo->fecha_terminacion), 'blocking' => true],
             ['id' => 'validOrder', 'ok' => $pedidoData['exists'], 'blocking' => true],
             ['id' => 'amountReviewed', 'ok' => ! $economyData['exceeds'], 'blocking' => true],
+            ['id' => 'billingComplete', 'ok' => $billingSnapshot['facturacion_completa'], 'blocking' => true],
             ['id' => 'legalizationChecked', 'ok' => ! $legalizacionData['critical'], 'blocking' => false],
             ['id' => 'mandatoryFields', 'ok' => $mandatoryFieldsComplete, 'blocking' => true],
             ['id' => 'noBlockingIncidents', 'ok' => ! $trabajo->bloqueado_cierre, 'blocking' => true],
@@ -219,6 +247,8 @@ class ClosureDashboardService
         $incidencias = $this->buildIncidentLabels($trabajo, $pedidoData, $economyData, $legalizacionData);
         $responsable = $this->resolveResponsibleName($trabajo);
         $finalizado = $trabajo->isProtectedFinalizedState();
+        $billingSnapshot = $this->trabajoStateService->billingSnapshotForTrabajo($trabajo);
+        $closureSnapshot = $this->trabajoStateService->closureSnapshotForTrabajo($trabajo, $billingSnapshot);
         $readyToFinalize = $this->passesFinalizationRequirements($trabajo, $pedidoData, $economyData);
         $fechaFinalizacion = $trabajo->isFunctionallyFinalized()
             ? optional($trabajo->updated_at)->toIso8601String()
@@ -243,6 +273,8 @@ class ClosureDashboardService
             'incidenciaBloqueante' => $incidencias !== [],
             'incidencias' => $incidencias,
             'estado' => $trabajo->estado,
+            'estadoFacturacion' => $billingSnapshot['estado_facturacion'],
+            'cierreSecundario' => $closureSnapshot['estado_cierre'],
             'terminadoConfirmado' => $this->isFinishedForFinalizationFlow($trabajo),
             'camposObligatoriosCompletos' => filled($trabajo->numero_trabajo)
                 && filled($trabajo->descripcion_trabajo)
@@ -285,9 +317,13 @@ class ClosureDashboardService
     private function extractEconomyData(Trabajo $trabajo, array $pedidoData): array
     {
         $facturaItemsTotal = (float) $trabajo->pedidos->sum(fn ($pedido) => $pedido->items->sum(
-            fn ($item) => $item->facturaItems->sum(fn ($facturaItem) => (float) ($facturaItem->importe_facturado ?? 0))
+            fn ($item) => $item->facturaItems
+                ->filter(fn ($facturaItem) => ($facturaItem->factura?->estado ?? null) !== 'anulada')
+                ->sum(fn ($facturaItem) => (float) ($facturaItem->importe_facturado ?? 0))
         ));
-        $facturaTotal = (float) $trabajo->facturas->sum(fn ($factura) => (float) ($factura->total ?? 0));
+        $facturaTotal = (float) $trabajo->facturas
+            ->filter(fn ($factura) => $factura->estado !== 'anulada')
+            ->sum(fn ($factura) => (float) ($factura->total ?? 0));
         $pedidoFacturado = (float) $trabajo->pedidos->sum(fn ($pedido) => (float) ($pedido->importe_facturado ?? 0));
         $amount = $facturaItemsTotal > 0 ? $facturaItemsTotal : ($facturaTotal > 0 ? $facturaTotal : $pedidoFacturado);
         $latestFactura = $trabajo->facturas->sortByDesc('updated_at')->first();
@@ -374,8 +410,7 @@ class ClosureDashboardService
 
     private function isFinishedForFinalizationFlow(Trabajo $trabajo): bool
     {
-        return in_array($trabajo->estado, ['terminado', 'pendiente_facturar', 'facturado', 'finalizado'], true)
-            || filled($trabajo->fecha_terminacion);
+        return $this->trabajoStateService->isTrabajoFinished($trabajo);
     }
 
     private function passesFinalizationRequirements(
@@ -391,11 +426,13 @@ class ClosureDashboardService
             && filled($trabajo->fecha_encargo)
             && $trabajo->empresa !== null
             && $trabajo->estacion !== null;
+        $billingSnapshot = $this->trabajoStateService->billingSnapshotForTrabajo($trabajo);
 
         return $this->isFinishedForFinalizationFlow($trabajo)
             && filled($trabajo->fecha_terminacion)
             && $pedidoData['exists']
             && ! $economyData['exceeds']
+            && $billingSnapshot['facturacion_completa']
             && $mandatoryFieldsComplete
             && ! $trabajo->bloqueado_cierre
             && filled($trabajo->id_contrato)
@@ -443,5 +480,72 @@ class ClosureDashboardService
         }
 
         return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function snapshotTrabajo(Trabajo $trabajo): array
+    {
+        return $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
+    }
+
+    /**
+     * @param array<string, mixed> $before
+     */
+    private function auditChecklistReview(Trabajo $trabajo, User $user, array $before): void
+    {
+        $after = $this->snapshotTrabajo($trabajo);
+
+        if (($before['bloqueado_cierre'] ?? null) === ($after['bloqueado_cierre'] ?? null)) {
+            return;
+        }
+
+        $this->auditLogger->log([
+            'user' => $user,
+            'accion' => 'actualizar',
+            'modulo' => 'cierre',
+            'tabla' => 'trabajos',
+            'entity_type' => Trabajo::class,
+            'entity_id' => $trabajo->id_trabajo,
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'bloqueado_cierre',
+            'valor_anterior' => $before['bloqueado_cierre'] ?? null,
+            'valor_nuevo' => $after['bloqueado_cierre'] ?? null,
+            'datos_anteriores' => $before,
+            'datos_nuevos' => $after,
+            'descripcion' => 'Revision de checklist de cierre actualizada desde panel de direccion.',
+            'id_contexto' => $trabajo->id_contexto,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $before
+     */
+    private function auditFinalization(Trabajo $trabajo, User $user, array $before): void
+    {
+        $after = $this->snapshotTrabajo($trabajo);
+
+        if (($before['estado'] ?? null) === ($after['estado'] ?? null)
+            && ($before['bloqueado_cierre'] ?? null) === ($after['bloqueado_cierre'] ?? null)) {
+            return;
+        }
+
+        $this->auditLogger->log([
+            'user' => $user,
+            'accion' => 'cambiar_estado',
+            'modulo' => 'cierre',
+            'tabla' => 'trabajos',
+            'entity_type' => Trabajo::class,
+            'entity_id' => $trabajo->id_trabajo,
+            'registro_id' => $trabajo->id_trabajo,
+            'campo' => 'estado',
+            'valor_anterior' => $before['estado'] ?? null,
+            'valor_nuevo' => $after['estado'] ?? null,
+            'datos_anteriores' => $before,
+            'datos_nuevos' => $after,
+            'descripcion' => 'Trabajo finalizado desde panel de cierre.',
+            'id_contexto' => $trabajo->id_contexto,
+        ]);
     }
 }

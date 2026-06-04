@@ -1,9 +1,11 @@
 import ContextualPageHeader from '@/Components/ContextualPageHeader';
+import { useMastersBackLink } from '@/Hooks/useMastersBackLink';
 import InputError from '@/Components/InputError';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function TarifarioForm({ tarifario = null, contratos = [], activeContext = null }) {
+    const mastersBack = useMastersBackLink();
     const isEditing = Boolean(tarifario);
     const { data, setData, post, put, processing, errors } = useForm({
         id_contrato: tarifario?.id_contrato ?? '',
@@ -13,6 +15,7 @@ export default function TarifarioForm({ tarifario = null, contratos = [], active
         fecha_fin_vigencia: tarifario?.fecha_fin_vigencia ?? '',
         factor_multiplicador: tarifario?.factor_multiplicador ?? '1.0000',
         moneda: tarifario?.moneda ?? 'EUR',
+        es_predeterminado: tarifario?.es_predeterminado ?? false,
         activo: tarifario?.activo ?? true,
         observaciones: tarifario?.observaciones ?? '',
     });
@@ -36,7 +39,6 @@ export default function TarifarioForm({ tarifario = null, contratos = [], active
                 <ContextualPageHeader
                     eyebrow="Maestros"
                     title={isEditing ? 'Editar tarifario' : 'Nuevo tarifario'}
-                    description="El tarifario se seleccionara despues desde pedidos y lineas, sin crear operativa desde este panel."
                     backHref={route('maestros.index')}
                 />
 
@@ -46,18 +48,12 @@ export default function TarifarioForm({ tarifario = null, contratos = [], active
                         <p className="mt-1 text-sm font-semibold text-text-main">
                             {activeContext?.nombre ?? 'Contexto no disponible'}
                         </p>
-                        <p className="mt-1 text-sm text-text-muted">
-                            El tarifario solo puede enlazarse a contratos activos de este contexto.
-                        </p>
                     </div>
 
                     {contratos.length === 0 && (
                         <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
                             <p className="text-sm font-medium text-amber-800">
                                 No hay contratos activos para crear un tarifario en este contexto.
-                            </p>
-                            <p className="mt-1 text-sm text-amber-700">
-                                Crea o activa primero el contrato maestro. Sin contrato no hay cascada contrato - tarifario - lineas.
                             </p>
                             <Link
                                 href={route('maestros.contratos.index')}
@@ -157,11 +153,33 @@ export default function TarifarioForm({ tarifario = null, contratos = [], active
                             <input
                                 type="checkbox"
                                 checked={Boolean(data.activo)}
-                                onChange={(event) => setData('activo', event.target.checked)}
+                                onChange={(event) => {
+                                    const checked = event.target.checked;
+                                    setData('activo', checked);
+
+                                    if (!checked) {
+                                        setData('es_predeterminado', false);
+                                    }
+                                }}
                                 className="rounded border-border text-(--ciete-red)"
                             />
                             <span className="text-sm font-semibold text-text-main">Activo para nuevas operaciones</span>
                         </label>
+
+                        <div className="block md:col-span-2">
+                            <span className="text-sm font-semibold text-text-main">Tarifario predeterminado</span>
+                            <div className="mt-2 flex items-start gap-3 rounded-lg border border-border bg-surface-2 px-4 py-3">
+                                <input
+                                    type="checkbox"
+                                    checked={Boolean(data.es_predeterminado)}
+                                    disabled={!data.activo}
+                                    onChange={(event) => setData('es_predeterminado', event.target.checked)}
+                                    className="mt-0.5 rounded border-border text-(--ciete-red)"
+                                />
+                                <span className="block text-sm font-semibold text-text-main">Usar por defecto en trabajos nuevos</span>
+                            </div>
+                            <InputError message={errors.es_predeterminado} className="mt-1" />
+                        </div>
 
                         <label className="block md:col-span-2">
                             <span className="text-sm font-semibold text-text-main">Observaciones</span>
@@ -177,7 +195,7 @@ export default function TarifarioForm({ tarifario = null, contratos = [], active
 
                     <div className="mt-6 flex justify-end gap-3">
                         <Link
-                            href={route('maestros.index')}
+                            href={mastersBack.href ?? route('maestros.index')}
                             className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-main hover:bg-surface-2"
                         >
                             Cancelar

@@ -84,6 +84,18 @@ function normalizeItems(items) {
     }));
 }
 
+function hasMeaningfulItem(item) {
+    return Boolean(
+        item?.id_pedido_item
+            || item?.id_tarifario_linea
+            || String(item?.codigo_servicio ?? '').trim()
+            || String(item?.numero_tarifa ?? '').trim()
+            || String(item?.descripcion_servicio ?? '').trim()
+            || Number(item?.precio_unitario) > 0
+            || Number(item?.total_linea) > 0
+    );
+}
+
 function resolveClientKey(context) {
     const value = String(context?.codigo || context?.nombre || '').trim().toLowerCase();
 
@@ -144,16 +156,20 @@ function validarForm(form, items, trabajos, tarifarioLineas, allowClientSelectio
 
             if (!Number.isFinite(requestedUnits) || requestedUnits < 0) {
                 errs.unidades_solicitadas = 'Las unidades solicitadas no son válidas.';
-            } else if (!Number.isInteger(requestedUnits)) {
-                errs.unidades_solicitadas = 'Las unidades solicitadas deben ser enteras.';
             }
         }
     }
 
-    if (items.length === 0) {
+    const meaningfulItems = items.filter(hasMeaningfulItem);
+
+    if (meaningfulItems.length === 0 && tarifarioLineas.length > 0) {
         errs.items = 'Añade al menos una línea al pedido.';
-    } else {
+    } else if (meaningfulItems.length > 0) {
         items.forEach((item, i) => {
+            if (!hasMeaningfulItem(item)) {
+                return;
+            }
+
             const quantity = Number(item.cantidad);
 
             if (tarifarioLineas.length > 0 && !item.id_tarifario_linea) {
@@ -161,8 +177,6 @@ function validarForm(form, items, trabajos, tarifarioLineas, allowClientSelectio
             }
             if (!Number.isFinite(quantity) || quantity <= 0) {
                 errs[`items.${i}.cantidad`] = 'La cantidad debe ser mayor que 0.';
-            } else if (!Number.isInteger(quantity)) {
-                errs[`items.${i}.cantidad`] = 'La cantidad debe ser entera.';
             }
             if (Number(item.precio_unitario) < 0) {
                 errs[`items.${i}.precio_unitario`] = 'El precio no puede ser negativo.';
@@ -179,6 +193,7 @@ export default function PedidosForm({
     tarifarioLineas = [],
     contextoIds = [],
     clientContexts = [],
+    sourceTrabajo = null,
 }) {
     const { t } = useI18n();
     const { props } = usePage();
@@ -202,12 +217,23 @@ export default function PedidosForm({
     const defaultContextId = availableClientContexts[0]?.id_contexto
         ? String(availableClientContexts[0].id_contexto)
         : '';
+    const sourceTrabajoId = sourceTrabajo?.id_trabajo ? String(sourceTrabajo.id_trabajo) : '';
+    const isPedidoFromTrabajo = !isEditing && Boolean(sourceTrabajoId);
+    const initialPedido = useMemo(() => {
+        if (!isPedidoFromTrabajo) return normalizedPedido;
+
+        return {
+            ...normalizedPedido,
+            id_trabajo: sourceTrabajoId,
+            id_contexto: sourceTrabajo?.id_contexto ? String(sourceTrabajo.id_contexto) : normalizedPedido.id_contexto,
+        };
+    }, [isPedidoFromTrabajo, normalizedPedido, sourceTrabajo, sourceTrabajoId]);
 
     const [form, setForm] = useState(() => ({
-        ...normalizedPedido,
-        id_contexto: normalizedPedido.id_contexto || (allowClientSelection ? '' : defaultContextId),
+        ...initialPedido,
+        id_contexto: initialPedido.id_contexto || (allowClientSelection ? '' : defaultContextId),
     }));
-    const [items, setItems] = useState(normalizedItems);
+    const [items, setItems] = useState(() => (isPedidoFromTrabajo ? [{ ...EMPTY_ITEM }] : normalizedItems));
     const [serverErrors, setServerErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [touched, setTouched] = useState({});
@@ -218,14 +244,14 @@ export default function PedidosForm({
 
     useEffect(() => {
         setForm({
-            ...normalizedPedido,
-            id_contexto: normalizedPedido.id_contexto || (allowClientSelection ? '' : defaultContextId),
+            ...initialPedido,
+            id_contexto: initialPedido.id_contexto || (allowClientSelection ? '' : defaultContextId),
         });
-    }, [normalizedPedido, allowClientSelection, defaultContextId]);
+    }, [initialPedido, allowClientSelection, defaultContextId]);
 
     useEffect(() => {
-        setItems(normalizedItems);
-    }, [normalizedItems]);
+        setItems(isPedidoFromTrabajo ? [{ ...EMPTY_ITEM }] : normalizedItems);
+    }, [isPedidoFromTrabajo, normalizedItems]);
 
     useEffect(() => {
         setListaTrab(trabajos);
@@ -292,6 +318,12 @@ export default function PedidosForm({
         [form, items, filteredTrabajos, filteredTarifarioLineas, allowClientSelection, isRepsol, t],
     );
     const totalPedido = items.reduce((sum, item) => sum + (Number(item.total_linea) || 0), 0);
+    const exportableItems = useMemo(() => items.filter(hasMeaningfulItem), [items]);
+    // La exportación MOEVE (PDF, CSV, ARIBA) solo aplica a pedidos del contexto MOEVE.
+    const canExportMoeve = isEditing && exportableItems.length > 0 && selectedClientKey === 'moeve';
+    const pedidoId = (pedido?.data || pedido)?.id_pedido ?? null;
+    const [showCorreoModal, setShowCorreoModal] = useState(false);
+    const pedidoData = pedido?.data || pedido;
     const pedidoStatusOptions = useMemo(() => {
         if (!form.estado || DEFAULT_PEDIDO_STATUS_OPTIONS.includes(form.estado)) {
             return DEFAULT_PEDIDO_STATUS_OPTIONS;
@@ -311,6 +343,8 @@ export default function PedidosForm({
     };
 
     const updateTrabajo = (value) => {
+        if (isPedidoFromTrabajo) return;
+
         setTouched((prev) => ({ ...prev, id_trabajo: true, items: true }));
         setServerErrors((prev) => {
             const next = { ...prev };
@@ -323,6 +357,8 @@ export default function PedidosForm({
     };
 
     const selectClient = (contextId) => {
+        if (isPedidoFromTrabajo) return;
+
         setTouched((prev) => ({ ...prev, id_contexto: true }));
         setServerErrors((prev) => {
             const next = { ...prev };
@@ -377,7 +413,8 @@ export default function PedidosForm({
         setLoading(true);
 
         try {
-            const payloadItems = items.map((item) => {
+            const itemsToSubmit = items.filter(hasMeaningfulItem);
+            const payloadItems = itemsToSubmit.map((item) => {
                 const itemId = Number(item.id_pedido_item);
 
                 return {
@@ -398,8 +435,11 @@ export default function PedidosForm({
                 fecha_solicitud: form.fecha_solicitud,
                 fecha_recepcion: form.fecha_recepcion || null,
                 estado: form.estado,
-                items: payloadItems,
             };
+
+            if (!isPedidoFromTrabajo || payloadItems.length > 0 || isEditing) {
+                payload.items = payloadItems;
+            }
 
             const selectedLine = payloadItems.find((item) => item.id_tarifario_linea);
             if (selectedLine) {
@@ -409,6 +449,9 @@ export default function PedidosForm({
                 if (line?.id_tarifario) {
                     payload.id_tarifario = Number(line.id_tarifario);
                 }
+            }
+            if (!payload.id_tarifario && selectedTrabajo?.id_tarifario) {
+                payload.id_tarifario = Number(selectedTrabajo.id_tarifario);
             }
 
             if (isRepsol) {
@@ -427,7 +470,7 @@ export default function PedidosForm({
                 return;
             }
 
-            router.visit(route('pedidos.index'));
+            router.visit(isPedidoFromTrabajo ? route('trabajos.index') : route('pedidos.index'));
         } catch (err) {
             if (err.response?.status === 422) {
                 setServerErrors(err.response.data?.errors ?? {});
@@ -440,7 +483,18 @@ export default function PedidosForm({
         }
     };
 
+    const openExportWindow = (routeName) => {
+        if (!pedidoId) return;
+        window.open(route(routeName, pedidoId), '_blank', 'noopener,noreferrer');
+    };
+
+    const downloadExport = (routeName) => {
+        if (!pedidoId) return;
+        window.location.assign(route(routeName, pedidoId));
+    };
+
     return (
+        <>
         <AuthenticatedLayout
             header={<h2 className="text-xl font-semibold leading-tight text-(--ciete-slate)">{pageTitle}</h2>}
         >
@@ -450,7 +504,13 @@ export default function PedidosForm({
                 <ContextualPageHeader
                     eyebrow={t('nav.groups.operations')}
                     title={pageTitle}
-                    description={selectedClientKey ? t('trabajos.clientSelector.contextReady') : t('trabajos.clientSelector.intro')}
+                    description={
+                        isPedidoFromTrabajo
+                            ? 'Nuevo pedido iniciado desde Trabajos. El trabajo queda preseleccionado y aquí ya puedes completar las líneas económicas.'
+                            : selectedClientKey
+                              ? t('trabajos.clientSelector.contextReady')
+                              : t('trabajos.clientSelector.intro')
+                    }
                 />
 
                 {!hasOperationalClientAccess && (
@@ -495,6 +555,7 @@ export default function PedidosForm({
                                                     key={context.id_contexto}
                                                     type="button"
                                                     onClick={() => selectClient(context.id_contexto)}
+                                                    disabled={isPedidoFromTrabajo}
                                                     className={`rounded-2xl border px-4 py-4 text-left transition ${
                                                         isSelected
                                                             ? 'border-transparent bg-surface-2 shadow-sm'
@@ -550,6 +611,26 @@ export default function PedidosForm({
 
                         {selectedClientKey && (
                             <>
+                                {isPedidoFromTrabajo && (
+                                    <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-sm">
+                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                                            Nuevo pedido desde trabajo
+                                        </p>
+                                        <p className="mt-1 text-sm font-semibold text-emerald-900">
+                                            Trabajo {formatWorkNumber(sourceTrabajo)}
+                                            {sourceTrabajo?.descripcion_trabajo ? ` — ${sourceTrabajo.descripcion_trabajo}` : ''}
+                                        </p>
+                                        {(sourceTrabajo?.codigo_estacion || sourceTrabajo?.nombre_estacion) && (
+                                            <p className="mt-1 text-xs text-emerald-800">
+                                                Estación: {[sourceTrabajo.codigo_estacion, sourceTrabajo.nombre_estacion].filter(Boolean).join(' · ')}
+                                            </p>
+                                        )}
+                                        <p className="mt-2 text-xs text-emerald-800">
+                                            El trabajo queda bloqueado para evitar asociar el pedido a otro registro por error.
+                                        </p>
+                                    </section>
+                                )}
+
                                 <fieldset className="space-y-5 rounded-2xl border border-border bg-surface p-6 shadow-sm">
                                     <legend className="px-1 text-sm font-semibold text-text-main">
                                         Datos principales
@@ -579,7 +660,7 @@ export default function PedidosForm({
                                                 id="id_trabajo"
                                                 value={form.id_trabajo}
                                                 onChange={(e) => updateTrabajo(e.target.value)}
-                                                disabled={cargandoTrab || !selectedClientKey}
+                                                disabled={cargandoTrab || !selectedClientKey || isPedidoFromTrabajo}
                                                 className={inputClass('id_trabajo')}
                                             >
                                                 <option value="">
@@ -703,7 +784,8 @@ export default function PedidosForm({
                                                     htmlFor="importe_solicitado"
                                                     className="mb-1.5 block text-sm font-medium text-text-main"
                                                 >
-                                                    {t('pedidos.fields.importeSolicitado')} <span className="text-red-500">*</span>
+                                                    {t('pedidos.fields.importeSolicitado')}
+                                                    <span className="text-red-500"> *</span>
                                                 </label>
                                                 <div className="relative">
                                                     <input
@@ -728,13 +810,14 @@ export default function PedidosForm({
                                                     htmlFor="unidades_solicitadas"
                                                     className="mb-1.5 block text-sm font-medium text-text-main"
                                                 >
-                                                    {t('pedidos.fields.unidadesSolicitadas')} <span className="text-red-500">*</span>
+                                                    {t('pedidos.fields.unidadesSolicitadas')}
+                                                    <span className="text-red-500"> *</span>
                                                 </label>
                                                 <input
                                                     id="unidades_solicitadas"
                                                     type="number"
                                                     min="0"
-                                                    step="1"
+                                                    step="0.001"
                                                     value={form.unidades_solicitadas}
                                                     onChange={(e) => updateField('unidades_solicitadas', e.target.value)}
                                                     className={inputClass('unidades_solicitadas')}
@@ -750,6 +833,16 @@ export default function PedidosForm({
                                     <legend className="px-1 text-sm font-semibold text-text-main">
                                         {t('pedidos.items.title')}
                                     </legend>
+                                    {isPedidoFromTrabajo && (
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                                            <p className="text-sm font-medium text-blue-900">
+                                                El pedido ya nace vinculado al trabajo y al tarifario heredado.
+                                            </p>
+                                            <p className="mt-1 text-sm text-blue-800">
+                                                Añade ahora las líneas tarifarias para dejar el pedido operativo completo.
+                                            </p>
+                                        </div>
+                                    )}
                                     {form.id_trabajo && filteredTarifarioLineas.length === 0 && (
                                         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
                                             <p className="text-sm font-medium text-amber-800">
@@ -772,7 +865,7 @@ export default function PedidosForm({
                                     )}
                                 </fieldset>
 
-                                {items.length > 0 && (
+                                {exportableItems.length > 0 && (
                                     <div className="rounded-2xl border border-border bg-surface-2 px-4 py-4 sm:px-6">
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                             <span className="text-sm font-semibold text-text-main">
@@ -792,6 +885,75 @@ export default function PedidosForm({
                                     </div>
                                 )}
 
+                                {isEditing && (
+                                    <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
+                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <p className="text-sm font-semibold text-text-main">
+                                                    Exportación Moeve
+                                                </p>
+                                                <p className="mt-1 text-sm text-text-muted">
+                                                    El CSV se descarga directamente. El PDF se sirve como HTML imprimible hasta cerrar un PDF binario definitivo.
+                                                </p>
+                                            </div>
+                                            {canExportMoeve && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openExportWindow('pedidos.export.moeve.pdf')}
+                                                        className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-text-main transition hover:bg-surface-2"
+                                                    >
+                                                        PDF Moeve
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => downloadExport('pedidos.export.moeve.csv')}
+                                                        className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-text-main transition hover:bg-surface-2"
+                                                    >
+                                                        CSV Moeve
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openExportWindow('pedidos.export.moeve.ariba')}
+                                                        className="inline-flex items-center justify-center rounded-md border border-border px-4 py-2 text-sm font-medium text-text-main transition hover:bg-surface-2"
+                                                    >
+                                                        Cuadro ARIBA
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowCorreoModal(true)}
+                                                        className="inline-flex items-center justify-center rounded-md bg-(--ciete-red) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--ciete-red-dark)"
+                                                    >
+                                                        ✉ Preparar correo Moeve
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {!canExportMoeve && (
+                                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                                                <p className="text-sm font-medium text-amber-800">
+                                                    Este pedido todavía no tiene líneas exportables.
+                                                </p>
+                                                <p className="mt-1 text-sm text-amber-700">
+                                                    Añade y guarda al menos una línea válida antes de generar PDF, CSV o cuadro ARIBA.
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {canExportMoeve && (
+                                            <div className="mt-4 space-y-1">
+                                                <p className="text-xs text-text-hint">
+                                                    La exportación usa el pedido guardado en servidor. Si acabas de modificar líneas o importes, guarda primero antes de exportar.
+                                                </p>
+                                                <p className="text-xs text-amber-700">
+                                                    La exportación contiene campos pendientes de parametrizar.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </section>
+                                )}
+
                                 {submitError && (
                                     <div
                                         role="alert"
@@ -807,7 +969,7 @@ export default function PedidosForm({
                                 <div className="ciete-form-actions">
                                     <button
                                         type="button"
-                                        onClick={() => router.visit(route('pedidos.index'))}
+                                        onClick={() => router.visit(isPedidoFromTrabajo ? route('trabajos.index') : route('pedidos.index'))}
                                         className="inline-flex w-full items-center justify-center text-sm font-medium text-text-muted transition hover:text-text-main sm:w-auto"
                                     >
                                         {t('common.actions.cancel')}
@@ -847,5 +1009,115 @@ export default function PedidosForm({
                 )}
             </div>
         </AuthenticatedLayout>
+
+        {showCorreoModal && canExportMoeve && (
+            <CorreoMoeveModal
+                pedidoId={pedidoId}
+                numeroPedido={form.numero_pedido || pedidoData?.numero_pedido || ''}
+                nombreEstacion={pedidoData?.trabajo?.nombre_estacion ?? pedidoData?.trabajo?.estacion?.nombre ?? ''}
+                codigoEstacion={pedidoData?.trabajo?.codigo_estacion ?? pedidoData?.trabajo?.estacion?.codigo_estacion ?? ''}
+                onClose={() => setShowCorreoModal(false)}
+                onOpenPdf={() => openExportWindow('pedidos.export.moeve.pdf')}
+                onDownloadCsv={() => downloadExport('pedidos.export.moeve.csv')}
+                onOpenAriba={() => openExportWindow('pedidos.export.moeve.ariba')}
+            />
+        )}
+        </>
+    );
+}
+
+function CorreoMoeveModal({ pedidoId, numeroPedido, nombreEstacion, codigoEstacion, onClose, onOpenPdf, onDownloadCsv, onOpenAriba }) {
+    const [copied, setCopied] = useState(null);
+
+    const estacionLabel = [codigoEstacion, nombreEstacion].filter(Boolean).join(' - ') || 'estación';
+    const asunto = `Solicitud de pedido Moeve - ${estacionLabel} - ${numeroPedido}`;
+    const cuerpo = `Estimados/as,
+
+Adjuntamos la solicitud de pedido correspondiente al trabajo en la estación ${estacionLabel} (Pedido: ${numeroPedido}).
+
+Se adjuntan a este correo:
+  • Oferta Precios Acuerdo (PDF)
+  • Fichero de carga CSV
+
+A continuación encontrará también el cuadro ARIBA para la tramitación del pedido.
+
+Quedamos a su disposición para cualquier consulta.
+
+Un saludo,
+Ciete Ingenieros S.A.`;
+
+    function copy(text, key) {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(key);
+            setTimeout(() => setCopied(null), 2000);
+        });
+    }
+
+    const btnBase = 'inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition';
+    const btnOutline = `${btnBase} border border-border bg-surface text-text-main hover:bg-surface-2`;
+    const btnRed = `${btnBase} bg-(--ciete-red) text-white hover:bg-(--ciete-red-dark)`;
+    const btnGreen = `${btnBase} bg-green-600 text-white hover:bg-green-700`;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface shadow-2xl border border-border">
+                <div className="flex items-center justify-between border-b border-border px-6 py-4">
+                    <h2 className="text-lg font-semibold text-text-main">✉ Preparar correo Moeve</h2>
+                    <button onClick={onClose} className="text-text-hint hover:text-text-main text-xl leading-none">&times;</button>
+                </div>
+
+                <div className="px-6 py-5 space-y-5">
+                    {/* Asunto */}
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-text-hint mb-1">Asunto del correo</p>
+                        <div className="flex gap-2 items-start">
+                            <code className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-main break-all">{asunto}</code>
+                            <button className={copied === 'asunto' ? btnGreen : btnOutline} onClick={() => copy(asunto, 'asunto')}>
+                                {copied === 'asunto' ? '✓ Copiado' : 'Copiar'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Cuerpo */}
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-text-hint mb-1">Cuerpo del correo</p>
+                        <textarea readOnly value={cuerpo} rows={10} className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-main resize-none font-mono" />
+                        <button className={`mt-2 ${copied === 'cuerpo' ? btnGreen : btnOutline}`} onClick={() => copy(cuerpo, 'cuerpo')}>
+                            {copied === 'cuerpo' ? '✓ Cuerpo copiado' : 'Copiar cuerpo'}
+                        </button>
+                    </div>
+
+                    {/* Acciones de descarga */}
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-text-hint mb-2">Adjuntos y documentos</p>
+                        <div className="flex flex-wrap gap-2">
+                            <button className={btnRed} onClick={onOpenPdf}>📄 Abrir PDF Moeve</button>
+                            <button className={btnOutline} onClick={onDownloadCsv}>⬇ Descargar CSV</button>
+                            <button className={btnOutline} onClick={onOpenAriba}>📋 Abrir cuadro ARIBA</button>
+                        </div>
+                        <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                            ⚠ Imprime o guarda el PDF como archivo y adjúntalo manualmente al correo junto con el CSV descargado.
+                        </p>
+                    </div>
+
+                    {/* Checklist */}
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-text-hint mb-2">Checklist antes de enviar</p>
+                        <ul className="space-y-1 text-sm text-text-muted">
+                            {['Abrir PDF Moeve, imprimirlo o guardarlo como PDF y adjuntarlo al correo', 'Descargar el CSV y adjuntarlo al correo', 'Copiar el cuerpo del correo y pegarlo en el cliente de email', 'Añadir el asunto copiado', 'Revisar destinatario Moeve antes de enviar'].map((item, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                    <span className="mt-0.5 text-green-600">☐</span>
+                                    <span>{item}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="flex justify-end border-t border-border px-6 py-4">
+                    <button className={btnOutline} onClick={onClose}>Cerrar</button>
+                </div>
+            </div>
+        </div>
     );
 }

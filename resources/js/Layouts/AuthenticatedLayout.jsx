@@ -6,8 +6,15 @@ import { getNavigationIcon } from '@/Components/navigationIcons';
 import { useI18n } from '@/i18n';
 import { buildSidebarSections } from '@/navigation/sidebar';
 import { Link, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
-export default function AuthenticatedLayout({ header, children, contentWidthClass = 'max-w-[1400px]' }) {
+export default function AuthenticatedLayout({
+    header,
+    children,
+    contentWidthClass = 'max-w-[1400px]',
+    desktopSidebarInitiallyHidden = false,
+    showDesktopSidebarToggle = false,
+}) {
     const page = usePage();
     const user = page.props.auth.user;
     const { t } = useI18n();
@@ -18,6 +25,11 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
     const LogOutIcon = getNavigationIcon('common.actions.logOut');
     const desktopSidebarWidthClass = 'xl:w-[240px] 2xl:w-[252px]';
     const desktopContentOffsetClass = 'xl:ml-[240px] 2xl:ml-[252px]';
+    const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(!desktopSidebarInitiallyHidden);
+
+    useEffect(() => {
+        setIsDesktopSidebarOpen(!desktopSidebarInitiallyHidden);
+    }, [desktopSidebarInitiallyHidden]);
 
     const navLinkClass = (active) =>
         `group block rounded-lg px-2.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-hidden ${
@@ -33,7 +45,11 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
 
     return (
         <div className="flex min-h-dvh overflow-x-clip bg-surface font-sans antialiased text-text-main">
-            <aside className={`fixed inset-y-0 left-0 z-30 hidden ${desktopSidebarWidthClass} flex-col overflow-hidden bg-secondary text-white shadow-xl xl:flex`}>
+            <aside
+                className={`fixed inset-y-0 left-0 z-30 hidden ${desktopSidebarWidthClass} flex-col overflow-hidden bg-secondary text-white shadow-xl transition-transform duration-200 xl:flex ${
+                    isDesktopSidebarOpen ? 'xl:translate-x-0' : 'xl:-translate-x-full'
+                }`}
+            >
                 <div className="flex h-full min-h-0 flex-1 flex-col">
                     <div className="flex h-[calc(var(--app-shell-header-height)+1px)] items-center gap-3 border-b border-white/10 px-5 xl:px-6">
                         <CieteMark className="h-8 w-8 shrink-0 text-primary" />
@@ -99,8 +115,13 @@ export default function AuthenticatedLayout({ header, children, contentWidthClas
                 </div>
             </aside>
 
-            <div className={`flex min-w-0 flex-1 flex-col ${desktopContentOffsetClass}`}>
-                <TopNavbar header={header} />
+            <div className={`flex min-w-0 flex-1 flex-col ${isDesktopSidebarOpen ? desktopContentOffsetClass : ''}`}>
+                <TopNavbar
+                    header={header}
+                    showDesktopSidebarToggle={showDesktopSidebarToggle}
+                    isDesktopSidebarOpen={isDesktopSidebarOpen}
+                    onDesktopSidebarToggle={() => setIsDesktopSidebarOpen((current) => !current)}
+                />
 
                 <main className="min-w-0 flex-1 overflow-x-clip px-4 py-4 pb-24 sm:px-5 sm:pb-8 lg:px-6 xl:px-8 xl:py-6">
                     <div className={`mx-auto w-full min-w-0 ${contentWidthClass}`}>{children}</div>

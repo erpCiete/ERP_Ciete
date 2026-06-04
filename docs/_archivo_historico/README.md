@@ -1,19 +1,24 @@
-# Archivo historico ERP CIETE
+# Archivo historico — ERP CIETE
 
-Carpeta para documentacion legacy, reemplazada o de trazabilidad no normativa.
+Trazabilidad historica del proyecto. No usar como referencia activa.
 
-Subcarpetas:
+Documentacion activa: docs/00_ENTREGA_FINAL/
+Fuentes cliente: docs/00_FUENTES_CLIENTE/
 
-- `borradores/`
-- `reemplazados/`
-- `legacy/`
+## Estructura
 
-Movimientos realizados en A.10 (2026-05-19):
+- entrega_final_2026_06/ - Documentos archivados en la entrega final
+  - 01_cliente_y_bloques/ - bloques funcionales, validaciones, hotfixes
+  - 02_planes_y_validaciones/ - planes, fases B1/B2, tareasComparar historico
+  - 03_prompts_y_borradores/ - prompts de trabajo interno
+  - 04_api_ui_git_sprints/ - carpetas antiguas: API, UI, Git, Sprints
+  - 05_legacy_y_otros/ - BIBLIA_DESARROLLO, legacy
+  - 06_evidencias_playwright/ - CSVs descargados durante validacion Playwright
+  - 07_evidencias_tests/ - resultados y dumps de tests anteriores
+- erp_ciete_documentacion_desfasada_2026-05-28/ - Bitacoras de sprints del equipo original
 
-- `docs/MemoriaProyecto/**` -> `docs/_archivo_historico/legacy/MemoriaProyecto/**`
-- `docs/informes/**` -> `docs/_archivo_historico/legacy/informes/**`
+## Cuando consultar esto
 
-Reglas:
-
-- No usar estos documentos como autoridad funcional vigente.
-- Si un documento viejo contradice uno vigente, se conserva aqui con nota de reemplazo.
+Para entender decisiones que no aparecen en la documentacion actual.
+Para revisar que validaciones se hicieron en fases anteriores.
+No borrar sin razon, es trazabilidad del proyecto.

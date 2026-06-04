@@ -1215,7 +1215,7 @@ export default function FacturasExcelView({
                                                 {selectedInvoiceItems.map((line, index) => (
                                                     <tr key={line.id_pedido_item} className="align-top text-text-main">
                                                         <td className="px-2 py-2">
-                                                            <p className="font-mono font-semibold text-(--ciete-red)">
+                                                            <p className="ciete-dark-table-accent font-mono font-semibold">
                                                                 {line.display.numero_pedido}
                                                             </p>
                                                             <p className="mt-1 text-text-muted">
@@ -1277,7 +1277,7 @@ export default function FacturasExcelView({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeInvoiceLine(index)}
-                                                                className="text-xs font-semibold text-(--ciete-red) hover:text-(--ciete-red-dark)"
+                                                                className="ciete-dark-table-accent text-xs font-semibold hover:underline"
                                                             >
                                                                 Quitar
                                                             </button>
@@ -1535,13 +1535,13 @@ export default function FacturasExcelView({
                                     </td>
 
                                     {/* Nº factura — protagonista */}
-                                    <td className="w-[11rem] max-w-[11rem] whitespace-nowrap px-2 py-1.5 font-mono font-semibold text-(--ciete-red)">
+                                    <td className="ciete-dark-table-accent w-[11rem] max-w-[11rem] whitespace-nowrap px-2 py-1.5 font-mono font-semibold">
                                         <EditableTextCell
                                             factura={factura}
                                             fieldName="numero_factura"
                                             canEdit={canEdit}
                                             onPatched={handleFacturaPatched}
-                                            className="max-w-[10rem] font-mono font-semibold text-(--ciete-red)"
+                                            className="ciete-dark-table-accent max-w-[10rem] font-mono font-semibold"
                                         />
                                     </td>
 
@@ -1570,7 +1570,7 @@ export default function FacturasExcelView({
 
                                     {/* CIF — prominente, en mono rojo */}
                                     <td className="whitespace-nowrap px-2 py-1.5">
-                                        <span className="font-mono font-semibold text-(--ciete-red)">
+                                        <span className="ciete-dark-table-accent font-mono font-semibold">
                                             {sociedadFacturadora?.cif ?? '—'}
                                         </span>
                                     </td>

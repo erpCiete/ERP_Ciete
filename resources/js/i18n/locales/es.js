@@ -7,7 +7,7 @@ const es = {
         panel: 'Panel',
         preferences: 'Preferencias',
         footer: {
-            projectVersion: 'ERP Ciete v2.1.0',
+            projectVersion: 'ERP Ciete v2.2.0',
         },
         actions: {
             save: 'Guardar',
@@ -19,8 +19,9 @@ const es = {
             edit: 'Editar',
             delete: 'Eliminar',
             logOut: 'Cerrar sesión',
-            deleteAccount: 'Eliminar cuenta',
-            viewAll: 'Ver todas',
+        deleteAccount: 'Eliminar cuenta',
+        viewAll: 'Ver todas',
+        menu: 'Menú',
         },
         validation: {
             required: 'Este campo es obligatorio.',
@@ -168,6 +169,7 @@ const es = {
         works: 'Trabajos',
         orders: 'Pedidos',
         invoices: 'Facturas',
+        support: 'Tickets',
         legalizations: 'Legalizaciones',
         audit: 'Auditoría',
         technicalAudit: 'Auditoría técnica',
@@ -195,7 +197,7 @@ const es = {
             headTitle: 'Inicio - ERP Ciete',
             hero: {
                 badgeErp: 'ERP Ciete',
-                badgeVersion: 'v2.1.0',
+                badgeVersion: 'v2.2.0',
                 featuredBadge: 'Aviso destacado',
                 title: 'Centro operativo del equipo',
                 subtitle: 'Prioriza avisos, accesos y contexto útil para arrancar la jornada con claridad.',
@@ -1125,7 +1127,7 @@ const es = {
             support: {
                 title: 'Soporte técnico',
                 intro: 'Si encuentras un error, un comportamiento inesperado o necesitas ayuda con el ERP, puedes enviar una solicitud de soporte directamente desde la aplicación. El equipo de soporte recibirá un correo con los detalles de tu consulta.',
-                step1: 'Accede a Soporte desde el dock inferior (icono de salvavidas) o la navegación lateral. Selecciona el tema más adecuado para tu consulta: Acceso y autenticación, Datos incorrectos, Error técnico, Rendimiento lento, Solicitud de funcionalidad, Permisos y roles, Facturación, Obras y proyectos, Legalizaciones u Otro.',
+                step1: 'Accede a Soporte desde el dock inferior de la pantalla de inicio (icono de salvavidas) o desde el botón "Accesos y contexto rápido". Selecciona el tema más adecuado para tu consulta: Acceso y autenticación, Datos incorrectos, Error técnico, Rendimiento lento, Solicitud de funcionalidad, Permisos y roles, Facturación, Obras y proyectos, Legalizaciones u Otro.',
                 step2: 'Escribe un asunto descriptivo (ej: "Error al guardar estación en contexto Moeve") y describe el problema en el campo de mensaje con el mayor detalle posible: qué pantalla estabas usando, qué acción realizaste, qué error viste y si el problema se reproduce siempre o es intermitente.',
                 step3: 'Selecciona la prioridad (Normal para consultas generales, Alta si afecta a tu trabajo diario, Urgente si bloquea tu operativa completamente). Pulsa "Enviar solicitud". Recibirás confirmación en pantalla y el equipo responderá por correo electrónico.',
             },
@@ -1214,7 +1216,7 @@ const es = {
                 q6: '¿Cómo envío un mensaje interno?',
                 a6: 'Ve a Mensajes (dock inferior o barra lateral), pulsa "Nuevo mensaje", selecciona un destinatario del desplegable, escribe el asunto y el cuerpo, elige la prioridad y pulsa "Enviar". El destinatario lo verá en su bandeja de entrada.',
                 q7: '¿Cómo solicito soporte técnico?',
-                a7: 'Ve a Soporte (dock inferior o navegación), selecciona el tema que mejor describe tu problema, escribe un asunto y una descripción detallada, selecciona la prioridad y pulsa "Enviar solicitud". El equipo responderá por correo.',
+                a7: 'Ve a Soporte desde el dock inferior de inicio o desde "Accesos y contexto rápido", selecciona el tema que mejor describe tu problema, escribe un asunto y una descripción detallada, selecciona la prioridad y pulsa "Enviar solicitud". El equipo responderá por correo.',
                 q8: '¿Dónde veo el estado del sistema?',
                 a8: 'Accede a Estado desde el dock inferior (icono de pulso) o la barra lateral. Verás el estado de cada componente: base de datos, almacenamiento, correo, cola de tareas, aplicación y mantenimiento. Verde = todo correcto.',
             },
@@ -1393,6 +1395,10 @@ const es = {
             urgente: 'Urgente',
         },
         submit: 'Enviar solicitud',
+        myTickets: 'Mis tickets recientes',
+        noTicketsYet: 'Todavía no has creado tickets de soporte.',
+        openTicket: 'Abrir ticket',
+        lastUpdate: 'Última actualización',
         footer: 'Ciete Ingenieros S.A. — Soporte técnico interno',
     },
     supportAdmin: {

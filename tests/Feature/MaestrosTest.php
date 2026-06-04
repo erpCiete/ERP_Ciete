@@ -256,6 +256,214 @@ class MaestrosTest extends TestCase
         $this->post(route('maestros.tarifario-lineas.store'), $payload)->assertSessionHasErrors('codigo_tarifa');
     }
 
+    public function test_tarifario_predeterminado_es_unico_por_contrato_y_desmarca_el_anterior(): void
+    {
+        $user = $this->createUserWithPermissions([
+            'maestros.ver',
+            'tarifarios.ver',
+            'tarifarios.crear',
+            'tarifarios.editar',
+        ]);
+        [$contrato] = $this->createContratoConEmpresa(1, 'TAR-DEFAULT-1');
+
+        $this->actingAs($user);
+        $user->setActiveContextSelection(1);
+
+        $this->post(route('maestros.tarifarios.store'), [
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa habitual A',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'es_predeterminado' => true,
+        ])->assertRedirect();
+
+        $tarifarioA = Tarifario::query()->where('nombre', 'Tarifa habitual A')->firstOrFail();
+
+        $this->post(route('maestros.tarifarios.store'), [
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa habitual B',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'es_predeterminado' => true,
+        ])->assertRedirect();
+
+        $tarifarioB = Tarifario::query()->where('nombre', 'Tarifa habitual B')->firstOrFail();
+
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioA->id_tarifario,
+            'es_predeterminado' => false,
+        ]);
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioB->id_tarifario,
+            'es_predeterminado' => true,
+        ]);
+    }
+
+    public function test_desactivar_tarifario_predeterminado_no_promociona_otro_automaticamente(): void
+    {
+        $user = $this->createUserWithPermissions([
+            'maestros.ver',
+            'tarifarios.ver',
+            'tarifarios.eliminar',
+        ]);
+        [$contrato] = $this->createContratoConEmpresa(1, 'TAR-DEFAULT-2');
+        $tarifarioPredeterminado = Tarifario::create([
+            'id_contexto' => 1,
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa predeterminada',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'moneda' => 'EUR',
+            'es_predeterminado' => true,
+            'activo' => true,
+        ]);
+        $tarifarioSecundario = Tarifario::create([
+            'id_contexto' => 1,
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa secundaria',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'moneda' => 'EUR',
+            'es_predeterminado' => false,
+            'activo' => true,
+        ]);
+
+        $this->actingAs($user);
+        $user->setActiveContextSelection(1);
+
+        $this->delete(route('maestros.tarifarios.destroy', $tarifarioPredeterminado->id_tarifario))->assertRedirect();
+
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioPredeterminado->id_tarifario,
+            'activo' => false,
+            'es_predeterminado' => false,
+        ]);
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioSecundario->id_tarifario,
+            'activo' => true,
+            'es_predeterminado' => false,
+        ]);
+    }
+
+    public function test_tarifario_quick_action_can_mark_default_without_marking_contract(): void
+    {
+        $user = $this->createUserWithPermissions([
+            'maestros.ver',
+            'tarifarios.ver',
+            'tarifarios.editar',
+        ]);
+        [$contrato] = $this->createContratoConEmpresa(1, 'TAR-DEFAULT-QUICK');
+        [$otroContrato] = $this->createContratoConEmpresa(1, 'TAR-DEFAULT-OTHER');
+        $tarifarioA = Tarifario::create([
+            'id_contexto' => 1,
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa A',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'moneda' => 'EUR',
+            'es_predeterminado' => false,
+            'activo' => true,
+        ]);
+        $tarifarioB = Tarifario::create([
+            'id_contexto' => 1,
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa B',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'moneda' => 'EUR',
+            'es_predeterminado' => true,
+            'activo' => true,
+        ]);
+        $tarifarioOtroContrato = Tarifario::create([
+            'id_contexto' => 1,
+            'id_contrato' => $otroContrato->id_contrato,
+            'nombre' => 'Tarifa otro contrato',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'moneda' => 'EUR',
+            'es_predeterminado' => true,
+            'activo' => true,
+        ]);
+
+        $this->actingAs($user);
+        $user->setActiveContextSelection(1);
+
+        $this->put(route('maestros.tarifarios.set-default', $tarifarioA))->assertRedirect();
+
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioA->id_tarifario,
+            'es_predeterminado' => true,
+        ]);
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioB->id_tarifario,
+            'es_predeterminado' => false,
+        ]);
+        $this->assertDatabaseHas('tarifarios', [
+            'id_tarifario' => $tarifarioOtroContrato->id_tarifario,
+            'es_predeterminado' => true,
+        ]);
+        $this->assertDatabaseHas('contratos', [
+            'id_contrato' => $contrato->id_contrato,
+        ]);
+    }
+
+    public function test_unified_contratos_tarifas_screen_returns_aggregated_read_payload(): void
+    {
+        $user = $this->createUserWithPermissions([
+            'maestros.ver',
+            'contratos.ver',
+            'sociedades_facturadoras.ver',
+            'tarifarios.ver',
+            'tarifario_lineas.ver',
+        ]);
+        [$contrato] = $this->createContratoConEmpresa(1, 'UNIFIED-1');
+        $sociedadEmpresa = Empresa::factory()->create(['id_contexto' => 1, 'cif' => 'B87654321']);
+        ContratoEmpresaFacturadora::create([
+            'id_contexto' => 1,
+            'id_contrato' => $contrato->id_contrato,
+            'id_empresa' => $sociedadEmpresa->id_empresa,
+            'activo' => true,
+        ]);
+        $tarifario = Tarifario::create([
+            'id_contexto' => 1,
+            'id_contrato' => $contrato->id_contrato,
+            'nombre' => 'Tarifa unificada',
+            'version' => '2026',
+            'factor_multiplicador' => 1,
+            'moneda' => 'EUR',
+            'es_predeterminado' => true,
+            'activo' => true,
+        ]);
+        TarifarioLinea::create([
+            'id_contexto' => 1,
+            'id_tarifario' => $tarifario->id_tarifario,
+            'codigo_tarifa' => 'UNI-001',
+            'actuacion' => 'Linea unificada',
+            'descripcion' => 'Descripción unificada',
+            'tarifa_base' => 120,
+            'tarifa_aplicada' => 120,
+            'activo' => true,
+        ]);
+
+        $this->actingAs($user);
+        $user->setActiveContextSelection(1);
+
+        $this->get(route('maestros.contratos-tarifas'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Maestros/ContratosTarifas')
+                ->where('overview.counts.contratos', 1)
+                ->where('overview.counts.tarifarios', 1)
+                ->where('overview.counts.lineas', 1)
+                ->where('selected.contrato_id', $contrato->id_contrato)
+                ->where('selected.tarifario_id', $tarifario->id_tarifario)
+                ->where('selected.lineas_total', 1)
+                ->has('contracts', 1)
+                ->where('contracts.0.sociedades_count', 1)
+                ->where('contracts.0.tarifarios_count', 1)
+                ->where('contracts.0.has_valid_sociedad', true));
+    }
+
     public function test_deactivation_keeps_related_history_and_writes_audit(): void
     {
         $user = $this->createUserWithPermissions([
