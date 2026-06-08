@@ -6,12 +6,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'maintenance'])->group(function () {
     // ── Importaciones ─────────────────────────────────────────────────────────
     Route::middleware('permission:importaciones.ver')->group(function () {
-        Route::get('/importaciones',              [ImportacionController::class, 'index'])->name('importaciones.index');
-        Route::get('/importaciones/preview/{id}', [ImportacionController::class, 'preview'])->name('importaciones.preview');
+        Route::get('/importaciones', [ImportacionController::class, 'index'])->name('importaciones.index');
     });
-    Route::get('/importaciones/subir', [ImportacionController::class, 'create'])
-        ->middleware('permission:importaciones.ejecutar')
-        ->name('importaciones.create');
     Route::post('/importaciones/procesar', [ImportacionController::class, 'store'])
         ->middleware('permission:importaciones.ejecutar')
         ->name('importaciones.store');

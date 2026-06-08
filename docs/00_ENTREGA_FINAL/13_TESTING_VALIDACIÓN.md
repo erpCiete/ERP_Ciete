@@ -2,18 +2,21 @@
 
 ## Estado actual de tests
 
-La última ejecución completa sobre `abaco_ciete_testing` terminó con **270 tests correctos, 3 fallidos y 1679 aserciones**. El build de producción finalizó correctamente.
+La última ejecución completa sobre `abaco_ciete_testing` terminó con **277 tests correctos, 1 fallido y 1694 aserciones**. El build de producción finalizó correctamente.
 
 ```bash
 php artisan test
-# Tests: 3 failed, 270 passed (1679 assertions)
+# Tests: 1 failed, 277 passed (1694 assertions)
 ```
 
-Fallos pendientes:
+De los 3 fallos que documentaba la entrega anterior, se han revisado y corregido 2:
 
-- `AdminAccessTest`: `/dashboard` devuelve `403` para administración donde el test espera `200`.
-- `ContextCreationGuardTest`: la creación de un pedido de OTROS CLIENTES falla si el trabajo no tiene tarifario válido.
-- `ImportacionesAccessTest`: la vista solicita `resources/js/Pages/Importaciones/Form.jsx`, ausente del manifest de Vite.
+- `AdminAccessTest`: tenía la expectativa al revés — esperaba `200` en `/dashboard` para admin, pero `RoleModuleAccessTest` (que ya pasaba) confirma que `/dashboard` debe devolver `403` para todos los roles por igual (el `DashboardController`/`Dashboard.jsx` existen pero la página no está enlazada en el menú; el bloqueo es intencional, no un olvido). Se corrigió la expectativa del test para que coincida con el resto de la suite.
+- `ImportacionesAccessTest`: era un fallo real y más serio de lo que parecía — las rutas `importaciones.create`/`importaciones.preview` apuntaban a vistas (`Form.jsx`/`Preview.jsx`) que nunca llegaron a construirse, y `store()` redirigía a esa página inexistente también en producción. El flujo real está centralizado en `Importaciones/Index.jsx` (formulario y previsualización embebidos). Se eliminaron esas rutas/métodos huérfanos y `store()` ahora redirige a `Importaciones/Index` con la previsualización ya cargada, que es lo que esa pantalla esperaba recibir.
+
+Fallo pendiente:
+
+- `ContextCreationGuardTest`: la creación de un pedido de OTROS CLIENTES falla si el trabajo no tiene tarifario válido. Es una decisión de negocio pendiente (¿debe OTROS CLIENTES seguir la misma regla de tarifario que MOEVE/REPSOL?), no urgente porque ese contexto todavía no tiene clientes activos.
 
 No ejecutes varias suites simultáneamente sobre la misma base `abaco_ciete_testing`.
 

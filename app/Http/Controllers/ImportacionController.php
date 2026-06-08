@@ -67,7 +67,19 @@ class ImportacionController extends Controller
             ->paginate(50, ['*'], 'detalle_page')
             ->withQueryString();
 
+        $preview = null;
+        $previewImportacionId = $request->session()->get('preview_importacion_id');
+
+        if ($previewImportacionId !== null) {
+            $importacionEnPreview = Importacion::with('filas')->find($previewImportacionId);
+
+            if ($importacionEnPreview && ContextGuard::canOperateContext($request->user(), (int) $importacionEnPreview->id_contexto)) {
+                $preview = $this->evaluarFilasImportacion($importacionEnPreview);
+            }
+        }
+
         return Inertia::render('Importaciones/Index', [
+            'preview' => $preview,
             'importaciones' => $importaciones,
             'resumen' => $this->buildImportSummary(clone $importacionesBaseQuery),
             'detalleImportacion' => $selectedImport,
@@ -247,20 +259,6 @@ class ImportacionController extends Controller
     }
 
     /**
-     * Muestra el formulario para subir un Excel.
-     */
-    public function create(Request $request): Response|RedirectResponse
-    {
-        if (! ContextGuard::canCreateInActiveContext($request->user())) {
-            return redirect()
-                ->route('importaciones.index')
-                ->with('error', ContextGuard::CREATE_FROM_ALL_MESSAGE);
-        }
-
-        return Inertia::render('Importaciones/Form');
-    }
-
-    /**
      * Recibe el archivo, lo parsea y lo persiste en staging (importacion_filas)
      * para que el usuario pueda revisar antes de confirmar.
      */
@@ -346,8 +344,9 @@ class ImportacionController extends Controller
             // 6. Como ya tenemos las filas en la BD, ya no necesitamos el archivo Excel. Lo borramos.
             Storage::disk('local')->delete($path);
 
-            return redirect()->route('importaciones.preview', $importacion->id_importacion ?? $importacion->id)
-                ->with('success', 'Archivo analizado correctamente.');
+            return redirect()->route('importaciones.index')
+                ->with('success', 'Archivo analizado correctamente.')
+                ->with('preview_importacion_id', $importacion->id_importacion ?? $importacion->id);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error en importación Store: ' . $e->getMessage());
@@ -369,17 +368,12 @@ class ImportacionController extends Controller
     }
 
     /**
-     * Vista de pre-confirmación: Evalúa cada fila para ver si es válida.
+     * Evalúa cada fila en staging de una importación para mostrarla en la
+     * vista previa embebida de Importaciones/Index antes de confirmarla.
      */
-    public function preview(Request $request, $id): Response
+    private function evaluarFilasImportacion(Importacion $importacion): \Illuminate\Support\Collection
     {
-        $importacion = Importacion::with('filas')->findOrFail($id);
-
-        if (! ContextGuard::canOperateContext($request->user(), (int) $importacion->id_contexto)) {
-            abort(403);
-        }
-
-        $filasEvaluadas = $importacion->filas->map(function ($fila) {
+        return $importacion->filas->map(function ($fila) use ($importacion) {
             $datos = is_string($fila->datos_json) ? json_decode($fila->datos_json, true) : $fila->datos_json;
             $errores = [];
 
@@ -399,6 +393,7 @@ class ImportacionController extends Controller
             }
 
             return [
+                'id_importacion'      => $importacion->id_importacion ?? $importacion->id,
                 'id_importacion_fila' => $fila->id_importacion_fila ?? $fila->id,
                 'numero_fila'         => $fila->numero_fila,
                 'datos'               => $datos,
@@ -406,11 +401,6 @@ class ImportacionController extends Controller
                 'errores'             => $errores,
             ];
         });
-
-        return Inertia::render('Importaciones/Preview', [
-            'importacion' => $importacion,
-            'filas'       => $filasEvaluadas,
-        ]);
     }
 
     /**

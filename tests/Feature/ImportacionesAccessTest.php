@@ -25,10 +25,6 @@ class ImportacionesAccessTest extends TestCase
             ->get(route('importaciones.index'))
             ->assertOk()
             ->assertInertia(fn(Assert $page) => $page->component('Importaciones/Index'));
-
-        $this->actingAs($admin)
-            ->get(route('importaciones.create'))
-            ->assertOk();
     }
 
     public function test_director_cannot_access_importaciones_without_explicit_permission(): void
