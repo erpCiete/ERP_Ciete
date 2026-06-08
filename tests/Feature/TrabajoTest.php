@@ -1428,6 +1428,165 @@ class TrabajoTest extends TestCase
             ]);
     }
 
+    public function test_patch_field_returns_conflict_for_recent_same_field_even_when_timestamp_is_current()
+    {
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $otroUsuario = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $otroUsuario->forceFill([
+            'nombre' => 'Cesar',
+            'apellidos' => 'CIETE',
+        ])->save();
+
+        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
+        $trabajo = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+            'descripcion_trabajo' => 'OTROS alta manual sin pedido',
+        ]);
+
+        $serverNow = now()->addSecond();
+        DB::table('trabajos')->where('id_trabajo', $trabajo->id_trabajo)->update([
+            'descripcion_trabajo' => 'OTROS alta manual sin pedido v1',
+            'updated_at' => $serverNow->format('Y-m-d H:i:s'),
+        ]);
+        $trabajo->refresh();
+
+        $audit = AuditLog::create([
+            'id_usuario'  => $otroUsuario->id_usuario,
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'accion'      => 'actualizar',
+            'modulo'      => 'trabajos',
+            'tabla'       => 'trabajos',
+            'entity_id'   => $trabajo->id_trabajo,
+            'registro_id' => $trabajo->id_trabajo,
+            'campo'       => 'descripcion_trabajo',
+            'valor_anterior' => 'OTROS alta manual sin pedido',
+            'valor_nuevo'    => 'OTROS alta manual sin pedido v1',
+            'created_at'  => $serverNow,
+        ]);
+
+        $response = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajo), [
+            'campo' => 'descripcion_trabajo',
+            'valor' => 'OTROS alta manual sin pedido v2',
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response
+            ->assertStatus(409)
+            ->assertJson([
+                'conflict' => true,
+                'modificado_recientemente' => true,
+                'campo' => 'descripcion_trabajo',
+                'conflict_audit_id' => $audit->id_audit,
+                'usuario_modificacion' => 'Cesar CIETE',
+                'valor_anterior' => 'OTROS alta manual sin pedido',
+                'valor_actual' => 'OTROS alta manual sin pedido v1',
+                'valor_intentado' => 'OTROS alta manual sin pedido v2',
+                'fecha_modificacion' => $serverNow->format('Y-m-d H:i:s'),
+            ]);
+
+        $confirmed = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajo), [
+            'campo' => 'descripcion_trabajo',
+            'valor' => 'OTROS alta manual sin pedido v2',
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+            'conflict_audit_id' => $audit->id_audit,
+        ]);
+
+        $confirmed->assertOk()->assertJson(['success' => true]);
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'descripcion_trabajo' => 'OTROS alta manual sin pedido v2',
+        ]);
+    }
+
+    public function test_patch_field_saves_when_recent_same_field_audit_is_from_same_user()
+    {
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
+        $trabajo = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+            'descripcion_trabajo' => 'Valor inicial',
+        ]);
+
+        $serverNow = now()->addSecond();
+        DB::table('trabajos')->where('id_trabajo', $trabajo->id_trabajo)->update([
+            'descripcion_trabajo' => 'Valor propio anterior',
+            'updated_at' => $serverNow->format('Y-m-d H:i:s'),
+        ]);
+        $trabajo->refresh();
+
+        AuditLog::create([
+            'id_usuario'  => $gestorMoeve->id_usuario,
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'accion'      => 'actualizar',
+            'modulo'      => 'trabajos',
+            'tabla'       => 'trabajos',
+            'registro_id' => $trabajo->id_trabajo,
+            'campo'       => 'descripcion_trabajo',
+            'valor_anterior' => 'Valor inicial',
+            'valor_nuevo'    => 'Valor propio anterior',
+            'created_at'  => $serverNow,
+        ]);
+
+        $response = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajo), [
+            'campo' => 'descripcion_trabajo',
+            'valor' => 'Valor propio nuevo',
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'descripcion_trabajo' => 'Valor propio nuevo',
+        ]);
+    }
+
+    public function test_patch_field_saves_when_recent_other_user_audit_is_for_different_field()
+    {
+        $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $otroUsuario = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);
+        $empresa = Empresa::factory()->create(['id_contexto' => $this->ctxMoeve->id_contexto]);
+        $trabajo = Trabajo::factory()->create([
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'id_empresa_cliente' => $empresa->id_empresa,
+            'descripcion_trabajo' => 'Descripcion inicial',
+            'observaciones' => 'Observaciones iniciales',
+        ]);
+
+        $serverNow = now()->addSecond();
+        DB::table('trabajos')->where('id_trabajo', $trabajo->id_trabajo)->update([
+            'observaciones' => 'Observaciones editadas por otro usuario',
+            'updated_at' => $serverNow->format('Y-m-d H:i:s'),
+        ]);
+        $trabajo->refresh();
+
+        AuditLog::create([
+            'id_usuario'  => $otroUsuario->id_usuario,
+            'id_contexto' => $this->ctxMoeve->id_contexto,
+            'accion'      => 'actualizar',
+            'modulo'      => 'trabajos',
+            'tabla'       => 'trabajos',
+            'registro_id' => $trabajo->id_trabajo,
+            'campo'       => 'observaciones',
+            'valor_anterior' => 'Observaciones iniciales',
+            'valor_nuevo'    => 'Observaciones editadas por otro usuario',
+            'created_at'  => $serverNow,
+        ]);
+
+        $response = $this->actingAs($gestorMoeve)->patchJson(route('trabajos.patch-field', $trabajo), [
+            'campo' => 'descripcion_trabajo',
+            'valor' => 'Descripcion editada sin conflicto',
+            'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+        $this->assertDatabaseHas('trabajos', [
+            'id_trabajo' => $trabajo->id_trabajo,
+            'descripcion_trabajo' => 'Descripcion editada sin conflicto',
+        ]);
+    }
+
     public function test_patch_field_saves_directly_when_timestamp_stale_but_old_modification()
     {
         $gestorMoeve = $this->createUserWithContext('ejecucion_moeve', $this->ctxMoeve);

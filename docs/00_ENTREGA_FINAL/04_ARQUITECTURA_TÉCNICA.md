@@ -106,9 +106,10 @@ Los permisos se asignan en `RolPermisosSeeder` y se pueden gestionar desde `/adm
 El endpoint `PATCH /api/v1/trabajos/{id}/campo` implementa guardado optimista:
 
 1. El cliente envía el campo, el nuevo valor y el `updated_at` que tenía cuando cargó la página.
-2. El servidor compara ese timestamp con el actual en BD.
-3. Si difieren, consulta el AuditLog: si otro usuario modificó ese campo en los últimos 60 minutos, devuelve **HTTP 409** con: campo, valor actual, valor intentado, usuario y fecha.
-4. El frontend muestra el ConflictDialog con opciones: recargar, cancelar o mantener su cambio.
+2. El servidor consulta siempre la última auditoría del mismo trabajo y campo normalizado, por otro usuario, creada en los últimos 60 minutos. El `updated_at` obsoleto se mantiene como señal adicional, pero no es requisito para detectar el conflicto.
+3. Si existe conflicto, devuelve **HTTP 409** con `conflict_audit_id`, campo, usuario, fecha, valor anterior, valor actual, valor intentado y `updated_at_actual`.
+4. El frontend muestra el ConflictDialog como modal global de primer plano. La modal conserva el texto intentado en un campo editable y ofrece Cancelar o Guardar cambios.
+5. Guardar cambios reintenta el guardado con el valor actual de la modal y el `conflict_audit_id`. Si otra persona editó después, se muestra un nuevo conflicto.
 
 ---
 

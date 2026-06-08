@@ -52,6 +52,45 @@ class UsuariosInicialesSeederTest extends TestCase
         $this->assertSame([1, 2, 3], $contable->contextos()->orderBy('contextos_cliente.id_contexto')->pluck('contextos_cliente.id_contexto')->all());
     }
 
+    public function test_usuarios_iniciales_usan_modo_excel_por_defecto(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame(
+            ['ciete_excel'],
+            User::query()
+                ->whereIn('email', [
+                    'admin@ciete.es',
+                    'cesar@ciete.es',
+                    'usuario@ciete.es',
+                    'moeve@ciete.es',
+                    'repsol@ciete.es',
+                    'contable@ciete.es',
+                ])
+                ->pluck('interface_mode')
+                ->unique()
+                ->values()
+                ->all()
+        );
+    }
+
+    public function test_el_seeder_respeta_el_modo_elegido_manualmente_en_profile(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        User::query()
+            ->where('email', 'cesar@ciete.es')
+            ->firstOrFail()
+            ->update(['interface_mode' => 'ciete_moderno']);
+
+        $this->seed(UsuariosInicialesSeeder::class);
+
+        $this->assertSame(
+            'ciete_moderno',
+            User::query()->where('email', 'cesar@ciete.es')->firstOrFail()->interface_mode
+        );
+    }
+
     public function test_el_seeder_es_idempotente_y_no_duplica_usuarios_roles_ni_contextos(): void
     {
         $this->seed(DatabaseSeeder::class);

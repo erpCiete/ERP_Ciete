@@ -530,15 +530,24 @@ function ConflictDialog({
     responsables = [],
     canKeepMine = false,
     isSaving = false,
-    onReload,
     onCancel,
     onKeepMine,
 }) {
     const fieldLabel = FIELD_LABELS[fieldName] ?? conflict?.campo ?? 'Campo';
     const conflictMessage = conflict?.message ?? 'Este campo fue modificado por otro usuario.';
-    const conflictHint = conflict?.modificadoRecientemente
-        ? 'Este campo fue modificado recientemente por otro usuario. Revisa los valores antes de sobrescribir.'
-        : 'Revisa los valores antes de continuar para no sobrescribir cambios recientes.';
+    const conflictHint = conflict?.usuarioModificacion
+        ? `${conflict.usuarioModificacion} editó este campo${conflict?.modifiedAt ? ` el ${conflict.modifiedAt}` : ''}.`
+        : 'Este campo fue modificado recientemente por otro usuario.';
+    const [draftValue, setDraftValue] = useState(conflict?.myValue ?? '');
+    const isLongTextField = ['observaciones', 'descripcion', 'descripcion_trabajo'].includes(fieldName);
+
+    useEffect(() => {
+        setDraftValue(conflict?.myValue ?? '');
+    }, [conflict?.myValue, conflict?.auditId]);
+
+    function handleKeepMine() {
+        onKeepMine?.(draftValue === '' ? null : draftValue);
+    }
 
     return (
         <Modal show={Boolean(conflict)} maxWidth="lg" closeable={!isSaving} onClose={onCancel}>
@@ -558,21 +567,21 @@ function ConflictDialog({
                         </div>
                         <div className="rounded-lg border border-border bg-surface-2 p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-text-hint">Fecha de modificación</p>
-                            <p className="mt-1 font-medium text-text-main">{fmt(conflict?.currentUpdatedAt)}</p>
+                            <p className="mt-1 font-medium text-text-main">{fmt(conflict?.modifiedAt ?? conflict?.currentUpdatedAt)}</p>
                         </div>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="rounded-lg border border-border bg-surface p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-text-hint">Valor actual del servidor</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-text-hint">Valor anterior</p>
                             <p className="mt-1 break-words text-text-main">
-                                {formatConflictValue(fieldName, conflict?.currentValue, responsables)}
+                                {formatConflictValue(fieldName, conflict?.previousValue, responsables)}
                             </p>
                         </div>
                         <div className="rounded-lg border border-border bg-surface p-3">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-text-hint">Valor que intentabas guardar</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-text-hint">Valor actual del servidor</p>
                             <p className="mt-1 break-words text-text-main">
-                                {formatConflictValue(fieldName, conflict?.myValue, responsables)}
+                                {formatConflictValue(fieldName, conflict?.currentValue, responsables)}
                             </p>
                         </div>
                     </div>
@@ -581,17 +590,32 @@ function ConflictDialog({
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-text-hint">Usuario de modificación</p>
                         <p className="mt-1 text-text-main">{fmt(conflict?.usuarioModificacion)}</p>
                     </div>
+
+                    <div>
+                        <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wide text-text-hint">
+                            Valor que quieres guardar
+                        </label>
+                        {isLongTextField ? (
+                            <textarea
+                                value={draftValue ?? ''}
+                                rows={5}
+                                onChange={(event) => setDraftValue(event.target.value)}
+                                disabled={isSaving}
+                                className="w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:opacity-60"
+                            />
+                        ) : (
+                            <input
+                                type="text"
+                                value={draftValue ?? ''}
+                                onChange={(event) => setDraftValue(event.target.value)}
+                                disabled={isSaving}
+                                className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-text-main outline-none transition focus:border-(--ciete-red) focus:ring-1 focus:ring-(--ciete-red) disabled:opacity-60"
+                            />
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex flex-col-reverse gap-3 border-t border-border px-6 py-4 sm:flex-row sm:justify-end">
-                    <button
-                        type="button"
-                        onClick={onReload}
-                        disabled={isSaving}
-                        className="rounded-md border border-border bg-surface px-4 py-2 text-xs font-semibold uppercase tracking-widest text-text-muted transition hover:bg-surface-2 hover:text-text-main disabled:opacity-50"
-                    >
-                        Recargar valor actual
-                    </button>
                     <button
                         type="button"
                         onClick={onCancel}
@@ -603,11 +627,11 @@ function ConflictDialog({
                     {canKeepMine && (
                         <button
                             type="button"
-                            onClick={onKeepMine}
+                            onClick={handleKeepMine}
                             disabled={isSaving}
                             className="rounded-md bg-(--ciete-red) px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-(--ciete-red-dark) disabled:opacity-50"
                         >
-                            Mantener mi cambio
+                            Guardar cambios
                         </button>
                     )}
                 </div>
@@ -626,7 +650,7 @@ function EditableTextCell({
     textClassName = 'text-text-muted',
 }) {
     const [editing, setEditing] = useState(false);
-    const { value, setValue, isSaving, error, conflict, save, cancel, resolveConflict } = useOptimisticField({
+    const { value, setValue, isSaving, error, conflict, save, cancel, dismissConflict, resolveConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -668,9 +692,9 @@ function EditableTextCell({
                     await resolveConflict('reload');
                     setEditing(false);
                 }}
-                onCancel={rollback}
-                onKeepMine={async () => {
-                    const ok = await resolveConflict('keepMine');
+                onCancel={dismissConflict}
+                onKeepMine={async (nextValue) => {
+                    const ok = await resolveConflict('keepMine', nextValue);
                     if (ok) setEditing(false);
                 }}
             />
@@ -708,7 +732,7 @@ function EditableTextCell({
 function EditableDateCell({ trabajo, onPatched, canEdit = false }) {
     const fieldName = 'fecha_terminacion';
     const initialDate = trabajo.fecha_terminacion ?? trabajo.fecha_terminado ?? '';
-    const { value, setValue, isSaving, error, conflict, save, cancel, resolveConflict } = useOptimisticField({
+    const { value, setValue, isSaving, error, conflict, save, cancel, dismissConflict, resolveConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -743,9 +767,9 @@ function EditableDateCell({ trabajo, onPatched, canEdit = false }) {
                     await resolveConflict('reload');
                     setEditing(false);
                 }}
-                onCancel={rollback}
-                onKeepMine={async () => {
-                    const ok = await resolveConflict('keepMine');
+                onCancel={dismissConflict}
+                onKeepMine={async (nextValue) => {
+                    const ok = await resolveConflict('keepMine', nextValue);
                     if (ok) setEditing(false);
                 }}
             />
@@ -781,7 +805,7 @@ function EditableDateCell({ trabajo, onPatched, canEdit = false }) {
 
 function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
     const fieldName = 'estado';
-    const { value, setValue, isSaving, error, conflict, save, cancel, resolveConflict } = useOptimisticField({
+    const { value, setValue, isSaving, error, conflict, save, cancel, dismissConflict, resolveConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -822,9 +846,9 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
                     await resolveConflict('reload');
                     setEditing(false);
                 }}
-                onCancel={rollback}
-                onKeepMine={async () => {
-                    const ok = await resolveConflict('keepMine');
+                onCancel={dismissConflict}
+                onKeepMine={async (nextValue) => {
+                    const ok = await resolveConflict('keepMine', nextValue);
                     if (ok) setEditing(false);
                 }}
             />
@@ -870,7 +894,7 @@ function EditableEstadoCell({ trabajo, onPatched, canEdit = false }) {
 function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdit = false }) {
     const fieldName = 'id_responsable_ciete';
     const hasResponsables = responsables.length > 0;
-    const { value, setValue, isSaving, error, conflict, save, cancel, resolveConflict } = useOptimisticField({
+    const { value, setValue, isSaving, error, conflict, save, cancel, dismissConflict, resolveConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -905,9 +929,9 @@ function EditableResponsableCell({ trabajo, responsables = [], onPatched, canEdi
                     await resolveConflict('reload');
                     setEditing(false);
                 }}
-                onCancel={rollback}
-                onKeepMine={async () => {
-                    const ok = await resolveConflict('keepMine');
+                onCancel={dismissConflict}
+                onKeepMine={async (nextValue) => {
+                    const ok = await resolveConflict('keepMine', nextValue);
                     if (ok) setEditing(false);
                 }}
             />
@@ -980,7 +1004,7 @@ function TrabajoPedidoFlowCells({
     const suggestedOption = currentOption ?? defaultOption ?? (options.length === 1 ? options[0] : null);
     const [selectedTarifario, setSelectedTarifario] = useState(() => String(suggestedOption?.id ?? ''));
     const [showAllPedidos, setShowAllPedidos] = useState(false);
-    const { value, isSaving, error, conflict, save, resolveConflict, cancel } = useOptimisticField({
+    const { value, isSaving, error, conflict, save, resolveConflict, dismissConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -1058,14 +1082,11 @@ function TrabajoPedidoFlowCells({
                     await resolveConflict('reload');
                     setSelectedTarifario(String(conflict?.currentValue ?? currentOption?.id ?? ''));
                 }}
-                onCancel={() => {
-                    cancel();
-                    setSelectedTarifario(String(suggestedOption?.id ?? ''));
-                }}
-                onKeepMine={async () => {
-                    const ok = await resolveConflict('keepMine');
+                onCancel={dismissConflict}
+                onKeepMine={async (nextValue) => {
+                    const ok = await resolveConflict('keepMine', nextValue);
                     if (ok) {
-                        setSelectedTarifario(String(conflict?.myValue ?? effectiveTarifario ?? ''));
+                        setSelectedTarifario(String(nextValue ?? conflict?.myValue ?? effectiveTarifario ?? ''));
                     }
                 }}
             />
@@ -1178,7 +1199,7 @@ function EditableStationCell({ trabajo, estaciones = [], onPatched, canEdit = fa
         : contextOptions;
     const selectedStation = options.find((estacion) => String(estacion.id) === String(trabajo.id_estacion_servicio)) ?? null;
     const selectedLabel = stationLabel(selectedStation) ?? trabajo.codigo_estacion;
-    const { value, isSaving, error, conflict, save, resolveConflict } = useOptimisticField({
+    const { value, isSaving, error, conflict, save, resolveConflict, dismissConflict } = useOptimisticField({
         entityId: trabajo.id_trabajo,
         entityUpdatedAt: trabajo.updated_at,
         fieldName,
@@ -1209,8 +1230,8 @@ function EditableStationCell({ trabajo, estaciones = [], onPatched, canEdit = fa
                 canKeepMine={canEdit}
                 isSaving={isSaving}
                 onReload={() => resolveConflict('reload')}
-                onCancel={() => resolveConflict('cancel')}
-                onKeepMine={() => resolveConflict('keepMine')}
+                onCancel={dismissConflict}
+                onKeepMine={(nextValue) => resolveConflict('keepMine', nextValue)}
             />
             <div className="flex min-w-0 items-center gap-1">
                 <SearchableInlineSelect
@@ -1328,8 +1349,8 @@ function EditableCategoriaCell({
                 canKeepMine={canEdit}
                 isSaving={isSaving}
                 onReload={() => (isRepsol ? workTypeField.resolveConflict('reload') : categoriaField.resolveConflict('reload'))}
-                onCancel={() => (isRepsol ? workTypeField.resolveConflict('cancel') : categoriaField.resolveConflict('cancel'))}
-                onKeepMine={() => (isRepsol ? workTypeField.resolveConflict('keepMine') : categoriaField.resolveConflict('keepMine'))}
+                onCancel={() => (isRepsol ? workTypeField.dismissConflict() : categoriaField.dismissConflict())}
+                onKeepMine={(nextValue) => (isRepsol ? workTypeField.resolveConflict('keepMine', nextValue) : categoriaField.resolveConflict('keepMine', nextValue))}
             />
             <div className="flex min-w-0 items-center gap-1">
                 <SearchableInlineSelect
@@ -1463,8 +1484,8 @@ function ObservacionesModal({ trabajo, onClose, onPatched, canEdit = false }) {
                     await resolveConflict('reload');
                 }}
                 onCancel={handleDismissConflict}
-                onKeepMine={async () => {
-                    const ok = await resolveConflict('keepMine');
+                onKeepMine={async (nextValue) => {
+                    const ok = await resolveConflict('keepMine', nextValue);
                     if (ok) onClose();
                 }}
             />

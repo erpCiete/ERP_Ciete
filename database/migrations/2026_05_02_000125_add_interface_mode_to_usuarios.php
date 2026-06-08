@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::table('usuarios', function (Blueprint $table) {
             $table->enum('interface_mode', ['ciete_excel', 'ciete_moderno'])
-                ->default('ciete_moderno')
+                ->default('ciete_excel')
                 ->after('activo');
         });
     }

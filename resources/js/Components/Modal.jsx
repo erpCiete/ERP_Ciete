@@ -1,9 +1,4 @@
-import {
-    Dialog,
-    DialogPanel,
-    Transition,
-    TransitionChild,
-} from '@headlessui/react';
+import { createPortal } from 'react-dom';
 
 export default function Modal({
     children,
@@ -12,6 +7,10 @@ export default function Modal({
     closeable = true,
     onClose = () => {},
 }) {
+    if (!show) {
+        return null;
+    }
+
     const close = () => {
         if (closeable) {
             onClose();
@@ -19,47 +18,41 @@ export default function Modal({
     };
 
     const maxWidthClass = {
-        sm: 'sm:max-w-sm',
-        md: 'sm:max-w-md',
-        lg: 'sm:max-w-lg',
-        xl: 'sm:max-w-xl',
-        '2xl': 'sm:max-w-2xl',
-    }[maxWidth];
+        sm: 'max-w-sm',
+        md: 'max-w-md',
+        lg: 'max-w-lg',
+        xl: 'max-w-xl',
+        '2xl': 'max-w-2xl',
+    }[maxWidth] ?? 'max-w-2xl';
 
-    return (
-        <Transition show={show} leave="duration-200">
-            <Dialog
-                as="div"
-                id="modal"
-                className="fixed inset-0 z-50 flex transform items-end overflow-y-auto px-4 py-4 transition-all sm:items-center sm:px-0 sm:py-6"
-                onClose={close}
+    const modal = (
+        <div
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{ zIndex: 2147483647 }}
+            role="presentation"
+        >
+            <button
+                type="button"
+                aria-label="Cerrar modal"
+                className="absolute inset-0 h-full w-full cursor-default bg-black/60"
+                onClick={close}
+                tabIndex={closeable ? 0 : -1}
+            />
+
+            <div
+                role="dialog"
+                aria-modal="true"
+                className={`relative w-full ${maxWidthClass} max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-surface text-text-main shadow-2xl`}
+                style={{ zIndex: 2147483647 }}
             >
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="pointer-events-none absolute inset-0 bg-black/35" />
-                </TransitionChild>
-
-                <TransitionChild
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    enterTo="opacity-100 translate-y-0 sm:scale-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                    leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                >
-                    <DialogPanel
-                        className={`relative mb-0 w-full max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] transform overflow-y-auto overscroll-contain rounded-2xl bg-surface shadow-xl transition-all sm:mb-6 sm:mx-auto sm:w-full ${maxWidthClass}`}
-                    >
-                        {children}
-                    </DialogPanel>
-                </TransitionChild>
-            </Dialog>
-        </Transition>
+                {children}
+            </div>
+        </div>
     );
+
+    if (typeof document === 'undefined') {
+        return modal;
+    }
+
+    return createPortal(modal, document.body);
 }

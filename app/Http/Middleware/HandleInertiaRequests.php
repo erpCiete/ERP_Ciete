@@ -185,7 +185,7 @@ class HandleInertiaRequests extends Middleware
                     'active_context' => $activeContextPayload,
                     'available_contexts' => $availableContextsPayload->values()->all(),
                     'can_use_all_contexts' => $canUseAllContexts,
-                    'interface_mode' => $user->interface_mode ?? 'ciete_moderno',
+                    'interface_mode' => $user->interface_mode ?? 'ciete_excel',
                 ] : null,
             ],
             'locale' => [

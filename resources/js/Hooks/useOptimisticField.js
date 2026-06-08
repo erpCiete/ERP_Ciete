@@ -9,9 +9,12 @@ function readConflict(responseData, attemptedValue, fieldName) {
     return {
         message: responseData?.message ?? 'Este campo fue modificado por otro usuario.',
         campo: responseData?.campo ?? fieldName,
+        auditId: responseData?.conflict_audit_id ?? responseData?.audit_id ?? null,
+        previousValue: responseData?.valor_anterior ?? null,
         currentValue: responseData?.valor_actual ?? responseData?.current_value ?? null,
         myValue: responseData?.valor_intentado ?? attemptedValue,
         currentUpdatedAt: responseData?.updated_at_actual ?? responseData?.current_updated_at ?? null,
+        modifiedAt: responseData?.fecha_modificacion ?? null,
         usuarioModificacion: responseData?.usuario_modificacion ?? null,
         modificadoRecientemente: Boolean(responseData?.modificado_recientemente ?? false),
     };
@@ -61,6 +64,7 @@ export function useOptimisticField({
                 campo: fieldName,
                 valor: nextValue,
                 updated_at: options.updatedAt ?? updatedAt,
+                ...(options.conflictAuditId ? { conflict_audit_id: options.conflictAuditId } : {}),
             });
 
             const responseData = response.data ?? {};
@@ -110,7 +114,7 @@ export function useOptimisticField({
         setError(null);
     }
 
-    async function resolveConflict(action = 'reload') {
+    async function resolveConflict(action = 'reload', nextValue = undefined) {
         if (!conflict) {
             return false;
         }
@@ -136,9 +140,12 @@ export function useOptimisticField({
         }
 
         if (action === 'keepMine' || action === 'retry') {
-            return save(conflict.myValue, {
+            const attemptedValue = nextValue !== undefined ? nextValue : conflict.myValue;
+
+            return save(attemptedValue, {
                 force: true,
                 updatedAt: conflict.currentUpdatedAt ?? updatedAt,
+                conflictAuditId: conflict.auditId,
             });
         }
 

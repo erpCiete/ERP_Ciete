@@ -91,6 +91,10 @@ function isManualStatus(value) {
     return MANUAL_STATUS_OPTIONS.some((option) => option.value === value);
 }
 
+function sameFormValue(a, b) {
+    return String(a ?? '') === String(b ?? '');
+}
+
 function statusLabelKey(value) {
     return {
         en_curso: 'trabajos.status.enCurso',
@@ -345,7 +349,30 @@ export default function TrabajosForm({
 
         if (isEditing) {
             const idTrabajo = trabajo.data ? trabajo.data.id_trabajo : trabajo.id_trabajo;
-            router.put(route('trabajos.update', idTrabajo), payload, inertiaOptions);
+            const dirtyPayload = Object.fromEntries(
+                Object.entries(payload).filter(([field, value]) => !sameFormValue(value, normalizedTrabajo[field])),
+            );
+
+            if (dirtyPayload.id_estacion_servicio !== undefined || dirtyPayload.id_contexto !== undefined) {
+                if (selectedClientKey === 'moeve') {
+                    dirtyPayload.id_contrato = payload.id_contrato;
+                }
+
+                if (selectedClientKey === 'repsol') {
+                    dirtyPayload.id_tipo_documento = payload.id_tipo_documento;
+                    dirtyPayload.id_tipo_trabajo = payload.id_tipo_trabajo;
+                }
+            }
+
+            dirtyPayload.updated_at = form.updated_at ?? normalizedTrabajo.updated_at ?? null;
+
+            if (Object.keys(dirtyPayload).length === 1) {
+                setLoading(false);
+                router.visit(route('trabajos.index'));
+                return;
+            }
+
+            router.put(route('trabajos.update', idTrabajo), dirtyPayload, inertiaOptions);
             return;
         }
 

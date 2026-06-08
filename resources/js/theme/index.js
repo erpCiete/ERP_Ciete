@@ -10,7 +10,7 @@ import {
 
 const DEFAULT_THEME = 'light';
 const STORAGE_KEY = 'ciete.theme';
-const DEFAULT_VISUAL_STYLE = 'ciete_moderno';
+const DEFAULT_VISUAL_STYLE = 'ciete_excel';
 const VISUAL_STYLE_STORAGE_KEY = 'ciete.visualStyle';
 const DEFAULT_WORKSPACE_CONTEXT = 'moeve';
 const WORKSPACE_CONTEXT_STORAGE_KEY = 'ciete.workspaceContext';

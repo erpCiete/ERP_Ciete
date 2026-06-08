@@ -73,7 +73,7 @@ Una factura puede incluir ítems de diferentes pedidos y trabajos, siempre que s
 Los campos ARIBA (Cta. de Mayor, Propuesta de Inversión, etc.) se parametrizan en el maestro de contratos, no en la estación. La sociedad facturadora tiene un campo de fallback a nivel de contrato que se usa cuando la estación no tiene `cod_sociedad` configurado.
 
 ### Concurrencia optimista por campo
-El sistema detecta si otro usuario modificó un campo en los últimos 60 minutos y muestra un aviso con el valor anterior, el nuevo, quién lo cambió y cuándo. El test automatizado confirma el 409. La verificación manual requiere sesiones realmente concurrentes.
+El sistema detecta si otro usuario modificó el mismo campo de un trabajo en los últimos 60 minutos, aunque el `updated_at` del cliente no esté obsoleto. La modal global muestra valor anterior, valor actual, usuario, fecha y el texto intentado; Cancelar conserva el borrador y Guardar cambios reintenta el guardado.
 
 ---
 
@@ -111,6 +111,8 @@ El sistema detecta si otro usuario modificó un campo en los últimos 60 minutos
 
 | Fecha | Incidencia | Fix |
 |-------|-----------|-----|
+| 2026-06-08 | Conflicto de trabajos no avisaba si `updated_at` del cliente no estaba obsoleto | Detección por última auditoría del mismo campo en la última hora y modal global de primer plano |
+| 2026-06-08 | Usuarios podían arrancar en modo moderno por defecto | Default cambiado a Ciete Excel y preferencia manual persistente desde `/profile` |
 | 2026-06-04 | CSV decimales sin coma (510 en vez de 510,00) | `formatCsvNumber` eliminó el `rtrim` que recortaba ceros |
 | 2026-06-04 | `passwords.sent` sin traducir | Creados `lang/es/passwords.php` y `lang/en/passwords.php` |
 | 2026-06-04 | `ImportacionController@store` devolvía JSON en lugar de Inertia | Cambio a `$request->validate()` con `mimetypes` |

@@ -29,7 +29,7 @@ Desarrollado por ABACO para Ciete Ingenieros S.A.
 | Estado | En revisión funcional |
 | Build verificado | `npm run build` correcto |
 | Tests verificados | 270 correctos, 3 fallidos, 1679 aserciones |
-| Documentación actualizada | 4 de junio de 2026 |
+| Documentación actualizada | 8 de junio de 2026 |
 
 La fuente de verdad documental está en [`docs/00_ENTREGA_FINAL/`](docs/00_ENTREGA_FINAL/). Para una primera lectura, consulta [`00_LÉEME_PRIMERO.md`](docs/00_ENTREGA_FINAL/00_LÉEME_PRIMERO.md).
 
@@ -48,7 +48,7 @@ Fallos conocidos de la última ejecución completa:
 - Exportaciones MOEVE en PDF, CSV y cuadro ARIBA.
 - Importación controlada de Excel y CSV.
 - Usuarios, roles, permisos, auditoría, avisos, soporte y estado del sistema.
-- Interfaz en español e inglés, con vistas moderna y tipo Excel.
+- Interfaz en español e inglés. Ciete Excel es el modo por defecto; el usuario puede cambiar a Ciete Moderno desde `/profile` y conservar esa preferencia.
 
 ## Requisitos
 
@@ -115,6 +115,7 @@ El volcado crea la base `abaco_ciete` e incluye estructura, catálogos, usuarios
 
 ```bash
 mysql -u root < database/schema/abaco_ciete_v220_2026-06-04.sql
+php artisan migrate
 php artisan optimize:clear
 ```
 
@@ -122,6 +123,7 @@ Si el usuario de MySQL tiene contraseña:
 
 ```bash
 mysql -u root -p < database/schema/abaco_ciete_v220_2026-06-04.sql
+php artisan migrate
 ```
 
 ### 4. Iniciar la aplicación

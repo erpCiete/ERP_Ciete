@@ -5,6 +5,7 @@
 **Opción A — Restaurar dump completo (más rápido):**
 ```bash
 mysql -u root < database/schema/abaco_ciete_v220_2026-06-04.sql
+php artisan migrate
 ```
 
 **Opción B — Desde cero con migraciones:**

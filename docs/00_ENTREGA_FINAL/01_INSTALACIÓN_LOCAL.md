@@ -82,6 +82,7 @@ El volcado incluye la estructura, los usuarios iniciales y datos demo de MOEVE, 
 
 ```bash
 mysql -u root < database/schema/abaco_ciete_v220_2026-06-04.sql
+php artisan migrate
 php artisan optimize:clear
 ```
 
@@ -89,7 +90,10 @@ Si MySQL solicita contraseña:
 
 ```bash
 mysql -u root -p < database/schema/abaco_ciete_v220_2026-06-04.sql
+php artisan migrate
 ```
+
+El `migrate` aplica las migraciones posteriores al volcado, incluido el modo Ciete Excel por defecto para los usuarios.
 
 ### Opción B: instalación limpia
 

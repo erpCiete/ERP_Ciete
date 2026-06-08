@@ -21,7 +21,7 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'admin',
                 'contextos' => [1, 2, 3],
-                'interface_mode' => 'ciete_moderno',
+                'interface_mode' => 'ciete_excel',
             ],
             [
                 'nombre' => 'Cesar',
@@ -81,13 +81,17 @@ class UsuariosInicialesSeeder extends Seeder
                 'id_contacto_empresa' => null,
                 'rol' => 'contable',
                 'contextos' => [1, 2, 3],
-                'interface_mode' => 'ciete_moderno',
+                'interface_mode' => 'ciete_excel',
             ],
         ];
 
         $roles = Role::query()->pluck('id_rol', 'slug');
 
         foreach ($usuarios as $item) {
+            $interfaceMode = User::query()
+                ->where('email', $item['email'])
+                ->value('interface_mode') ?: $item['interface_mode'];
+
             $usuario = User::query()->updateOrCreate(
                 ['email' => $item['email']],
                 [
@@ -100,7 +104,7 @@ class UsuariosInicialesSeeder extends Seeder
                     'email_verificado_at' => now(),
                     'password' => Hash::make($item['password']),
                     'activo' => true,
-                    'interface_mode' => $item['interface_mode'],
+                    'interface_mode' => $interfaceMode,
                 ]
             );
 

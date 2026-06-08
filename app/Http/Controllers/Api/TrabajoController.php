@@ -22,6 +22,7 @@ use App\Support\TrabajoPermission;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Carbon;
@@ -622,47 +623,43 @@ class TrabajoController extends Controller
 
         $validated = $request->validated();
 
-        // Detección de conflicto para el formulario completo (Modo Moderno).
-        // Si el cliente envía un updated_at y difiere del servidor, comprobamos
-        // si otro usuario modificó el trabajo en los últimos 60 minutos.
-        $clientTs = isset($validated['updated_at'])
-            ? ($this->normalizePatchTimestamp($validated['updated_at']) ?? $validated['updated_at'])
-            : null;
         $serverTs = $trabajo->updated_at?->format('Y-m-d H:i:s') ?? '';
+        $confirmedConflictAuditId = $request->integer('conflict_audit_id') ?: null;
 
-        if ($clientTs !== null && $clientTs !== $serverTs) {
-            $lastAudit = AuditLog::where('tabla', 'trabajos')
-                ->where('registro_id', $trabajo->id_trabajo)
-                ->orderByDesc('created_at')
-                ->with('usuario')
-                ->first();
+        foreach (Arr::except($validated, ['updated_at', 'conflict_audit_id']) as $field => $attemptedValue) {
+            $conflictAudit = $this->recentConflictAuditForField(
+                $trabajo,
+                (string) $field,
+                $request->user(),
+                $confirmedConflictAuditId
+            );
 
-            $fueModificadoPorOtro = $lastAudit?->id_usuario
-                && (int) $lastAudit->id_usuario !== (int) $request->user()->id_usuario;
-
-            $fueReciente = $fueModificadoPorOtro
-                && $lastAudit?->created_at instanceof Carbon
-                && $lastAudit->created_at->greaterThanOrEqualTo(now()->subHour());
-
-            if ($fueReciente) {
-                $nombreModificador = null;
-                if ($lastAudit->usuario) {
-                    $nombreModificador = trim(
-                        ($lastAudit->usuario->nombre ?? '') . ' ' . ($lastAudit->usuario->apellidos ?? '')
-                    ) ?: null;
-                }
+            if (
+                $conflictAudit
+                && ! $this->patchValuesAreEqual(
+                    $this->formatPatchValue($trabajo->{$field}),
+                    $this->formatPatchValue($attemptedValue)
+                )
+            ) {
+                $usuarioMod = $this->auditUserName($conflictAudit) ?? 'otro usuario';
+                $modifiedAt = $conflictAudit->created_at instanceof Carbon
+                    ? $conflictAudit->created_at->format('Y-m-d H:i:s')
+                    : $serverTs;
 
                 return redirect()->back()
                     ->withInput()
                     ->with('conflict_warning', sprintf(
-                        'Conflicto: este trabajo fue modificado recientemente por %s (%s). Recarga la página para ver los datos actualizados antes de guardar.',
-                        $nombreModificador ?? 'otro usuario',
-                        $serverTs
+                        'Conflicto: %s editó el campo %s el %s. Revisa el valor actualizado antes de sobrescribir.',
+                        $usuarioMod,
+                        $field,
+                        $modifiedAt
                     ));
             }
         }
 
-        $requestedEstado = $validated['estado'] ?? null;
+        $updateData = Arr::except($validated, ['updated_at', 'conflict_audit_id']);
+
+        $requestedEstado = $updateData['estado'] ?? null;
         if (is_string($requestedEstado) && $requestedEstado !== $trabajo->estado) {
             $stateError = $this->assertTrabajoStateMutationAllowed($request->user(), $requestedEstado);
             if ($stateError) {
@@ -672,7 +669,7 @@ class TrabajoController extends Controller
 
         $before = $this->auditLogger->snapshotModel($trabajo, self::AUDIT_FIELDS);
 
-        $trabajo->update($this->prepareTrabajoStateData($validated, $trabajo));
+        $trabajo->update($this->prepareTrabajoStateData($updateData, $trabajo));
         $this->trabajoStateService->syncTrabajo($trabajo);
         $trabajo->refresh();
 
@@ -890,6 +887,7 @@ class TrabajoController extends Controller
             'campo'      => ['required', 'string', Rule::in(array_keys($fieldMap))],
             'valor'      => $valorRules,
             'updated_at' => ['required', 'string'],
+            'conflict_audit_id' => ['nullable', 'integer'],
         ]);
 
         // El timestamp viaja en formato Y-m-d H:i:s para coincidir con lo que emite TrabajoResource.
@@ -905,49 +903,31 @@ class TrabajoController extends Controller
             : ($isPedidoPrincipalField ? $trabajo->primerPedido?->id_pedido : $trabajo->{$campo});
 
         $serverTs = $trabajo->updated_at?->format('Y-m-d H:i:s') ?? '';
-        $clientTs = $this->normalizePatchTimestamp($validated['updated_at']) ?? $validated['updated_at'];
+        $confirmedConflictAuditId = isset($validated['conflict_audit_id'])
+            ? (int) $validated['conflict_audit_id']
+            : null;
+        $formattedCurrentPatchValue = $this->formatPatchValue($currentPatchValue);
+        $formattedAttemptedPatchValue = $this->formatPatchValue($request->input('valor'));
+        $conflictAudit = $this->recentConflictAuditForField(
+            $trabajo,
+            $campo,
+            $user,
+            $confirmedConflictAuditId,
+            $isStationField,
+            $stationFieldMap
+        );
 
-        if ($serverTs !== $clientTs) {
-            $lastAudit = AuditLog::where('tabla', 'trabajos')
-                ->where('registro_id', $trabajo->id_trabajo)
-                ->where(function ($query) use ($campo): void {
-                    $query->where('campo', $campo)
-                        ->orWhereNull('campo');
-                })
-                ->orderByDesc('created_at')
-                ->with('usuario')
-                ->first();
-
-            $usuarioMod = null;
-            if ($lastAudit?->usuario) {
-                $usuarioMod = trim(
-                    ($lastAudit->usuario->nombre ?? '') . ' ' . ($lastAudit->usuario->apellidos ?? '')
-                ) ?: null;
-            }
-
-            $fueModificadoPorOtroUsuario = $lastAudit?->id_usuario
-                && (int) $lastAudit->id_usuario !== (int) $request->user()->id_usuario;
-
-            // Bloqueo solo si otra persona modificó ese campo en los últimos 60 minutos.
-            // Ediciones propias o antiguas pasan directamente sin aviso.
-            $fueModificadoRecientemente = $fueModificadoPorOtroUsuario
-                && $lastAudit?->created_at instanceof Carbon
-                && $lastAudit->created_at->greaterThanOrEqualTo(now()->subHour());
-
-            if ($fueModificadoRecientemente) {
-                return response()->json([
-                    'conflict'             => true,
-                    'message'              => 'Este campo fue modificado recientemente por otro usuario.',
-                    'campo'                => $campo,
-                    'valor_actual'         => $this->formatPatchValue($currentPatchValue),
-                    'valor_intentado'      => $this->formatPatchValue($request->input('valor')),
-                    'updated_at_actual'    => $serverTs,
-                    'usuario_modificacion' => $usuarioMod,
-                    'modificado_recientemente' => true,
-                    'current_value'        => $this->formatPatchValue($currentPatchValue),
-                    'current_updated_at'   => $serverTs,
-                ], 409);
-            }
+        if (
+            $conflictAudit
+            && ! $this->patchValuesAreEqual($formattedCurrentPatchValue, $formattedAttemptedPatchValue)
+        ) {
+            return $this->fieldConflictResponse(
+                $conflictAudit,
+                $campo,
+                $formattedCurrentPatchValue,
+                $formattedAttemptedPatchValue,
+                $serverTs
+            );
         }
 
         $valorAnterior = $this->formatPatchValue($currentPatchValue);
@@ -1374,6 +1354,145 @@ class TrabajoController extends Controller
             'updated_at' => $trabajo->updated_at?->format('Y-m-d H:i:s'),
             'trabajo' => (new TrabajoResource($trabajo))->resolve($request),
         ]);
+    }
+
+    /**
+     * Devuelve la última auditoría reciente de otro usuario para el mismo campo.
+     *
+     * @param  array<string, string>  $stationFieldMap
+     */
+    private function recentConflictAuditForField(
+        Trabajo $trabajo,
+        string $campo,
+        User $user,
+        ?int $confirmedConflictAuditId,
+        bool $isStationField = false,
+        array $stationFieldMap = [],
+    ): ?AuditLog {
+        $lastAudit = $this->latestAuditForField($trabajo, $campo, $isStationField, $stationFieldMap);
+
+        if (! $lastAudit?->id_usuario) {
+            return null;
+        }
+
+        if ((int) $lastAudit->id_usuario === (int) $user->id_usuario) {
+            return null;
+        }
+
+        if (
+            ! $lastAudit->created_at instanceof Carbon
+            || $lastAudit->created_at->lt(now()->subHour())
+        ) {
+            return null;
+        }
+
+        if ($confirmedConflictAuditId && (int) $lastAudit->id_audit === $confirmedConflictAuditId) {
+            return null;
+        }
+
+        return $lastAudit;
+    }
+
+    /**
+     * @param  array<string, string>  $stationFieldMap
+     */
+    private function latestAuditForField(
+        Trabajo $trabajo,
+        string $campo,
+        bool $isStationField = false,
+        array $stationFieldMap = [],
+    ): ?AuditLog {
+        if ($isStationField) {
+            $stationId = $trabajo->estacion?->id_estacion_servicio;
+
+            if (! $stationId || ! array_key_exists($campo, $stationFieldMap)) {
+                return null;
+            }
+
+            return AuditLog::query()
+                ->where('tabla', 'estaciones_servicio')
+                ->where('registro_id', $stationId)
+                ->where('campo', $campo)
+                ->latest('created_at')
+                ->with('usuario')
+                ->first();
+        }
+
+        return AuditLog::query()
+            ->where(function ($query): void {
+                $query->where('tabla', 'trabajos')
+                    ->orWhere('modulo', 'trabajos');
+            })
+            ->where(function ($query) use ($trabajo): void {
+                $query->where('registro_id', $trabajo->id_trabajo)
+                    ->orWhere('entity_id', $trabajo->id_trabajo);
+            })
+            ->where('campo', $campo)
+            ->latest('created_at')
+            ->with('usuario')
+            ->first();
+    }
+
+    private function fieldConflictResponse(
+        AuditLog $audit,
+        string $campo,
+        mixed $currentValue,
+        mixed $attemptedValue,
+        string $serverTs,
+    ): JsonResponse {
+        $usuarioMod = $this->auditUserName($audit) ?? 'otro usuario';
+        $modifiedAt = $audit->created_at instanceof Carbon
+            ? $audit->created_at->format('Y-m-d H:i:s')
+            : null;
+
+        return response()->json([
+            'conflict' => true,
+            'message' => sprintf(
+                '%s editó este campo%s. Revisa el valor antes de sobrescribir.',
+                $usuarioMod,
+                $modifiedAt ? ' el ' . $modifiedAt : ''
+            ),
+            'campo' => $campo,
+            'audit_id' => $audit->id_audit,
+            'conflict_audit_id' => $audit->id_audit,
+            'valor_anterior' => $this->auditFieldValue($audit, $campo, 'datos_anteriores', 'valor_anterior'),
+            'valor_nuevo' => $this->auditFieldValue($audit, $campo, 'datos_nuevos', 'valor_nuevo'),
+            'valor_actual' => $currentValue,
+            'valor_intentado' => $attemptedValue,
+            'updated_at_actual' => $serverTs,
+            'fecha_modificacion' => $modifiedAt,
+            'usuario_modificacion' => $usuarioMod,
+            'modificado_recientemente' => true,
+            'current_value' => $currentValue,
+            'current_updated_at' => $serverTs,
+        ], 409);
+    }
+
+    private function auditUserName(AuditLog $audit): ?string
+    {
+        if (! $audit->usuario) {
+            return null;
+        }
+
+        return trim(
+            ($audit->usuario->nombre ?? '') . ' ' . ($audit->usuario->apellidos ?? '')
+        ) ?: null;
+    }
+
+    private function auditFieldValue(AuditLog $audit, string $campo, string $snapshotKey, string $fallbackKey): mixed
+    {
+        $snapshot = $audit->{$snapshotKey};
+
+        if (is_array($snapshot) && array_key_exists($campo, $snapshot)) {
+            return $this->formatPatchValue($snapshot[$campo]);
+        }
+
+        return $this->formatPatchValue($audit->{$fallbackKey});
+    }
+
+    private function patchValuesAreEqual(mixed $first, mixed $second): bool
+    {
+        return (string) ($first ?? '') === (string) ($second ?? '');
     }
 
     private function loadTrabajoForResponse(Trabajo $trabajo): void

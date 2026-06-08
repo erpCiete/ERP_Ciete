@@ -67,6 +67,7 @@ class UpdateTrabajoRequest extends FormRequest
             ],
             'numero_aviso' => ['nullable', 'string', 'max:80'],
             'updated_at'   => ['nullable', 'string'],
+            'conflict_audit_id' => ['nullable', 'integer'],
         ];
     }
 

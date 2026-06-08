@@ -30,7 +30,9 @@
 ### Editar trabajo
 - Clic en el campo de la tabla para edición inline (modo Excel)
 - O "Abrir ficha" para el formulario completo (modo Moderno)
-- El formulario guarda con detección de concurrencia: si otro usuario modificó un campo en los últimos 60 minutos, aparece un aviso con la información del conflicto
+- La edición inline y el formulario completo envían solo campos modificados junto con `updated_at`, para no pisar campos que el usuario no tocó
+- El guardado tiene detección de concurrencia por campo: si otro usuario modificó ese mismo campo en los últimos 60 minutos, aparece una modal de primer plano con usuario, hora, valor anterior, valor actual y el texto que se iba a guardar
+- En la modal, Cancelar conserva lo escrito sin guardar; Guardar cambios reintenta con el texto actual y vuelve a avisar si hubo otro cambio posterior
 
 ### Estados del trabajo
 

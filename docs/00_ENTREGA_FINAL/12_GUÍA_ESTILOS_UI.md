@@ -29,22 +29,23 @@ La tabla principal de trabajos. Funciona como una hoja de cálculo:
 - La tabla no tiene sidebar para aprovechar el ancho completo de pantalla
 
 ### ConflictDialog
-Modal de conflicto de concurrencia. Aparece cuando el guardado optimista detecta que otro usuario modificó el mismo campo en los últimos 60 minutos. Muestra:
+Modal de conflicto de concurrencia. Aparece cuando el guardado optimista detecta que otro usuario modificó el mismo campo en los últimos 60 minutos. Se renderiza como modal global sobre toda la aplicación para quedar por encima de tablas, overlays y modales secundarios. Muestra:
 - Campo afectado
-- Valor actual en servidor
-- Valor que el usuario intentaba guardar
 - Quién lo modificó y cuándo
-- Opciones: recargar, cancelar (conserva borrador), mantener mi cambio
+- Valor anterior guardado antes del cambio de la otra persona
+- Valor actual en servidor
+- Campo editable con el valor que el usuario intentaba guardar
+- Botones: Cancelar (cierra la alerta y conserva lo escrito) y Guardar cambios (reintenta con el texto actual)
 
 ### ObservacionesModal
-Modal inline para editar las observaciones de un trabajo. Si se cancela el ConflictDialog desde aquí, el borrador del usuario se conserva y puede seguir editando.
+Modal inline para editar las observaciones de un trabajo. Si se cancela el ConflictDialog desde aquí, el borrador del usuario se conserva y puede seguir editando. El mismo patrón se aplica a `descripcion_trabajo` y al resto de campos editables de trabajos.
 
 ### CorreoMoeveModal
 Modal "Preparar correo Moeve" en la ficha del pedido. Genera asunto y cuerpo copiables, botones de exportación y checklist de envío.
 
 ## Modo Ciete Excel vs Modo Moderno
 
-El usuario puede elegir su preferencia en el perfil:
+**Ciete Excel** es el modo por defecto para todos los usuarios. La preferencia se guarda en `usuarios.interface_mode`; si el usuario cambia manualmente a Ciete Moderno desde `/profile`, esa elección se mantiene en sesiones posteriores y no se pisa por el frontend.
 
 - **Ciete Excel**: tabla densa editable inline, vista de hoja de cálculo. La recomendada para uso diario.
 - **Ciete Moderno**: fichas individuales con formularios detallados. Útil para ediciones complejas.
