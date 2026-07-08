@@ -293,3 +293,12 @@ Comprueba que MySQL está iniciado y revisa `DB_HOST`, `DB_PORT`, `DB_DATABASE`,
 **Los correos fallan en local**
 
 Usa `MAIL_MAILER=log`. Los mensajes quedarán registrados en `storage/logs/laravel.log`.
+
+<!-- ORGANIZACION-PROFESIONAL-20260708 -->
+## Organización profesional
+
+- Carpeta canónica local: `ERP-CIETE`.
+- Remoto actual: `kampexiii/ERP_Ciete`.
+- Rama activa local: `Desplegadav2`.
+- Prioridad: conservar documentación funcional, estado de tests y notas de entrega sin exponer datos sensibles.
+- Próximo paso recomendado: separar claramente documentación pública de documentación interna de cliente.
